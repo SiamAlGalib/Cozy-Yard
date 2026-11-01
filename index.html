@@ -4919,7 +4919,7 @@ window.addEventListener("keydown",function(e){
 
 /* ===== Block mode (Minecraft-style) ===== */
 (function(){
-var VX={},KEY="cozy_garden_vx",H=.92,MAXL=30,on=false,lastXY=[0,0];
+var VX=window.__VX={};window.__vxSave=function(){save()};var KEY="cozy_garden_vx",H=.92,MAXL=30,on=false,lastXY=[0,0];
 function save(){try{var l=[];for(var k in VX){var p=k.split(",");l.push([+p[0],+p[1],+p[2],VX[k].id,VX[k].v])}localStorage.setItem(KEY,JSON.stringify(l))}catch(e){}}
 function make(ix,iz,L,id,v,anim){
   var o=y0(id,v||0);o.position.set(io(ix),L*H,io(iz));
@@ -4927,7 +4927,7 @@ function make(ix,iz,L,id,v,anim){
   fo.add(o);VX[ix+","+iz+","+L]={id:id,v:v||0,obj:o};
   if(anim){o.scale.setScalar(.01);no.push({obj:o,t0:performance.now()})}
   an=true}
-function clearAll(){for(var k in VX)fo.remove(VX[k].obj);VX={};save();an=true}
+function clearAll(){for(var k in VX){fo.remove(VX[k].obj)}for(var k2 in VX)delete VX[k2];save();an=true}
 try{var sv=JSON.parse(localStorage.getItem(KEY)||"[]");sv.forEach(function(r){if(pt[r[3]]&&Ql(r[0],r[1]))make(r[0],r[1],r[2],r[3],r[4],false)})}catch(e){}
 
 function occ(ix,iz,L){
@@ -5030,6 +5030,52 @@ bb.addEventListener("click",function(){
 /* "New" button clears blocks too (when confirmed) */
 var rs=document.getElementById("reset");
 rs.addEventListener("click",function(){if(rs.textContent==="Sure?")clearAll()},true);
+})();
+
+
+/* ===== fpBreakFix: remove anything in the kingdom ===== */
+(function(){
+function doBreak(){
+  if(!window.__fpOn)return;
+  Eu();
+  du.set(0,0);
+  Gl.setFromCamera(du,In);
+  var hs=Gl.intersectObjects(fo.children,true),o=null,hit=null;
+  for(var i=0;i<hs.length;i++){
+    var q=hs[i].object;
+    while(q&&!q.userData.cell)q=q.parent;
+    if(q){o=q;hit=hs[i];break}
+  }
+  if(!o||hit.distance>5)return Vt("Nothing to break here");
+  var ix=o.userData.cell.ix,iz=o.userData.cell.iz,id=null;
+  if(o.userData.vx&&window.__VX){
+    var k=ix+","+iz+","+o.userData.level,b=window.__VX[k];
+    if(b){fo.remove(b.obj);delete window.__VX[k];id=b.id;if(window.__vxSave)window.__vxSave()}
+  }else{
+    var c=so(ix,iz);
+    if(c.top&&c.top.obj===o){id=c.top.id;xu(c,"top")}
+    else if(c.base&&c.base.obj===o){id=c.base.id;xu(c,"base")}
+    else if(c.floor&&c.floor.obj===o){id=c.floor.id;xu(c,"floor")}
+    else if(c.stack){
+      for(var j=0;j<c.stack.length;j++)if(c.stack[j].obj===o){
+        var it=c.stack.splice(j,1)[0];id=it.id;fo.remove(it.obj);break;
+      }
+    }
+  }
+  if(!id)return Vt("Nothing to break here");
+  cgBg[id]=(cgBg[id]|0)+1;
+  an=true;
+  Vt("Broke "+pt[id].name+" - back in your bag");
+  ql();
+}
+var look=document.getElementById("fpLook");
+look.addEventListener("pointerup",function(e){
+  if(e.pointerType==="mouse"&&e.button===2&&window.__fpOn){doBreak();e.stopImmediatePropagation()}
+},true);
+window.addEventListener("keydown",function(e){
+  if(window.__fpOn&&e.code==="KeyX"){if(!e.repeat)doBreak();e.stopImmediatePropagation()}
+},true);
+document.getElementById("fpBreak").addEventListener("click",function(e){doBreak();e.stopImmediatePropagation()},true);
 })();
 
 window.__game={cells:wi,put:js,tryPlace:yu,select:mo,buyLand:Mu,get coins(){return Xt},set coins(i){Xt=i,er()},get size(){return Ai()},itemCount:Xl,get bag(){return cgBg},get cgMk(){return cgMk},cgOpenShop,cgMoveTap,cgMkAt};})();
