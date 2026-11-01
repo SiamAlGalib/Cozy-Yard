@@ -5046,7 +5046,7 @@ function doBreak(){
     while(q&&!q.userData.cell)q=q.parent;
     if(q){o=q;hit=hs[i];break}
   }
-  if(!o||hit.distance>(window.__BRK||12))return Vt("Nothing to break here");
+  if(!o||hit.distance>(window.__BRK||4))return Vt("Nothing to break here");
   var ix=o.userData.cell.ix,iz=o.userData.cell.iz,id=null;
   if(o.userData.vx&&window.__VX){
     var k=ix+","+iz+","+o.userData.level,b=window.__VX[k];
