@@ -5369,6 +5369,87 @@ try{(JSON.parse(localStorage.getItem(KEY)||"[]")||[]).forEach(function(d){if(JOB
 requestAnimationFrame(loop);
 })();
 
+
+/* ===== fishSys ===== */
+(function(){
+var MAXF=40,COLS=[[0xff8c1a,0xffb347],[0x3b82c4,0x7fc0ff],[0xc9d1d9,0xeef2f6],[0xe8e8e8,0xd62828],[0xf2c21b,0xffe066]];
+var fish=[],lastScan=0,tiles={};
+function isWater(x,z){
+  if(!Ql(x,z))return false;
+  var c=so(x,z);
+  if(!c.floor||(c.floor.id!=="pond"&&c.floor.id!=="lake"))return false;
+  return !c.base;
+}
+function mk(cols){
+  var g=new un(),body=new un();g.add(body);
+  body.add(Xe(.3,.14,.12,cols[0],0,0,0));
+  body.add(Xe(.1,.12,.1,cols[0],.18,0,0));
+  body.add(Xe(.04,.05,.1,cols[1],-.05,.09,0));
+  body.add(Xe(.06,.03,.08,cols[1],.0,-.07,.09),Xe(.06,.03,.08,cols[1],0,-.07,-.09));
+  body.add(Xe(.03,.03,.03,0x111111,-.1,.03,.07),Xe(.03,.03,.03,0x111111,-.1,.03,-.07));
+  if(cols[1]===0xd62828)body.add(Xe(.1,.15,.13,0xd62828,.03,0,0));
+  var tail=new un();tail.position.set(.22,0,0);
+  tail.add(Xe(.04,.14,.04,cols[1],.04,0,0));
+  body.add(tail);
+  g.scale.setScalar(1.1);
+  return {g:g,body:body,tail:tail};
+}
+function pickTarget(f){
+  for(var k=0;k<15;k++){
+    var tx=f.cx+(Math.random()-.5)*.8,tz=f.cz+(Math.random()-.5)*.8;
+    f.tx=tx;f.tz=tz;return;
+  }
+}
+function add(x,z){
+  var f={ix:x,iz:z,cx:io(x),cz:io(z),m:mk(COLS[Math.floor(Math.random()*COLS.length)]),ph:Math.random()*6,sp:.25+Math.random()*.25,y:.02+Math.random()*.02};
+  f.m.g.position.set(f.cx+(Math.random()-.5)*.5,f.y,f.cz+(Math.random()-.5)*.5);
+  pickTarget(f);fi.add(f.m.g);fish.push(f);
+}
+function scan(){
+  var n=Ai(),off=(lt-n)/2,seen={},cnt={};
+  fish.forEach(function(f){var k=f.ix+","+f.iz;cnt[k]=(cnt[k]||0)+1});
+  for(var z=off;z<off+n;z++)for(var x=off;x<off+n;x++){
+    if(!isWater(x,z))continue;
+    var k=x+","+z;seen[k]=1;
+    var want=((x*7+z*13)%3===0)?2:1;
+    while((cnt[k]||0)<want&&fish.length<MAXF){add(x,z);cnt[k]=(cnt[k]||0)+1}
+  }
+  for(var i=fish.length-1;i>=0;i--){
+    var f=fish[i];
+    if(!seen[f.ix+","+f.iz]){fi.remove(f.m.g);fish.splice(i,1);an=true}
+  }
+}
+var last=performance.now();
+function loop(now){
+  var dt=Math.min(.05,(now-last)/1000);last=now;
+  if(now-lastScan>1500){lastScan=now;scan()}
+  if(fish.length){
+    for(var i=0;i<fish.length;i++){
+      var f=fish[i],g=f.m.g,dx=f.tx-g.position.x,dz=f.tz-g.position.z,d=Math.hypot(dx,dz);
+      if(d<.06)pickTarget(f);
+      else{
+        var s=f.sp*dt;
+        g.position.x+=dx/d*Math.min(s,d);g.position.z+=dz/d*Math.min(s,d);
+        var want=Math.atan2(-dz,dx)+Math.PI,cur=g.rotation.y;
+        var diff=((want-cur+Math.PI)%(Math.PI*2)+Math.PI*2)%(Math.PI*2)-Math.PI;
+        g.rotation.y=cur+diff*Math.min(1,dt*5);
+      }
+      f.ph+=dt*8;
+      f.m.tail.rotation.y=Math.sin(f.ph)*.6;
+      f.m.body.rotation.y=Math.sin(f.ph)*.08;
+      g.position.y=f.y+Math.sin(f.ph*.4)*.01;
+    }
+    an=true;
+  }
+  requestAnimationFrame(loop);
+}
+var rs=document.getElementById("reset");
+rs.addEventListener("click",function(){
+  if(rs.textContent==="Sure?"){fish.forEach(function(f){fi.remove(f.m.g)});fish=[];an=true}
+},true);
+requestAnimationFrame(loop);
+})();
+
 window.__game={cells:wi,put:js,tryPlace:yu,select:mo,buyLand:Mu,get coins(){return Xt},set coins(i){Xt=i,er()},get size(){return Ai()},itemCount:Xl,get bag(){return cgBg},get cgMk(){return cgMk},cgOpenShop,cgMoveTap,cgMkAt};})();
 /*! Bundled license information:
 
