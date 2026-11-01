@@ -77,23 +77,21 @@
   #shop .r button:disabled { background:#c9d3c9; color:#fff; cursor:default; }
   #shop .r button.b5 { background:#1f7a43; }
 
-  #driveHud{display:none;position:fixed;inset:0;z-index:35;pointer-events:none;color:#fff;font-family:system-ui,sans-serif}
-  body.driving #driveHud{display:block}
-  body.driving #hud,body.driving #bottom,body.driving #hint,body.driving .vt{display:none!important}
-  #driveTop{position:absolute;top:calc(14px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);padding:9px 16px;border-radius:999px;background:rgba(8,15,25,.65);backdrop-filter:blur(12px);font-size:13px;font-weight:700;white-space:nowrap}
-  #driveExit{position:absolute;right:16px;top:calc(14px + env(safe-area-inset-top));pointer-events:auto;border:1px solid #ffffff55;background:#101a2acc;color:white;border-radius:999px;padding:10px 15px;font-weight:700}
-  #driveHelp{position:absolute;left:50%;bottom:calc(22px + env(safe-area-inset-bottom));transform:translateX(-50%);background:#07111dcc;border:1px solid #ffffff30;border-radius:14px;padding:10px 14px;font-size:12px;text-align:center;white-space:nowrap}
-  #driveDash{position:absolute;left:0;right:0;bottom:0;height:16vh;min-height:90px;background:linear-gradient(transparent,rgba(5,9,14,.82));}
-  #driveWheel{position:absolute;left:50%;bottom:18px;transform:translateX(-50%);width:90px;height:90px;border:9px solid #151b22;border-radius:50%;box-shadow:0 0 0 2px #ffffff35,inset 0 0 0 3px #ffffff30;opacity:.9}
-  #driveWheel:before{content:"";position:absolute;left:50%;top:0;bottom:0;width:9px;background:#151b22;transform:translateX(-50%)}
-  #driveWheel:after{content:"";position:absolute;left:8px;right:8px;top:50%;height:8px;background:#151b22;transform:translateY(-50%)}
-  #driveSpeed{position:absolute;right:22px;bottom:24px;font-size:25px;font-weight:800;text-shadow:0 2px 8px #000}
-  #driveSpeed small{display:block;font-size:10px;letter-spacing:2px;text-align:right;opacity:.75}
-  #driveTouch{display:none;position:absolute;left:18px;bottom:28px;width:112px;height:112px;border:1px solid #ffffff55;border-radius:50%;background:#ffffff16;pointer-events:auto;touch-action:none}
-  #driveTouch:after{content:"";position:absolute;left:50%;top:50%;width:42px;height:42px;transform:translate(-50%,-50%);border-radius:50%;background:#ffffff55}
-  @media(pointer:coarse){#driveTouch{display:block}#driveHelp{bottom:calc(150px + env(safe-area-inset-bottom))}}
 
 
+  #fpHud{display:none;position:fixed;inset:0;z-index:35;font-family:system-ui,sans-serif;color:#fff}
+  body.fp #fpHud{display:block}
+  body.fp #hud,body.fp #bottom,body.fp #hint,body.fp .vt{display:none!important}
+  #fpLook{position:absolute;inset:0;touch-action:none;cursor:crosshair}
+  #fpCross{position:absolute;left:50%;top:50%;width:14px;height:14px;transform:translate(-50%,-50%);pointer-events:none}
+  #fpCross:before,#fpCross:after{content:"";position:absolute;background:#ffffffcc;box-shadow:0 0 2px #000}
+  #fpCross:before{left:6px;top:0;width:2px;height:14px}
+  #fpCross:after{top:6px;left:0;height:2px;width:14px}
+  #fpExit{position:absolute;right:14px;top:calc(14px + env(safe-area-inset-top));border:1px solid #ffffff66;background:#101a2acc;color:#fff;border-radius:999px;padding:10px 15px;font-weight:700;cursor:pointer;z-index:2}
+  #fpHelp{position:absolute;left:14px;top:calc(14px + env(safe-area-inset-top));background:#07111dbb;border-radius:14px;padding:8px 12px;font-size:12px;font-weight:600;max-width:60vw;pointer-events:none}
+  #fpStick{display:none;position:absolute;left:18px;bottom:calc(28px + env(safe-area-inset-bottom));width:120px;height:120px;border:1px solid #ffffff66;border-radius:50%;background:#ffffff18;touch-action:none;z-index:2}
+  #fpStick:after{content:"";position:absolute;left:50%;top:50%;width:46px;height:46px;transform:translate(-50%,-50%);border-radius:50%;background:#ffffff66}
+  @media(pointer:coarse){#fpStick{display:block}}
 </style>
 </head>
 <body>
@@ -101,13 +99,15 @@
 <div id="hud">
   <div class="pill" id="coins"><i class="coin"></i> 0</div>
   <button class="pill" id="land">🌱 Land</button>
-  <button class="pill" id="reset">New</button><button class="pill" id="navToggle" style="pointer-events:auto;background:#285c48;color:#fff">👁 Land navigation</button><button class="pill" id="focusToggle" style="pointer-events:auto;background:#285c48;color:#fff">🎯 Focus on click</button><button class="pill" id="exploreStart" style="pointer-events:auto;background:#1f6feb;color:#fff">🚗 Explore</button>
+  <button class="pill" id="reset">New</button><button class="pill" id="navToggle" style="pointer-events:auto;background:#285c48;color:#fff">👁 Land navigation</button><button class="pill" id="focusToggle" style="pointer-events:auto;background:#285c48;color:#fff">🎯 Focus on click</button>
+  <button class="pill" id="enterKingdom" style="pointer-events:auto;border:0;cursor:pointer;background:#6b3fa0;color:#fff">🚶 Enter Kingdom</button>
   <div class="pill" id="goal"></div>
 </div>
 <div id="hint">Tap a 📮 market to get items · Tap to build · Drag to look around · 👁 Navigate: drag to move across the land, right-drag to rotate · Pinch/scroll to zoom</div>
 <button class="vt" id="vtTop">👁 Top</button><button class="vt" id="vtBot">👁 Items</button>
 <div id="toast"></div>
-<div id="shop"></div><div id="driveHud"><div id="driveTop">OPEN LAND EXPLORATION · DRIVE VIEW</div><button id="driveExit">✕ Exit</button><div id="driveDash"><div id="driveWheel"></div><div id="driveSpeed">0<small>KM/H</small></div></div><div id="driveHelp">WASD / Arrow keys to drive · Mouse to look around · ESC to exit</div><div id="driveTouch"></div></div>
+<div id="shop"></div>
+<div id="fpHud"><div id="fpLook"></div><div id="fpCross"></div><button id="fpExit">✕ Leave kingdom</button><div id="fpHelp">WASD / arrows: walk · Shift: run · Click then move mouse: look · Esc: free mouse</div><div id="fpStick"></div></div>
 <div id="bottom">
   <div id="tabs"></div>
   <div id="palette"></div>
@@ -4371,121 +4371,6 @@ di.addEventListener("wheel",i=>{i.preventDefault();let before=Au(i.clientX,i.cli
 setInterval(()=>{if(document.hidden)return;to+=vu()/20;let i=Math.floor(to);i>0&&(Xt+=i,to-=i),er()},3e3);setInterval(tc,15e3);function Cu(i){requestAnimationFrame(Cu);let e=!1;for(let t=no.length-1;t>=0;t--){let n=no[t],s=Math.min(1,(i-n.t0)/240);n.obj.scale.setScalar(Math.max(.01,M0(s)));if(n.obj.userData.dropFrom!==void 0){let d=Math.min(1,(i-(n.obj.userData.dropStart||n.t0))/260);n.obj.position.y=n.obj.userData.dropFrom*(1-d)+Math.max(0,n.obj.userData.dropFrom-2.2)*d+Math.sin(d*Math.PI)*.09*(1-d);if(d>=1){n.obj.position.y=Math.max(0,n.obj.userData.dropFrom-2.2);delete n.obj.userData.dropFrom;delete n.obj.userData.dropStart}}e=!0,s>=1&&n.obj.userData.dropFrom===void 0&&(n.obj.scale.setScalar(1),no.splice(t,1))}Xn!==null&&(sn+=(Xn-sn)*.12,Math.abs(Xn-sn)<.05&&(sn=Xn,Xn=null),e=!0),(an||e)&&(Eu(),co.render(fi,In),an=!1)}w0();cgMkRefresh();cgBagUi();jl();sn=ec();Su();er();Tu();requestAnimationFrame(Cu);setTimeout(()=>{let i=document.getElementById("hint");i&&i.classList.add("hide")},8e3);
 
 /* Flat-land orbit navigation replaces first-person flight. */
-/* First-person land exploration / car driving mode */
-var driveMode=false,driveCar=null,driveDriver=null,driveYaw=0,driveSpeed=0,driveKeys={},driveLookYaw=0,driveLookPitch=0;
-var driveOld={fov:In.fov,aspect:In.aspect,position:In.position.clone(),target:eo.clone(),yaw:Zl,angle:ao,distance:sn};
-var driveSpeedEl=document.getElementById("driveSpeed"),driveTouch=document.getElementById("driveTouch"),driveTouchState={x:0,y:0};
-function driveBox(w,h,d,color,x,y,z0){return Xe(w,h,d,color,x,y,z0)}
-function driveBuildCar(){
-  driveCar=new un();
-  /* compact off-road vehicle */
-  driveCar.add(driveBox(1.75,.48,3.35,0x2457a6,0,.72,0));
-  driveCar.add(driveBox(1.48,.58,1.72,0x183d70,0,1.18,.12));
-  driveCar.add(driveBox(1.36,.07,1.52,0x9edcff,0,1.48,.12));
-  driveCar.add(driveBox(.08,.55,.08,0xdce9f5,-.69,1.19,-.63));
-  driveCar.add(driveBox(.08,.55,.08,0xdce9f5,.69,1.19,-.63));
-  driveCar.add(driveBox(.08,.55,.08,0xdce9f5,-.69,1.19,.82));
-  driveCar.add(driveBox(.08,.55,.08,0xdce9f5,.69,1.19,.82));
-  driveCar.add(driveBox(1.42,.12,.12,0x17212c,0,1.51,-.63));
-  driveCar.add(driveBox(1.42,.12,.12,0x17212c,0,1.51,.82));
-  driveCar.add(driveBox(1.82,.16,.22,0xf4d36b,0,.82,-1.72));
-  driveCar.add(driveBox(1.82,.16,.22,0xc42d32,0,.82,1.72));
-  for(let x of [-.91,.91])for(let z0 of [-1.08,1.08]){
-    driveCar.add(driveBox(.22,.62,.68,0x171b20,x,.38,z0));
-    driveCar.add(driveBox(.235,.28,.31,0x8d969d,x,.38,z0));
-  }
-  /* steering wheel and dashboard */
-  driveCar.add(driveBox(1.2,.12,.48,0x111820,0,1.04,.52));
-  driveCar.add(driveBox(.72,.07,.12,0x05080c,0,1.12,.73));
-  /* seated driver: head, torso, arms and hands */
-  driveDriver=new un();
-  driveDriver.add(driveBox(.38,.48,.25,0x263b59,-.43,1.04,.22));
-  driveDriver.add(driveBox(.25,.25,.25,0xd69b72,-.43,1.42,.19));
-  driveDriver.add(driveBox(.12,.34,.14,0x263b59,-.66,1.1,.23));
-  driveDriver.add(driveBox(.12,.34,.14,0x263b59,-.20,1.1,.23));
-  driveDriver.add(driveBox(.11,.12,.11,0xd69b72,-.66,.94,.36));
-  driveDriver.add(driveBox(.11,.12,.11,0xd69b72,-.20,.94,.36));
-  driveCar.add(driveDriver);
-  fi.add(driveCar);
-}
-function driveStart(){
-  if(driveMode)return;
-  driveMode=true;driveSpeed=0;driveYaw=0;driveLookYaw=0;driveLookPitch=0;driveKeys={};
-  driveOld={fov:In.fov,aspect:In.aspect,position:In.position.clone(),target:eo.clone(),yaw:Zl,angle:ao,distance:sn};
-  driveBuildCar();
-  /* Begin in the middle of the currently owned plot. */
-  driveCar.position.set(0,0,0);
-  driveCar.rotation.y=driveYaw;
-  document.body.classList.add("driving");
-  document.getElementById("driveHelp").textContent="WASD / Arrow keys to drive · Mouse to look around · ESC to exit";
-  driveUpdateCamera();
-  Vt("Your driver has arrived. Enjoy the journey!");
-}
-function driveExit(){
-  if(!driveMode)return;
-  driveMode=false;driveSpeed=0;driveKeys={};
-  if(driveCar){fi.remove(driveCar);driveCar=null;driveDriver=null}
-  document.body.classList.remove("driving");
-  In.fov=driveOld.fov;In.aspect=window.innerWidth/window.innerHeight;In.updateProjectionMatrix();
-  eo.copy(driveOld.target);Zl=driveOld.yaw;ao=driveOld.angle;sn=driveOld.distance;Eu();an=true;
-  Vt("Back to garden building mode");
-}
-function driveUpdateCamera(){
-  if(!driveCar)return;
-  var c=driveCar.position;
-  var forward=new z(-Math.sin(driveYaw),0,-Math.cos(driveYaw));
-  var right=new z(Math.cos(driveYaw),0,-Math.sin(driveYaw));
-  var camPos=new z(c.x,1.42,c.z).addScaledVector(right,0).addScaledVector(forward,.28);
-  In.position.copy(camPos);
-  var yaw=driveYaw+driveLookYaw;
-  var pitch=driveLookPitch;
-  var look=new z(-Math.sin(yaw)*Math.cos(pitch),Math.sin(pitch),-Math.cos(yaw)*Math.cos(pitch));
-  In.lookAt(camPos.clone().add(look.multiplyScalar(12)));
-  In.fov=72;In.aspect=window.innerWidth/window.innerHeight;In.updateProjectionMatrix();
-}
-function driveTick(dt){
-  if(!driveMode||!driveCar)return;
-  var forward=driveKeys.KeyW||driveKeys.ArrowUp||driveTouchState.y<-.15;
-  var backward=driveKeys.KeyS||driveKeys.ArrowDown||driveTouchState.y>.15;
-  var left=driveKeys.KeyA||driveKeys.ArrowLeft||driveTouchState.x<-.15;
-  var right=driveKeys.KeyD||driveKeys.ArrowRight||driveTouchState.x>.15;
-  if(forward)driveSpeed=Math.min(8,driveSpeed+dt*5);
-  else if(backward)driveSpeed=Math.max(-3,driveSpeed-dt*7);
-  else driveSpeed*=Math.pow(.12,dt);
-  if(Math.abs(driveSpeed)>.15){if(left)driveYaw+=dt*1.45*(driveSpeed>=0?1:-1);if(right)driveYaw-=dt*1.45*(driveSpeed>=0?1:-1)}
-  driveCar.rotation.y=driveYaw;
-  var dx=-Math.sin(driveYaw)*driveSpeed*dt,dz=-Math.cos(driveYaw)*driveSpeed*dt;
-  var edge=Math.max(2,lt/2-1.6);
-  driveCar.position.x=Math.max(-edge,Math.min(edge,driveCar.position.x+dx));
-  driveCar.position.z=Math.max(-edge,Math.min(edge,driveCar.position.z+dz));
-  driveSpeedEl.innerHTML=Math.round(Math.abs(driveSpeed)*12)+"<small>KM/H</small>";
-  driveUpdateCamera();
-}
-document.getElementById("exploreStart").addEventListener("click",driveStart);
-document.getElementById("driveExit").addEventListener("click",driveExit);
-window.addEventListener("keydown",function(e){
-  if(!driveMode)return;
-  if(["ArrowUp","ArrowDown","ArrowLeft","ArrowRight","Space"].includes(e.code))e.preventDefault();
-  if(e.code==="Escape"){driveExit();return}
-  driveKeys[e.code]=true;
-});
-window.addEventListener("keyup",function(e){driveKeys[e.code]=false});
-di.addEventListener("pointerdown",function(e){if(driveMode&&e.pointerType==="mouse")di.dataset.driveX=e.clientX+","+e.clientY});
-di.addEventListener("pointermove",function(e){
-  if(!driveMode||e.pointerType!=="mouse"||!di.dataset.driveX)return;
-  var p=di.dataset.driveX.split(",").map(Number),dx=e.clientX-p[0],dy=e.clientY-p[1];
-  if(e.buttons){driveLookYaw-=dx*.003;driveLookPitch=Math.max(-.45,Math.min(.35,driveLookPitch-dy*.002))}
-  di.dataset.driveX=e.clientX+","+e.clientY;driveUpdateCamera();
-});
-di.addEventListener("pointerup",function(){delete di.dataset.driveX});
-driveTouch.addEventListener("pointerdown",function(e){driveTouch.setPointerCapture(e.pointerId);driveTouch.dataset.id=e.pointerId;driveTouchMove(e)});
-driveTouch.addEventListener("pointermove",function(e){if(driveTouch.dataset.id==e.pointerId)driveTouchMove(e)});
-function driveTouchMove(e){var r=driveTouch.getBoundingClientRect();driveTouchState.x=Math.max(-1,Math.min(1,(e.clientX-(r.left+r.width/2))/(r.width/2)));driveTouchState.y=Math.max(-1,Math.min(1,(e.clientY-(r.top+r.height/2))/(r.height/2)))}
-function driveTouchEnd(){driveTouchState={x:0,y:0};delete driveTouch.dataset.id}
-driveTouch.addEventListener("pointerup",driveTouchEnd);driveTouch.addEventListener("pointercancel",driveTouchEnd);
-var driveLast=performance.now();
-function driveFrame(now){var dt=Math.min(.05,(now-driveLast)/1000);driveLast=now;if(driveMode){driveTick(dt);an=true}requestAnimationFrame(driveFrame)}
-requestAnimationFrame(driveFrame);
 (function(){
 var ch=new un();
 function limb(w,h,d,c,x,y){var g=new un();g.position.set(x,y,0);g.add(Xe(w,h,d,c,0,-h/2,0));return g}
@@ -4597,7 +4482,7 @@ work={r:r,t0:performance.now()};path=[];arrive=null;cgShopEl.classList.remove("o
 /* Animation loop */
 var last=performance.now();
 function loop(now){
-var dt=Math.min(.05,(now-last)/1000);last=now;ch.visible=!driveMode;var active=false,walking=false;
+var dt=Math.min(.05,(now-last)/1000);last=now;ch.visible=!window.__fpOn;var active=false,walking=false;
 if(path.length){var t=path[0],tx=io(t[0]),tz=io(t[1]),dx=tx-ch.position.x,dz=tz-ch.position.z,d=Math.hypot(dx,dz),s=3.2*dt;
 ch.rotation.y=Math.atan2(dx,dz);walking=true;
 if(d<=s){ch.position.x=tx;ch.position.z=tz;path.shift();if(!path.length&&arrive){var f=arrive;arrive=null;f()}}
@@ -4650,6 +4535,108 @@ yu=function(ix,iz){
 
 /* Keep the builder in view while it moves around the garden. */
 })();
+
+/* ===== Enter Kingdom: first-person walk ===== */
+(function(){
+var EYE=0.72, RADIUS=0.2, WALK=2.4, RUN=4.2, PASS={door:1,flower:1,sunflower:1,mushroom:1};
+var fpOn=false, px=0, pz=0, yaw=0, pitch=0, keys={}, joy={x:0,y:0}, bob=0, last=0;
+var look=document.getElementById("fpLook"), stick=document.getElementById("fpStick");
+function blocked(x,z){
+  var ix=Math.floor(x+lt/2), iz=Math.floor(z+lt/2);
+  if(!Ql(ix,iz))return true;
+  if(cgMkAt(ix,iz)>=0)return true;
+  var c=so(ix,iz);
+  if(c.floor&&pt[c.floor.id].blocks)return true;
+  if(c.stack&&c.stack.length)return true;
+  if(c.base&&!PASS[c.base.id])return true;
+  return false;
+}
+function free(x,z){return !(blocked(x-RADIUS,z-RADIUS)||blocked(x+RADIUS,z-RADIUS)||blocked(x-RADIUS,z+RADIUS)||blocked(x+RADIUS,z+RADIUS))}
+function findStart(){
+  var c=lt/2;
+  for(var d=0;d<lt;d++)for(var x=c-d;x<=c+d;x++)for(var z=c-d;z<=c+d;z++){
+    var wx=x-lt/2+.5, wz=z-lt/2+.5;
+    if(free(wx,wz)){px=wx;pz=wz;return}
+  }
+}
+function cam(){
+  if(In.fov!==72||In.near!==.05){In.fov=72;In.near=.05;In.updateProjectionMatrix()}
+  In.rotation.order="YXZ";
+  In.position.set(px,EYE+Math.sin(bob)*.025,pz);
+  In.rotation.set(pitch,yaw,0);
+  In.updateMatrixWorld();
+}
+var _Eu=Eu;
+Eu=function(){ if(fpOn){cam();return} _Eu(); };
+function tick(now){
+  if(!fpOn)return;
+  requestAnimationFrame(tick);
+  var dt=Math.min(.05,(now-last)/1000); last=now;
+  var f=(keys.KeyW||keys.ArrowUp?1:0)-(keys.KeyS||keys.ArrowDown?1:0)-joy.y;
+  var r=(keys.KeyD||keys.ArrowRight?1:0)-(keys.KeyA||keys.ArrowLeft?1:0)+joy.x;
+  var len=Math.hypot(f,r); if(len>1){f/=len;r/=len}
+  var sp=((keys.ShiftLeft||keys.ShiftRight)?RUN:WALK)*dt;
+  var dx=(-Math.sin(yaw)*f+Math.cos(yaw)*r)*sp, dz=(-Math.cos(yaw)*f-Math.sin(yaw)*r)*sp;
+  if(free(px+dx,pz))px+=dx;
+  if(free(px,pz+dz))pz+=dz;
+  if(len>.05)bob+=dt*9;
+  cam(); an=true;
+}
+function enter(){
+  if(fpOn)return;
+  fpOn=true; window.__fpOn=true;
+  findStart(); yaw=0; pitch=0; keys={}; joy={x:0,y:0};
+  document.body.classList.add("fp");
+  Wt.visible=false; cgShopEl.classList.remove("open");
+  cam(); last=performance.now(); requestAnimationFrame(tick);
+  Vt("Welcome to your kingdom!");
+}
+function leave(){
+  if(!fpOn)return;
+  fpOn=false; window.__fpOn=false;
+  try{if(document.pointerLockElement)document.exitPointerLock()}catch(e){}
+  document.body.classList.remove("fp");
+  In.near=.1; In.rotation.order="XYZ";
+  Tu(); _Eu(); an=true;
+  Vt("Back to building mode");
+}
+document.getElementById("enterKingdom").addEventListener("click",enter);
+document.getElementById("fpExit").addEventListener("click",leave);
+window.addEventListener("keydown",function(e){
+  if(!fpOn)return;
+  if(["ArrowUp","ArrowDown","ArrowLeft","ArrowRight","Space"].indexOf(e.code)>=0)e.preventDefault();
+  keys[e.code]=true;
+});
+window.addEventListener("keyup",function(e){keys[e.code]=false});
+var lookId=null,lx=0,ly=0;
+look.addEventListener("pointerdown",function(e){
+  if(e.pointerType==="mouse"){try{look.requestPointerLock()}catch(_){}}
+  lookId=e.pointerId; lx=e.clientX; ly=e.clientY;
+  try{look.setPointerCapture(e.pointerId)}catch(_){}
+});
+look.addEventListener("pointermove",function(e){
+  if(!fpOn)return;
+  var locked=document.pointerLockElement===look;
+  if(!locked&&e.pointerId!==lookId)return;
+  var dx=locked?e.movementX:e.clientX-lx, dy=locked?e.movementY:e.clientY-ly;
+  lx=e.clientX; ly=e.clientY;
+  var k=e.pointerType==="mouse"?.0024:.005;
+  yaw-=dx*k; pitch=Math.max(-1.3,Math.min(1.3,pitch-dy*k));
+});
+function endLook(e){if(e.pointerId===lookId)lookId=null}
+look.addEventListener("pointerup",endLook); look.addEventListener("pointercancel",endLook);
+function stickMove(e){
+  var b=stick.getBoundingClientRect();
+  joy.x=Math.max(-1,Math.min(1,(e.clientX-(b.left+b.width/2))/(b.width/2)));
+  joy.y=Math.max(-1,Math.min(1,(e.clientY-(b.top+b.height/2))/(b.height/2)));
+}
+var stickId=null;
+stick.addEventListener("pointerdown",function(e){stickId=e.pointerId;try{stick.setPointerCapture(e.pointerId)}catch(_){}stickMove(e)});
+stick.addEventListener("pointermove",function(e){if(e.pointerId===stickId)stickMove(e)});
+function stickEnd(e){if(e.pointerId===stickId){stickId=null;joy={x:0,y:0}}}
+stick.addEventListener("pointerup",stickEnd); stick.addEventListener("pointercancel",stickEnd);
+})();
+
 window.__game={cells:wi,put:js,tryPlace:yu,select:mo,buyLand:Mu,get coins(){return Xt},set coins(i){Xt=i,er()},get size(){return Ai()},itemCount:Xl,get bag(){return cgBg},get cgMk(){return cgMk},cgOpenShop,cgMoveTap,cgMkAt};})();
 /*! Bundled license information:
 
