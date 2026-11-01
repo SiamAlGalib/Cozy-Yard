@@ -5496,6 +5496,14 @@ rs.addEventListener("click",function(){
 requestAnimationFrame(loop);
 })();
 
+/* ===== edgeScenery: grass all around the plot, no empty sky at the edge ===== */
+(function(){
+var g=new At(new ri(2400,2400),new Qi({color:5348677}));
+g.rotation.x=-Math.PI/2;g.position.y=-.08;g.renderOrder=-1;fi.add(g);
+In.far=1800;In.updateProjectionMatrix();
+an=true;
+})();
+
 window.__game={cells:wi,put:js,tryPlace:yu,select:mo,buyLand:Mu,get coins(){return Xt},set coins(i){Xt=i,er()},get size(){return Ai()},itemCount:Xl,get bag(){return cgBg},get cgMk(){return cgMk},cgOpenShop,cgMoveTap,cgMkAt};})();
 /*! Bundled license information:
 
