@@ -5463,5 +5463,133 @@ three/build/three.module.js:
 */
 
 </script>
+<script>
+/* ===== worldSafety: undo history, mass-removal guard, export/import ===== */
+(function(){
+var KS="cozy_garden_save_v2",KX="cozy_garden_vx",KV="cozy_garden_vil",KH="cozy_garden_hist",KP="cozy_garden_pin";
+var MAXH=300,MAXBYTES=3000000;
+function get(k){try{return localStorage.getItem(k)}catch(e){return null}}
+function put(k,v){try{if(v===null||v===undefined)localStorage.removeItem(k);else localStorage.setItem(k,v);return true}catch(e){return false}}
+function snap(){return JSON.stringify({s:get(KS),x:get(KX),v:get(KV)})}
+function parse(t){try{return JSON.parse(t)}catch(e){return null}}
+function count(o){
+  var n=0;
+  try{
+    var s=o.s?JSON.parse(o.s):null;if(s&&Array.isArray(s.list))n+=s.list.length;
+    var x=o.x?JSON.parse(o.x):null;if(x)n+=Array.isArray(x)?x.length:Object.keys(x).length;
+  }catch(e){}
+  return n;
+}
+function sig(o){
+  try{
+    var s=o.s?JSON.parse(o.s):{};
+    return JSON.stringify([s.list,s.bag,s.cgMk,o.x,o.v]);
+  }catch(e){return o.s+"|"+o.x+"|"+o.v}
+}
+function loadH(){var h=parse(get(KH));return Array.isArray(h)?h:[]}
+function saveH(h){
+  var tot=0,i;
+  for(i=h.length-1;i>=0;i--){tot+=h[i].length;if(tot>MAXBYTES||h.length-i>MAXH)break}
+  if(i>=0)h=h.slice(i+1);
+  while(!put(KH,JSON.stringify(h))&&h.length>1)h=h.slice(Math.ceil(h.length/2));
+}
+function toast(m){var t=document.getElementById("toast");if(!t)return;t.textContent=m;t.classList.add("show");clearTimeout(toast.t);toast.t=setTimeout(function(){t.classList.remove("show")},3500)}
+
+var last=snap(),lastObj=parse(last)||{},lastSig=sig(lastObj),hist=[];
+var recent=[];
+
+function tick(){
+  var cur=snap();
+  if(cur===last)return;
+  var co=parse(cur)||{},cs=sig(co);
+  if(cs!==lastSig){
+    hist=loadH();hist.push(last);saveH(hist);
+    var n=count(co),now=Date.now();
+    recent.push({t:now,n:count(lastObj),snap:last});
+    recent=recent.filter(function(r){return now-r.t<60000});
+    var best=null;recent.forEach(function(r){if(!best||r.n>best.n)best=r});
+    if(best&&best.n-n>=6){
+      var pin=parse(get(KP));
+      if(!pin||count(parse(pin.snap)||{})<best.n||now-pin.t>600000){put(KP,JSON.stringify({t:now,snap:best.snap}))}
+      toast("\u26A0 "+(best.n-n)+" items removed. Tap \u21A9 Undo or \uD83D\uDEDF Restore to get them back");
+      refresh();
+    }
+    lastSig=cs;
+  }
+  last=cur;lastObj=co;
+}
+
+function apply(snapStr,keepCoins){
+  var o=parse(snapStr);if(!o)return false;
+  if(o.s&&keepCoins){
+    try{var s=JSON.parse(o.s),c=JSON.parse(get(KS)||"{}");if(c&&c.coins!==undefined)s.coins=c.coins;o.s=JSON.stringify(s)}catch(e){}
+  }
+  put(KS,o.s);put(KX,o.x);put(KV,o.v);
+  last=snap();lastObj=parse(last)||{};lastSig=sig(lastObj);
+  return true;
+}
+
+function undo(){
+  tick();
+  var h=loadH();
+  if(!h.length)return toast("Nothing to undo yet");
+  var prev=h.pop();saveH(h);
+  if(apply(prev,true)){toast("Undone");setTimeout(function(){location.reload()},250)}
+}
+function restorePin(){
+  var pin=parse(get(KP));
+  if(!pin)return toast("No backup to restore");
+  if(!confirm("Restore your world from before the items disappeared?"))return;
+  tick();var h=loadH();h.push(snap());saveH(h);
+  if(apply(pin.snap,true)){put(KP,null);toast("Restored");setTimeout(function(){location.reload()},250)}
+}
+function exportFile(){
+  tick();
+  var data=JSON.stringify({game:"cozy-yard",v:1,saved:new Date().toISOString(),data:parse(snap())});
+  var a=document.createElement("a");
+  a.href=URL.createObjectURL(new Blob([data],{type:"application/json"}));
+  a.download="cozy-yard-backup.json";
+  document.body.appendChild(a);a.click();
+  setTimeout(function(){URL.revokeObjectURL(a.href);a.remove()},500);
+  toast("World saved to a file");
+}
+function importFile(file){
+  var r=new FileReader();
+  r.onload=function(){
+    var j=parse(r.result);
+    if(!j||j.game!=="cozy-yard"||!j.data||!j.data.s)return toast("That is not a Cozy-Yard backup");
+    if(!confirm("Load this backup? Your current world will be replaced (you can still Undo)."))return;
+    tick();var h=loadH();h.push(snap());saveH(h);
+    if(apply(JSON.stringify(j.data),false)){toast("Backup loaded");setTimeout(function(){location.reload()},250)}
+  };
+  r.readAsText(file);
+}
+
+var hud=document.getElementById("hud");
+function pill(id,text,bg,fn){
+  var b=document.createElement("button");
+  b.className="pill";b.id=id;b.textContent=text;
+  b.style.cssText="pointer-events:auto;border:0;cursor:pointer;background:"+bg+";color:#fff";
+  b.addEventListener("click",function(e){e.stopPropagation();fn()});
+  b.addEventListener("pointerdown",function(e){e.stopPropagation()});
+  hud.appendChild(b);return b;
+}
+var bU=pill("wsUndo","\u21A9 Undo","#b5651d",undo);
+var bR=pill("wsRestore","\uD83D\uDEDF Restore","#c0392b",restorePin);
+var bE=pill("wsExport","\u2B07 Save file","#285c48",exportFile);
+var bI=pill("wsImport","\u2B06 Load file","#285c48",function(){inp.click()});
+var inp=document.createElement("input");inp.type="file";inp.accept=".json,application/json";inp.style.display="none";
+inp.addEventListener("change",function(){if(inp.files[0])importFile(inp.files[0]);inp.value=""});
+document.body.appendChild(inp);
+function refresh(){bR.style.display=get(KP)?"":"none"}
+refresh();
+
+window.addEventListener("keydown",function(e){
+  if((e.ctrlKey||e.metaKey)&&!e.shiftKey&&e.key.toLowerCase()==="z"){e.preventDefault();undo()}
+});
+setInterval(tick,400);
+window.__worldSafety={tick:tick,undo:undo,history:function(){return loadH().length}};
+})();
+</script>
 </body>
 </html>
