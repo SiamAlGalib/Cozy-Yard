@@ -4698,7 +4698,7 @@ function cycle(d){
 function aim(){
   var t=Au(window.innerWidth/2,window.innerHeight/2); if(!t)return null;
   if(!Ql(t.ix,t.iz))return null;
-  if(Math.hypot(io(t.ix)-S.px,io(t.iz)-S.pz)>4.5)return null;
+  if(Math.hypot(io(t.ix)-S.px,io(t.iz)-S.pz)>12)return null;
   return t;
 }
 function place(){
@@ -5046,7 +5046,7 @@ function doBreak(){
     while(q&&!q.userData.cell)q=q.parent;
     if(q){o=q;hit=hs[i];break}
   }
-  if(!o||hit.distance>5)return Vt("Nothing to break here");
+  if(!o||hit.distance>(window.__BRK||12))return Vt("Nothing to break here");
   var ix=o.userData.cell.ix,iz=o.userData.cell.iz,id=null;
   if(o.userData.vx&&window.__VX){
     var k=ix+","+iz+","+o.userData.level,b=window.__VX[k];
@@ -5075,7 +5075,21 @@ look.addEventListener("pointerup",function(e){
 window.addEventListener("keydown",function(e){
   if(window.__fpOn&&e.code==="KeyX"){if(!e.repeat)doBreak();e.stopImmediatePropagation()}
 },true);
-document.getElementById("fpBreak").addEventListener("click",function(e){doBreak();e.stopImmediatePropagation()},true);
+window.__fpBreak=doBreak;document.getElementById("fpBreak").addEventListener("click",function(e){doBreak();e.stopImmediatePropagation()},true);
+})();
+
+
+/* ===== fpBreakBtn ===== */
+(function(){
+var bar=document.getElementById("fpBar"),nx=document.getElementById("fpNext");
+var b=document.createElement("button");
+b.id="fpBreakBtn";
+b.textContent="\u26CF Break";
+b.style.cssText="width:auto;border-radius:999px;padding:0 14px;font-weight:700;font-size:13px;background:#d64545;color:#fff;height:34px;border:0;cursor:pointer";
+bar.insertBefore(b,nx.nextSibling);
+function go(e){e.preventDefault();e.stopPropagation();if(window.__fpBreak)window.__fpBreak()}
+b.addEventListener("pointerdown",function(e){e.stopPropagation()});
+b.addEventListener("click",go);
 })();
 
 window.__game={cells:wi,put:js,tryPlace:yu,select:mo,buyLand:Mu,get coins(){return Xt},set coins(i){Xt=i,er()},get size(){return Ai()},itemCount:Xl,get bag(){return cgBg},get cgMk(){return cgMk},cgOpenShop,cgMoveTap,cgMkAt};})();
