@@ -5557,7 +5557,7 @@ function tick(){
     if(best&&best.n-n>=6){
       var pin=parse(get(KP));
       if(!pin||count(parse(pin.snap)||{})<best.n||now-pin.t>600000){put(KP,JSON.stringify({t:now,snap:best.snap}))}
-      toast("\u26A0 "+(best.n-n)+" items removed. Tap \u21A9 Undo or \uD83D\uDEDF Restore to get them back");
+      toast("\u26A0 "+(best.n-n)+" items removed. Tap \u21A9 Undo or \u21BA Restore to get them back");
       refresh();
     }
     lastSig=cs;
@@ -5621,7 +5621,7 @@ function pill(id,text,bg,fn){
   hud.appendChild(b);return b;
 }
 var bU=pill("wsUndo","\u21A9 Undo","#b5651d",undo);
-var bR=pill("wsRestore","\uD83D\uDEDF Restore","#c0392b",restorePin);
+var bR=pill("wsRestore","\u21BA Restore","#c0392b",restorePin);
 var bE=pill("wsExport","\u2B07 Save file","#285c48",exportFile);
 var bI=pill("wsImport","\u2B06 Load file","#285c48",function(){inp.click()});
 var inp=document.createElement("input");inp.type="file";inp.accept=".json,application/json";inp.style.display="none";
