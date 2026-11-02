@@ -8428,7 +8428,7 @@ setTimeout(function(){
  * This is intentionally isolated so it can later be removed for YouTube Playables.
  */
 import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/13.1.0/firebase-app.js";
-import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/13.1.0/firebase-auth.js";
+import { getAuth, signInAnonymously, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/13.1.0/firebase-auth.js";
 import { getFirestore, doc, setDoc, getDoc, collection, query, orderBy, limit, getDocs, serverTimestamp } from "https://www.gstatic.com/firebasejs/13.1.0/firebase-firestore.js";
 
 (function(){
@@ -8448,12 +8448,12 @@ import { getFirestore, doc, setDoc, getDoc, collection, query, orderBy, limit, g
   }
   function weekKey(){var d=new Date(),u=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()));u.setUTCDate(u.getUTCDate()+4-(u.getUTCDay()||7));var y=u.getUTCFullYear(),start=new Date(Date.UTC(y,0,1));return y+"-W"+String(Math.ceil((((u-start)/86400000)+1)/7)).padStart(2,"0")}
   function getLeaderboardName(){try{var o=JSON.parse(localStorage.getItem("cozy_garden_leaderboard_v1")||"{}");return o||{}}catch(e){return {}}}
-  function statusText(){return ready?(user?"🟢 Firebase connected · "+(user.displayName||user.email||"Google account"):"🟡 Firebase ready · sign in to sync"):"⚪ Firebase test mode not configured"}
+  function statusText(){return ready?(user?"🟢 Firebase connected · "+(user.isAnonymous?"Anonymous test account":(user.displayName||user.email||"Firebase account")):"🟡 Firebase ready · sign in to sync"):"⚪ Firebase test mode not configured"}
 
   function configUI(){
     var old=document.getElementById("firebaseTestPanel");if(old)old.remove();
     var ov=document.createElement("div");ov.id="firebaseTestPanel";
-    ov.innerHTML='<section><header><b>🔥 Firebase Test Setup</b><button data-fb="x">×</button></header><p>For testing only. Paste the <b>Firebase Web app configuration object</b> from your Firebase project. It is safe for browser code; Security Rules protect the database.</p><textarea id="fbConfigInput" spellcheck="false" placeholder=\'{"apiKey":"...","authDomain":"...","projectId":"...","storageBucket":"...","messagingSenderId":"...","appId":"..."}\'></textarea><div class="fbHelp">Enable <b>Authentication → Google</b> and create a <b>Cloud Firestore</b> database in Firebase Console before signing in.</div><div class="fbBtns"><button data-fb="save">Save & Connect</button><button data-fb="clear">Clear</button></div><div id="fbStatus">'+esc(statusText())+'</div></section>';
+    ov.innerHTML='<section><header><b>🔥 Firebase Test Setup</b><button data-fb="x">×</button></header><p>For testing only. Paste the <b>Firebase Web app configuration object</b> from your Firebase project. It is safe for browser code; Security Rules protect the database.</p><textarea id="fbConfigInput" spellcheck="false" placeholder=\'{"apiKey":"...","authDomain":"...","projectId":"...","storageBucket":"...","messagingSenderId":"...","appId":"..."}\'></textarea><div class="fbHelp">Enable <b>Authentication → Anonymous</b> and create a <b>Cloud Firestore</b> database in Firebase Console before signing in.</div><div class="fbBtns"><button data-fb="save">Save & Connect</button><button data-fb="clear">Clear</button></div><div id="fbStatus">'+esc(statusText())+'</div></section>';
     var st=document.createElement("style");st.textContent='#firebaseTestPanel{position:fixed;inset:0;z-index:500;display:none;align-items:center;justify-content:center;padding:14px;background:#061321dd;backdrop-filter:blur(6px);font-family:system-ui,sans-serif}#firebaseTestPanel.open{display:flex}#firebaseTestPanel section{width:min(560px,100%);border-radius:22px;background:linear-gradient(145deg,#10243c,#173b54);color:#f8fbff;border:1px solid #ffffff30;box-shadow:0 24px 80px #000b;padding:16px}#firebaseTestPanel header{display:flex;align-items:center;gap:10px;font-size:17px}#firebaseTestPanel header b{flex:1}#firebaseTestPanel header button{border:0;border-radius:50%;width:30px;height:30px;background:#ffffff20;color:#fff;font-size:20px}#firebaseTestPanel p{font-size:12px;line-height:1.5;color:#c7d8e5}#fbConfigInput{width:100%;height:150px;resize:vertical;border:1px solid #ffffff25;border-radius:12px;background:#071827;color:#dff5ff;padding:11px;font:12px ui-monospace,SFMono-Regular,Consolas,monospace}#firebaseTestPanel .fbHelp{font-size:10px;line-height:1.5;color:#9fb6c8;margin:9px 0}.fbBtns{display:flex;gap:8px;margin-top:10px}.fbBtns button{flex:1;border:0;border-radius:11px;padding:10px;background:linear-gradient(100deg,#fbbf24,#f59e0b);font-weight:900;cursor:pointer}.fbBtns button+button{background:#ffffff12;color:#fff;border:1px solid #ffffff20}#fbStatus{margin-top:10px;font-size:11px;color:#a7d7c4;text-align:center}';document.head.appendChild(st);document.body.appendChild(ov);
     var cfgInput=ov.querySelector("#fbConfigInput");cfgInput.value=Object.keys(CONFIG).length?JSON.stringify(CONFIG,null,2):"";
     ov.addEventListener("click",function(e){if(e.target===ov||e.target.closest('[data-fb="x"]'))ov.classList.remove("open");var b=e.target.closest("[data-fb]");if(!b)return;if(b.dataset.fb==="save")connectFromInput();if(b.dataset.fb==="clear"){localStorage.removeItem(CONFIG_KEY);CONFIG={};ready=false;user=null;ov.querySelector("#fbStatus").textContent="Cleared. Reload the page to fully reset Firebase.";}});
@@ -8477,16 +8477,16 @@ import { getFirestore, doc, setDoc, getDoc, collection, query, orderBy, limit, g
     return true;
   }
 
-  async function googleLogin(){
+  async function anonymousLogin(){
     if(!ready){var p=document.getElementById("firebaseTestPanel")||configUI();p.classList.add("open");return}
-    try{await signInWithPopup(auth,new GoogleAuthProvider());toast("✅ Signed in with Google");}
+    try{await signInAnonymously(auth);toast("✅ Signed in anonymously");}
     catch(e){toast("Firebase sign-in failed: "+(e&&e.message?e.message:"try again"));}
   }
   async function logout(){try{if(auth)await signOut(auth);toast("Signed out of Firebase test account")}catch(e){}}
 
   function updateFirebaseButtons(){
     document.querySelectorAll("[data-firebase-action]").forEach(function(b){
-      if(b.dataset.firebaseAction==="signin")b.textContent=user?"🟢 "+(user.displayName||user.email||"Signed in"):"🔐 Firebase Sign in";
+      if(b.dataset.firebaseAction==="signin")b.textContent=user?"🟢 "+(user.isAnonymous?"Anonymous test account":(user.displayName||user.email||"Signed in")):"🟢 Anonymous Sign in";
       if(b.dataset.firebaseAction==="setup")b.textContent="🔥 Firebase Test Setup";
     });
     var s=document.getElementById("fbInlineStatus");if(s)s.textContent=statusText();
@@ -8497,7 +8497,7 @@ import { getFirestore, doc, setDoc, getDoc, collection, query, orderBy, limit, g
     syncBusy=true;
     try{
       var lb=getLeaderboardName(),town=compactTown(currentTown());
-      var payload={name:String(lb.name||user.displayName||user.email||"Gardener").replace(/[<>]/g,"").slice(0,18),country:String(lb.country||"").slice(0,2),points:Number(lb.points)||0,weekPoints:Number(lb.weekPoints)||0,week:String(lb.week||weekKey()),town:town,online:true,updatedAt:serverTimestamp()};
+      var payload={name:String(lb.name||user.displayName||user.email||(user.isAnonymous?"Gardener-"+String(user.uid).slice(-6):"Gardener")).replace(/[<>]/g,"").slice(0,18),country:String(lb.country||"").slice(0,2),points:Number(lb.points)||0,weekPoints:Number(lb.weekPoints)||0,week:String(lb.week||weekKey()),town:town,online:true,updatedAt:serverTimestamp()};
       await setDoc(doc(db,"players",user.uid),payload,{merge:true});
     }catch(e){console.warn("Firebase sync",e)}
     syncBusy=false;
@@ -8519,7 +8519,7 @@ import { getFirestore, doc, setDoc, getDoc, collection, query, orderBy, limit, g
     if(!ready||!db||!id)return null;try{var s=await getDoc(doc(db,"players",id));return s.exists()?s.data():null}catch(e){console.warn(e);return null}
   }
 
-  window.__cozyFirebase={init:initFirebase,signIn:googleLogin,signOut:logout,setup:function(){var p=document.getElementById("firebaseTestPanel")||configUI();p.classList.add("open")},sync:syncOwnPlayer,loadLeaderboard:loadFirebaseLeaderboard,getPlayerTown:getPlayerTown,get currentUser(){return user},get ready(){return ready}};
+  window.__cozyFirebase={init:initFirebase,signIn:anonymousLogin,signOut:logout,setup:function(){var p=document.getElementById("firebaseTestPanel")||configUI();p.classList.add("open")},sync:syncOwnPlayer,loadLeaderboard:loadFirebaseLeaderboard,getPlayerTown:getPlayerTown,get currentUser(){return user},get ready(){return ready}};
 
   window.addEventListener("beforeunload",function(){markOffline()});
   setInterval(function(){if(user){syncOwnPlayer();loadFirebaseLeaderboard()}},15000);
@@ -8528,9 +8528,9 @@ import { getFirestore, doc, setDoc, getDoc, collection, query, orderBy, limit, g
   function addFirebaseControls(){
     var host=document.getElementById("glbNote");if(!host||host.dataset.fbAdded)return;host.dataset.fbAdded="1";
     var wrap=document.createElement("div");wrap.style.cssText="display:flex;gap:7px;justify-content:center;flex-wrap:wrap;margin-top:9px";
-    wrap.innerHTML='<button data-firebase-action="signin" style="border:0;border-radius:10px;padding:8px 10px;background:#ffffff14;color:#fff;font-weight:900;cursor:pointer">🔐 Firebase Sign in</button><button data-firebase-action="setup" style="border:1px solid #ffffff22;border-radius:10px;padding:8px 10px;background:#ffffff08;color:#cfe3ee;font-weight:800;cursor:pointer">🔥 Firebase Test Setup</button><div id="fbInlineStatus" style="width:100%;font-size:9px;color:#8fa8c5;text-align:center">'+esc(statusText())+'</div>';
+    wrap.innerHTML='<button data-firebase-action="signin" style="border:0;border-radius:10px;padding:8px 10px;background:#ffffff14;color:#fff;font-weight:900;cursor:pointer">🟢 Anonymous Sign in</button><button data-firebase-action="setup" style="border:1px solid #ffffff22;border-radius:10px;padding:8px 10px;background:#ffffff08;color:#cfe3ee;font-weight:800;cursor:pointer">🔥 Firebase Test Setup</button><div id="fbInlineStatus" style="width:100%;font-size:9px;color:#8fa8c5;text-align:center">'+esc(statusText())+'</div>';
     host.appendChild(wrap);
-    wrap.addEventListener("click",function(e){var b=e.target.closest("[data-firebase-action]");if(!b)return;if(b.dataset.firebaseAction==="signin")googleLogin();else configUI().classList.add("open")});updateFirebaseButtons();
+    wrap.addEventListener("click",function(e){var b=e.target.closest("[data-firebase-action]");if(!b)return;if(b.dataset.firebaseAction==="signin")anonymousLogin();else configUI().classList.add("open")});updateFirebaseButtons();
   }
 
   async function boot(){
