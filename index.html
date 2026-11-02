@@ -6428,5 +6428,14 @@ window.addEventListener("keydown",function(e){
   st.addEventListener("pointercancel",end);
 })();
 </script>
+<style>/*hide-fphelp*/#fpHelp{display:none!important}</style>
+<style>/*fp-mobile-fix*/
+#fpHelp{display:none!important}
+@media (pointer:coarse),(max-width:900px){
+  #fpStick{display:block}
+  #fpActs{display:flex}
+  #fpBar{max-width:calc(100vw - 16px);flex-wrap:wrap;justify-content:center;gap:6px;border-radius:18px;bottom:calc(165px + env(safe-area-inset-bottom))}
+}
+</style>
 </body>
 </html>
