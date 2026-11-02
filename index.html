@@ -5828,7 +5828,21 @@ function loop(now){
     if(zActive){
       var old=sn,a2=1-Math.exp(-dt*12);
       sn+=(zt-sn)*a2;
-      if(Math.abs(zt-sn)<.02){sn=zt;zActive=false}
+      if(Math.abs(zt-sn)<.02){
+        sn=zt;
+        zActive=false;
+
+        // Make the zoomed location the new camera orbit center
+        if(zAnchor &&
+           Number.isFinite(zAnchor.x) &&
+           Number.isFinite(zAnchor.z)){
+          eo.x=zAnchor.x;
+          eo.z=zAnchor.z;
+          clampT();
+        }
+
+        zAnchor=null;
+      }
       if(zAnchor){
         if(zAnchor.px!==undefined&&!window.__ins){
           Eu();
