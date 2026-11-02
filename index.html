@@ -4432,7 +4432,9 @@ function builderBuildAction(height){
 
 
 var path=[],work=null,arrive=null,phase=0;
-function ok(x,z){if(!Ql(x,z)||cgMkAt(x,z)>=0)return false;var c=so(x,z);return !c.base&&!(c.floor&&pt[c.floor.id].blocks)}
+function supH(x,z){var ix=Math.floor(x+lt/2),iz=Math.floor(z+lt/2),c=Ql(ix,iz)?so(ix,iz):null,t=0;if(!c)return 0;var V=window.__VX;if(c.stack&&c.stack.length)t=(c.stack.length+1)*.92;else if(c.base&&pt[c.base.id].wallish)t=.92;if(V)for(var L=30;L>=0;L--)if(V[ix+","+iz+","+L]){t=Math.max(t,(L+1)*.92);break}return t}
+function ok(x,z){if(!Ql(x,z)||cgMkAt(x,z)>=0)return false;var c=so(x,z);if(c.stack&&c.stack.length)return false;if(window.__VX&&(window.__VX[x+","+z+",0"]||window.__VX[x+","+z+",1"]))return false;return !c.base&&!(c.floor&&pt[c.floor.id].blocks)}
+var by=0;
 function spawn(){var c=lt/2,b=null;for(var d=0;d<lt&&!b;d++)for(var x=c-d;x<=c+d&&!b;x++)for(var z=c-d;z<=c+d;z++)if(ok(x,z)){b=[x,z];break}
 if(b)ch.position.set(io(b[0]),0,io(b[1]))}
 spawn();
@@ -4520,7 +4522,7 @@ if(walking){phase+=dt*10;legL.rotation.x=Math.sin(phase)*.7;legR.rotation.x=-Mat
 else if(now<buildingUntil){
 buildPhase+=dt*13;
 var hover=buildingHeight>0.15;
-ch.position.y=(hover?.48:0)+Math.sin(buildPhase*1.7)*.035;
+ch.position.y=(hover?Math.max(.48,buildingHeight):0)+Math.sin(buildPhase*1.7)*.035;
 armL.rotation.x=-.35+Math.sin(buildPhase)*.45;
 armR.rotation.x=-1.15+Math.sin(buildPhase*1.1)*.65;
 handL.position.y=.42+Math.sin(buildPhase)*.025;
@@ -4533,6 +4535,7 @@ active=true;
 ch.position.y=0;cb.textContent="\u{1F528} "+Math.min(99,Math.round(p*100))+"%";active=true;
 if(p>=1){cgBg[work.r.out]=(cgBg[work.r.out]|0)+work.r.n;Vt("Crafted "+pt[work.r.out].name+" \u00D7"+work.r.n+"!");work=null;hammer.visible=false;cb.textContent="\u{1F528} Craft";ql()}}
 else if(legL.rotation.x||armR.rotation.x||ch.position.y||jetpack.visible){legL.rotation.x=legR.rotation.x=armL.rotation.x=armR.rotation.x=0;ch.position.y=0;handL.position.y=handR.position.y=.42;jetpack.visible=false;active=true}
+var sup=supH(ch.position.x,ch.position.z);by+=(sup-by)*Math.min(1,dt*(sup>by?9:5));if(Math.abs(sup-by)<.003)by=sup;if(sup!==by)active=true;var busy=walking||now<buildingUntil||!!work;ch.position.y=busy?ch.position.y+by:by;
 if(active)an=true;requestAnimationFrame(loop)}
 requestAnimationFrame(loop);
 
