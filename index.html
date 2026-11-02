@@ -5790,6 +5790,15 @@ function panPx(dx,dy){
 function moveWorld(r,f){
   var c=Math.cos(Zl),s=Math.sin(Zl);
   eo.x+=r*c-f*s;eo.z+=-r*s-f*c;clampT();an=true}
+function hitAt(px,py){
+  Eu();
+  var r=di.getBoundingClientRect();
+  du.set((px-r.left)/r.width*2-1,-((py-r.top)/r.height)*2+1);
+  Gl.setFromCamera(du,In);
+  var hs=Gl.intersectObjects(fo.children,true);
+  if(hs.length)return hs[0].point.clone();
+  if(Gl.ray.intersectPlane(R0,Vl))return Vl.clone();
+  return null}
 function zoom(v,anchor){if(!zActive)zt=sn;zAnchor=anchor||null;var __v=window.__zfix?window.__zfix(v):v;zt=Jl(__v,window.__zmin?window.__zmin(anchor):5,90);zActive=true;Xn=null}
 function glideTo(ix,iz){
   glide={x:io(ix),z:io(iz),d:(window.__ins?sn:Math.min(sn,Math.max(7,sn*.6)))};
@@ -5821,7 +5830,17 @@ function loop(now){
       var old=sn,a2=1-Math.exp(-dt*12);
       sn+=(zt-sn)*a2;
       if(Math.abs(zt-sn)<.02){sn=zt;zActive=false}
-      if(zAnchor){var k=(old-sn)/Math.max(old,1);eo.x+=(zAnchor.x-eo.x)*k;eo.z+=(zAnchor.z-eo.z)*k;clampT()}
+      if(zAnchor){
+        if(zAnchor.px!==undefined&&!window.__ins){
+          Eu();
+          var rc=di.getBoundingClientRect();
+          du.set((zAnchor.px-rc.left)/rc.width*2-1,-((zAnchor.py-rc.top)/rc.height)*2+1);
+          Gl.setFromCamera(du,In);
+          var o3=Gl.ray.origin,d3=Gl.ray.direction;
+          if(Math.abs(d3.y)>1e-4){var t3=(zAnchor.y-o3.y)/d3.y;if(t3>0){eo.x+=zAnchor.x-(o3.x+d3.x*t3);eo.z+=zAnchor.z-(o3.z+d3.z*t3)}}
+          clampT();
+        }else{var k=(old-sn)/Math.max(old,1);eo.x+=(zAnchor.x-eo.x)*k;eo.z+=(zAnchor.z-eo.z)*k;clampT()}
+      }
       an=true}
   }
   requestAnimationFrame(loop)}
@@ -5865,7 +5884,8 @@ di.addEventListener("wheel",function(e){
   e.preventDefault();e.stopImmediatePropagation();
   var dy=Jl(e.deltaY*(e.deltaMode===1?33:1),-250,250),t=Au(e.clientX,e.clientY);
   glide=null;fl.x=fl.y=0;
-  zoom((zActive?zt:sn)*Math.exp(dy*.0014),t?{x:io(t.ix),z:io(t.iz)}:null);
+  var h3=hitAt(e.clientX,e.clientY);
+  zoom((zActive?zt:sn)*Math.exp(dy*.0014),h3?{x:h3.x,y:h3.y,z:h3.z,px:e.clientX,py:e.clientY}:(t?{x:io(t.ix),z:io(t.iz)}:null));
 },{passive:false,capture:true});
 
 /* keyboard: WASD/arrows move, Q/E rotate, +/- zoom, Shift = fast */
