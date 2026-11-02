@@ -4588,7 +4588,7 @@ function blocked(x,z){
   var c=so(ix,iz);
   if(c.floor&&pt[c.floor.id].blocks)return true;
   var ct=colTop(ix,iz);if(ct>0)return py<ct-.08;
-  if(c.base&&!PASS[c.base.id]){var lh=baseH(c.base,x,z);if(lh&&py>=lh-(/^(step|stairs|landing)/.test(c.base.id)?.5:.01))return false;return true}
+  if(c.base&&!PASS[c.base.id]){var lh=baseH(c.base,x,z);if(lh&&py>=(c.base.id==='stairs'?(((c.base.v|0)>>2)*.92+.23):lh)-(/^(step|stairs|landing)/.test(c.base.id)?.5:.01))return false;return true}
   return false;
 }
 function gh(x,z){var c=so(Math.floor(x+lt/2),Math.floor(z+lt/2));if(c){var ct0=colTop(Math.floor(x+lt/2),Math.floor(z+lt/2));if(ct0>0)return ct0}if(!c||(c.stack&&c.stack.length)||!c.base)return 0;return baseH(c.base,x,z)||0}
@@ -4647,7 +4647,7 @@ function blocked(x,z){
  }
  if(c.base&&!PASS[c.base.id]){
   var lh=baseH(c.base,x,z);
-  if(lh&&py>=lh-(/^(step|stairs|landing)/.test(c.base.id)?.5:.01))return false;
+  if(lh&&py>=(c.base.id==='stairs'?(((c.base.v|0)>>2)*.92+.23):lh)-(/^(step|stairs|landing)/.test(c.base.id)?.5:.01))return false;
   return true;
  }
  return false;
@@ -4696,7 +4696,7 @@ function tick(now){
   var fl=gnd(px,pz);camOff+=(0-camOff)*Math.min(1,dt*12);
   if(keys.Space&&py<=fl+.001&&vy<=0)vy=7.4;
   if(window.__noclip){vy=(keys.Space?5:0)-(keys.KeyC?5:0)}else vy-=12*dt; var _py0=py; py+=vy*dt; if(vy>0&&!window.__noclip){var _hp=__headClamp(_py0,py);if(_hp<py){py=_hp;vy=0}}
-  if(py<=fl){ if(vy<-1.5)stepSound(); if(vy>-1.5&&fl-py>.04&&fl-py<.5)camOff-=(fl-py); py=fl; vy=0; }
+  if(py<=fl){ if(vy<-1.5)stepSound(); if(vy>-1.5&&fl-py>.04&&fl-py<1.3)camOff-=(fl-py); py=fl; vy=0; }
   if(len>.05&&py<=fl+.01){ bob+=dt*9; stepAcc+=sp; if(stepAcc>((keys.ShiftLeft||keys.ShiftRight)?1.1:.75)){stepAcc=0;stepSound();} }
   try{ if(window.__fpx)window.__fpx.frame(dt,now); }catch(e){ console.error(e); }
   cam(); an=true;
