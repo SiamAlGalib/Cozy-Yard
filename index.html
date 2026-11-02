@@ -129,7 +129,7 @@ localStorage.setItem("cozy_land200_done","1");
 <button class="vt" id="vtTop">👁 Top</button><button class="vt" id="vtBot">👁 Items</button>
 <div id="toast"></div>
 <div id="shop"></div>
-<div id="fpHud"><div id="fpLook"></div><div id="fpCross"></div><button id="fpExit">✕ Leave kingdom</button><div id="fpHelp">WASD walk &middot; Shift run &middot; Space jump &middot; Click place &middot; Right-click break &middot; Wheel / Q / E change item (F / X also work)</div><div id="fpStick"></div><canvas id="fpMap" width="130" height="130"></canvas><div id="fpClock"></div><div id="fpBar"><button id="fpPrev">&#9664;</button><div id="fpItem"></div><button id="fpNext">&#9654;</button></div><div id="fpActs"><button id="fpJump">&#8679; Jump</button><button id="fpPlace">&#128296; Place</button><button id="fpBreak">&#9935; Break</button></div></div>
+<div id="fpHud"><div id="fpLook"></div><div id="fpCross"></div><button id="fpExit">✕ Leave kingdom</button><div id="fpHelp">WASD walk &middot; Shift run &middot; Space jump &middot; Click place &middot; Right-click break &middot; Wheel / Q / E change item (F / X also work) &middot; G stairs ahead (hold + run) &middot; R rotate stairs</div><div id="fpStick"></div><canvas id="fpMap" width="130" height="130"></canvas><div id="fpClock"></div><div id="fpBar"><button id="fpPrev">&#9664;</button><div id="fpItem"></div><button id="fpNext">&#9654;</button></div><div id="fpActs"><button id="fpJump">&#8679; Jump</button><button id="fpPlace">&#128296; Place</button><button id="fpBreak">&#9935; Break</button></div></div>
 <div id="bottom">
   <div id="tabs"></div>
   <div id="palette"></div>
@@ -4637,7 +4637,7 @@ function tick(now){
   var fl=gnd(px,pz);camOff+=(0-camOff)*Math.min(1,dt*12);
   if(keys.Space&&py<=fl+.001&&vy<=0)vy=7.4;
   vy-=12*dt; py+=vy*dt;
-  if(py<=fl){ if(vy<-1.5)stepSound(); py=fl; vy=0; }
+  if(py<=fl){ if(vy<-1.5)stepSound(); if(vy>-1.5&&fl-py>.04&&fl-py<.5)camOff-=(fl-py); py=fl; vy=0; }
   if(len>.05&&py<=fl+.01){ bob+=dt*9; stepAcc+=sp; if(stepAcc>((keys.ShiftLeft||keys.ShiftRight)?1.1:.75)){stepAcc=0;stepSound();} }
   try{ if(window.__fpx)window.__fpx.frame(dt,now); }catch(e){ console.error(e); }
   cam(); an=true;
@@ -4741,7 +4741,7 @@ function place(){
   else if(c.floor&&pt[c.floor.id].blocks)return Vt("You can't build on water");
   if(n.layer==="base"&&!PASSI[n.id]&&Math.abs(S.px-io(ix))<.7&&Math.abs(S.pz-io(iz))<.7)return Vt("Step aside first");
   var v=0;
-  if(n.id==="flower")v=Math.floor(Math.random()*5);
+  if(n.id==="flower")v=Math.floor(Math.random()*5);if(n.id==="stairs"||n.id==="landing")v=__stairAt(ix,iz,n.id);
   if(n.id==="fence"){
     var r=function(l,k){if(l<0||k<0||l>=lt||k>=lt)return false;var h=so(l,k).base;return !!(h&&h.id==="fence")};
     var a=r(ix-1,iz)||r(ix+1,iz); v=(r(ix,iz-1)||r(ix,iz+1))&&!a?1:0;
@@ -5756,6 +5756,79 @@ window.addEventListener("click",function(e){
 },true);
 })();
 
+/*stairsV2*/
+var __D4=[[1,0],[0,-1],[-1,0],[0,1]];
+var __oldStairVar=stairVar;
+stairVar=function(id,x,z,strict){
+ if(id!=="stairs")return __oldStairVar(id,x,z);
+ var D=__D4,d=(window.__stairDir|0)&3,nb;
+ var bs=function(k){var a=x-D[k][0],b=z-D[k][1];if(!Ql(a,b))return null;var c=so(a,b),n=c&&c.base;return n&&n.id==="stairs"&&((n.v|0)&3)===k?n:null};
+ var ah=function(k){var a=x+D[k][0],b=z+D[k][1];if(!Ql(a,b))return null;var c=so(a,b),n=c&&c.base;return n&&n.id==="stairs"&&((n.v|0)&3)===k?n:null};
+ if((nb=bs(d)))return d+4*(((nb.v|0)>>2)+1);
+ if((nb=ah(d))&&((nb.v|0)>>2)>0)return d+4*(((nb.v|0)>>2)-1);
+ if(!strict)for(var k=0;k<4;k++)if((nb=bs(k)))return k+4*(((nb.v|0)>>2)+1);
+ return d;
+};
+var __faceIdx=function(){var S=window.__fpS,fx=-Math.sin(S.yaw),fz=-Math.cos(S.yaw),b=0,bd=-9;for(var k=0;k<4;k++){var q=__D4[k][0]*fx+__D4[k][1]*fz;if(q>bd){bd=q;b=k}}return b};
+var __stairAt=function(ix,iz,id){
+ if(id!=="stairs")return stairVar(id,ix,iz);
+ var S=window.__fpS,k=__faceIdx(),pix=Math.floor(S.px+lt/2),piz=Math.floor(S.pz+lt/2);
+ if(ix===pix+__D4[k][0]&&iz===piz+__D4[k][1]){
+  var pc=so(pix,piz),pb=pc&&pc.base;
+  if(pb&&pb.id==="stairs"&&((pb.v|0)&3)===((k+2)&3)){var pl=(pb.v|0)>>2;if(pl>0)return (pl-1)*4+((pb.v|0)&3)}
+ }
+ var old=window.__stairDir;window.__stairDir=k;
+ var v=stairVar("stairs",ix,iz,true);window.__stairDir=old;return v;
+};
+var __rotStair=function(ix,iz){
+ if(!Ql(ix,iz))return false;
+ var c=so(ix,iz);if(!c||!c.base||c.base.id!=="stairs")return false;
+ var v=c.base.v|0,nv=(v&~3)|(((v&3)+1)&3);
+ xu(c,"base");js(ix,iz,"stairs",nv,false);ql();return true;
+};
+var __stairsAhead=function(){
+ if(!window.__fpOn)return;
+ var S=window.__fpS,k=__faceIdx(),ix=Math.floor(S.px+lt/2)+__D4[k][0],iz=Math.floor(S.pz+lt/2)+__D4[k][1];
+ if(!Ql(ix,iz))return Vt("Outside your land");
+ if(cgMkAt(ix,iz)>=0)return;
+ var c=so(ix,iz);
+ if(c.floor&&pt[c.floor.id].blocks)return Vt("You can't build on water");
+ if(c.base||(c.stack&&c.stack.length)||(window.__VX&&window.__VX[ix+","+iz+",0"]))return Vt("Something is already there");
+ var v=__stairAt(ix,iz,"stairs"),n=pt.stairs;
+ if((cgBg.stairs|0)>0)cgBg.stairs--;
+ else if(Xt>=n.cost)Xt-=n.cost;
+ else return Vt("Not enough coins for Stairs ("+n.cost+")");
+ js(ix,iz,"stairs",v,false);playBlockPlace();ql();
+};
+/* orbit view: click an existing stair (with Stairs selected) to rotate it */
+var __yuStairs=yu;
+yu=function(ix,iz){
+ if(qn==="stairs"&&Ql(ix,iz)){var c=so(ix,iz);if(c&&c.base&&c.base.id==="stairs"&&__rotStair(ix,iz)){Vt("Stairs rotated");return}}
+ __yuStairs(ix,iz);
+};
+var __lastG=0;
+window.addEventListener("keydown",function(e){
+ if(!window.__fpOn||e.ctrlKey||e.metaKey||e.altKey)return;
+ if(e.code==="KeyG"){
+  e.stopImmediatePropagation();e.preventDefault();
+  var n=performance.now();if(n-__lastG<130)return;__lastG=n;__stairsAhead();
+ }else if(e.code==="KeyR"&&!e.repeat){
+  e.stopImmediatePropagation();e.preventDefault();
+  var S=window.__fpS,t=Au(window.innerWidth/2,window.innerHeight/2);
+  if(t&&Math.hypot(io(t.ix)-S.px,io(t.iz)-S.pz)<=6&&__rotStair(t.ix,t.iz))Vt("Stairs rotated");
+  else Vt("Aim at a stair and press R");
+ }
+},true);
+(function(){
+ var b=document.createElement("button");
+ b.textContent="\u2B06 Stairs";
+ b.style.cssText="width:auto;border-radius:999px;padding:0 14px;font-weight:700;font-size:13px;background:#8a5a2b;color:#fff;height:34px;border:0;cursor:pointer";
+ var iv=null,t=null;
+ function end(){clearTimeout(t);clearInterval(iv)}
+ b.addEventListener("pointerdown",function(e){e.preventDefault();e.stopPropagation();__stairsAhead();t=setTimeout(function(){iv=setInterval(__stairsAhead,160)},300)});
+ ["pointerup","pointercancel","pointerleave"].forEach(function(n){b.addEventListener(n,end)});
+ document.getElementById("fpBar").appendChild(b);
+})();
 window.__game={cells:wi,put:js,tryPlace:yu,select:mo,buyLand:Mu,get coins(){return Xt},set coins(i){Xt=i,er()},get size(){return Ai()},itemCount:Xl,get bag(){return cgBg},get cgMk(){return cgMk},cgOpenShop,cgMoveTap,cgMkAt};})();
 /*! Bundled license information:
 
