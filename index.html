@@ -8509,7 +8509,10 @@ import { getFirestore, doc, setDoc, getDoc, collection, query, orderBy, limit, g
     try{
       var q=query(collection(db,"players"),orderBy("points","desc"),limit(100));
       var snap=await getDocs(q),rows=[];snap.forEach(function(d){var r=d.data()||{};rows.push({id:d.id,name:r.name||"Gardener",country:r.country||"",all:Number(r.points)||0,week:Number(r.weekPoints)||0,town:r.town||null,online:!!r.online,you:user&&d.id===user.uid})});
-      window.__firebaseLeaderboardRows=rows;window.dispatchEvent(new CustomEvent("cozy-firebase-leaderboard",{detail:rows}));return rows;
+      window.__firebaseLeaderboardRows=rows;
+      if(typeof window.__cozyLeaderboardSetPlayers==="function") window.__cozyLeaderboardSetPlayers(rows);
+      window.dispatchEvent(new CustomEvent("cozy-firebase-leaderboard",{detail:rows}));
+      return rows;
     }catch(e){console.warn("Firebase leaderboard",e);return []}
   }
   async function getPlayerTown(id){
