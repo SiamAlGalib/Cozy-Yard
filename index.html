@@ -4573,6 +4573,11 @@ var EYE=0.72, RADIUS=0.2, WALK=2.4, RUN=4.2, PASS={door:1,flower:1,sunflower:1,m
 var LOW={landing:1.8,bench:.3,fence:.42,rocks:.35,step1:.3,step2:.6,step3:.9,step4:1.2,step5:1.5,step6:1.8}, py=0, vy=0, stepAcc=0;
 var fpOn=false, px=0, pz=0, yaw=0, pitch=0, keys={}, joy={x:0,y:0}, bob=0, last=0;
 var look=document.getElementById("fpLook"), stick=document.getElementById("fpStick");
+var camOff=0;
+function colTop(ix,iz){var t=0,c=so(ix,iz);if(!c)return 0;
+ if(c.stack&&c.stack.length)t=(c.stack.length+1)*.92;
+ var V=window.__VX;if(V){for(var L=30;L>=0;L--){if(V[ix+","+iz+","+L]){t=Math.max(t,(L+1)*.92);break}}}
+ return t}
 function stairH(b,x,z){var v=b.v|0,ix=Math.floor(x+lt/2),iz=Math.floor(z+lt/2),cx=ix-lt/2+.5,cz=iz-lt/2+.5,a=(v&3)*Math.PI/2,t=(x-cx)*Math.cos(a)-(z-cz)*Math.sin(a)+.5;t=Math.max(0,Math.min(.999,t));return (v>>2)*.6+.3*(Math.floor(t*2)+1)}
 function baseH(b,x,z){return b.id==="stairs"?stairH(b,x,z):b.id==="landing"?(b.v||3)*.6:LOW[b.id]}
 function blocked(x,z){
@@ -4581,11 +4586,11 @@ function blocked(x,z){
   if(cgMkAt(ix,iz)>=0)return true;
   var c=so(ix,iz);
   if(c.floor&&pt[c.floor.id].blocks)return true;
-  if(c.stack&&c.stack.length)return true;
+  var ct=colTop(ix,iz);if(ct>0)return py<ct-.01;
   if(c.base&&!PASS[c.base.id]){var lh=baseH(c.base,x,z);if(lh&&py>=lh-(/^(step|stairs|landing)/.test(c.base.id)?.36:.01))return false;return true}
   return false;
 }
-function gh(x,z){var c=so(Math.floor(x+lt/2),Math.floor(z+lt/2));if(!c||(c.stack&&c.stack.length)||!c.base)return 0;return baseH(c.base,x,z)||0}
+function gh(x,z){var c=so(Math.floor(x+lt/2),Math.floor(z+lt/2));if(c){var ct0=colTop(Math.floor(x+lt/2),Math.floor(z+lt/2));if(ct0>0)return ct0}if(!c||(c.stack&&c.stack.length)||!c.base)return 0;return baseH(c.base,x,z)||0}
 function gnd(x,z){return Math.max(gh(x-RADIUS,z-RADIUS),gh(x+RADIUS,z-RADIUS),gh(x-RADIUS,z+RADIUS),gh(x+RADIUS,z+RADIUS))}
 function stepSound(){
   try{
@@ -4611,11 +4616,11 @@ function findStart(){
 function cam(){
   if(In.fov!==72||In.near!==.05){In.fov=72;In.near=.05;In.updateProjectionMatrix()}
   In.rotation.order="YXZ";
-  In.position.set(px,EYE+py+Math.sin(bob)*.025,pz);
+  In.position.set(px,EYE+py+camOff+Math.sin(bob)*.025,pz);
   In.rotation.set(pitch,yaw,0);
   In.updateMatrixWorld();
 }
-window.__fpS={get px(){return px},get pz(){return pz},get yaw(){return yaw},get py(){return py},free:free,jump:function(){if(py<=gnd(px,pz)+.001)vy=3.8}};
+window.__fpS={get px(){return px},get pz(){return pz},get yaw(){return yaw},get py(){return py},set py(v){py=v},set vy(v){vy=v},get camOff(){return camOff},set camOff(v){camOff=v},get pitch(){return pitch},colTop:colTop,free:free,jump:function(){if(py<=gnd(px,pz)+.001)vy=7.4}};
 var _Eu=Eu;
 Eu=function(){ if(fpOn){cam();return} _Eu(); };
 function tick(now){
@@ -4629,8 +4634,8 @@ function tick(now){
   var dx=(-Math.sin(yaw)*f+Math.cos(yaw)*r)*sp, dz=(-Math.cos(yaw)*f-Math.sin(yaw)*r)*sp;
   if(free(px+dx,pz))px+=dx;
   if(free(px,pz+dz))pz+=dz;
-  var fl=gnd(px,pz);
-  if(keys.Space&&py<=fl+.001&&vy<=0)vy=3.8;
+  var fl=gnd(px,pz);camOff+=(0-camOff)*Math.min(1,dt*12);
+  if(keys.Space&&py<=fl+.001&&vy<=0)vy=7.4;
   vy-=12*dt; py+=vy*dt;
   if(py<=fl){ if(vy<-1.5)stepSound(); py=fl; vy=0; }
   if(len>.05&&py<=fl+.01){ bob+=dt*9; stepAcc+=sp; if(stepAcc>((keys.ShiftLeft||keys.ShiftRight)?1.1:.75)){stepAcc=0;stepSound();} }
@@ -4917,7 +4922,7 @@ function frame(dt,now){
   if(fc%5===0)drawMap(now);
   if(fc%20===0)barUpdate();
 }
-window.__fpx={enter:enter,leave:leave,frame:frame};
+window.__fpx={enter:enter,leave:leave,frame:frame,getSel:function(){return sel}};
 
 /* ---- input ---- */
 document.getElementById("fpPrev").addEventListener("click",function(){cycle(-1)});
@@ -5518,6 +5523,47 @@ rs.addEventListener("click",function(){
   if(rs.textContent==="Sure?"){fish.forEach(function(f){fi.remove(f.m.g)});fish=[];an=true}
 },true);
 requestAnimationFrame(loop);
+})();
+
+/* ===== pillarUp: look down + click = place block under you and rise ===== */
+(function(){
+var S=window.__fpS,look=document.getElementById("fpLook"),H=.92,MAXL=30,lastT=0,dn=null;
+function lookingDown(){return window.__fpOn&&S.pitch<-1.0}
+function pillar(){
+ var now=performance.now();if(now-lastT<160)return;lastT=now;
+ var ix=Math.floor(S.px+lt/2),iz=Math.floor(S.pz+lt/2);
+ if(!Ql(ix,iz))return;
+ var c=so(ix,iz),ct=S.colTop(ix,iz);
+ if(c.base&&ct===0)return Vt("Can't build a pillar here");
+ if(c.floor&&pt[c.floor.id].blocks)return Vt("You can't build on water");
+ var L=Math.round(ct/H);
+ if(L>MAXL)return Vt("Too high!");
+ if(window.__VX[ix+","+iz+","+L])return;
+ var id=(window.__fpx&&window.__fpx.getSel&&window.__fpx.getSel())||qn;
+ if(!pt[id]||pt[id].layer!=="base")id="stone";
+ var n=pt[id];
+ if((cgBg[id]|0)>0)cgBg[id]--;
+ else if(Xt>=n.cost)Xt-=n.cost;
+ else return Vt("Not enough coins for "+n.name+" ("+n.cost+")");
+ var o=y0(id,0);o.position.set(io(ix),L*H,io(iz));
+ o.userData.cell={ix:ix,iz:iz};o.userData.vx=1;o.userData.level=L;
+ fo.add(o);window.__VX[ix+","+iz+","+L]={id:id,v:0,obj:o};
+ o.scale.setScalar(.01);no.push({obj:o,t0:performance.now()});
+ if(window.__vxSave)window.__vxSave();
+ S.py=(L+1)*H;S.vy=0;S.camOff=-H;
+ playBlockPlace();ql();an=true;
+}
+look.addEventListener("pointerdown",function(e){if(e.pointerType==="mouse")dn={locked:document.pointerLockElement===look}},true);
+look.addEventListener("pointerup",function(e){
+ if(e.pointerType==="mouse"&&e.button===0&&dn&&dn.locked&&lookingDown()){pillar();e.stopImmediatePropagation()}
+ dn=null;
+},true);
+window.addEventListener("keydown",function(e){
+ if(e.code==="KeyF"&&lookingDown()){if(!e.repeat)pillar();e.stopImmediatePropagation()}
+},true);
+document.getElementById("fpPlace").addEventListener("click",function(e){
+ if(lookingDown()){pillar();e.stopImmediatePropagation()}
+},true);
 })();
 
 window.__game={cells:wi,put:js,tryPlace:yu,select:mo,buyLand:Mu,get coins(){return Xt},set coins(i){Xt=i,er()},get size(){return Ai()},itemCount:Xl,get bag(){return cgBg},get cgMk(){return cgMk},cgOpenShop,cgMoveTap,cgMkAt};})();
