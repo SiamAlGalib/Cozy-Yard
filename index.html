@@ -4680,6 +4680,48 @@ window.addEventListener("keydown",function(e){
   Vt(window.__noclip?"Fly mode ON (Space up, C down, V off)":"Fly mode OFF");
  }
 });
+/*stairFix2*/
+var STEP=.5;
+function __isRamp(id){return id==="stairs"||id==="landing"}
+function __items(ix,iz){
+ var c=so(ix,iz),r=[],V=window.__VX,k,L;
+ if(!c)return r;
+ if(c.base&&__isRamp(c.base.id))r.push([0,c.base]);
+ if(c.stack)for(k=0;k<c.stack.length;k++)if(__isRamp(c.stack[k].id))r.push([k+1,c.stack[k]]);
+ if(V)for(L=0;L<=30;L++){var b=V[ix+","+iz+","+L];if(b&&__isRamp(b.id))r.push([L,b])}
+ return r}
+function __rh(it,x,z){return it[0]*.92+(it[1].id==="stairs"?stairH(it[1],x,z):((it[1].v|0)||3)*.92)}
+function __lv(ix,iz){
+ var c=so(ix,iz),r=[],k,V=window.__VX;
+ if(!c)return r;
+ if(c.stack)for(k=0;k<c.stack.length;k++)if(!__isRamp(c.stack[k].id))r.push(k+1);
+ if(V)for(var L=0;L<=30;L++){var b=V[ix+","+iz+","+L];if(b&&!__isRamp(b.id))r.push(L)}
+ if(r.length&&c.base&&!PASS[c.base.id]&&!__isRamp(c.base.id)&&r.indexOf(0)<0)r.push(0);
+ return r}
+function blocked(x,z){
+ var ix=Math.floor(x+lt/2),iz=Math.floor(z+lt/2),k;
+ if(!Ql(ix,iz))return true;
+ if(cgMkAt(ix,iz)>=0)return true;
+ var c=so(ix,iz);
+ if(c.floor&&pt[c.floor.id].blocks)return true;
+ var ls=__lv(ix,iz);
+ for(k=0;k<ls.length;k++){var lo=ls[k]*.92;if(lo+.92>py+.08&&lo<py+.95)return true}
+ var rs=__items(ix,iz);
+ for(k=0;k<rs.length;k++){var lo2=rs[k][0]*.92,h=__rh(rs[k],x,z);if(h>py+STEP&&lo2<py+.95)return true}
+ if(ls.length)return false;
+ var b=c.base;
+ if(b&&!PASS[b.id]&&!__isRamp(b.id)){var lh=baseH(b,x,z);return !(lh&&py>=lh-.01)}
+ return false}
+function gh(x,z){
+ var ix=Math.floor(x+lt/2),iz=Math.floor(z+lt/2),c=so(ix,iz),b0=0,k;
+ if(!c)return 0;
+ var ls=__lv(ix,iz);
+ for(k=0;k<ls.length;k++){var t=(ls[k]+1)*.92;if(t<=py+.45&&t>b0)b0=t}
+ var rs=__items(ix,iz);
+ for(k=0;k<rs.length;k++){var h=__rh(rs[k],x,z);if(h<=py+STEP+.001&&h>b0)b0=h}
+ if(!ls.length&&c.base&&!__isRamp(c.base.id)){var bh=baseH(c.base,x,z)||0;if(bh>b0)b0=bh}
+ return b0}
+
 window.__fpS={get px(){return px},get pz(){return pz},get yaw(){return yaw},get py(){return py},set py(v){py=v},set vy(v){vy=v},get camOff(){return camOff},set camOff(v){camOff=v},get pitch(){return pitch},colTop:colTop,free:free,jump:function(){if(py<=gnd(px,pz)+.001)vy=7.4}};
 var _Eu=Eu;
 Eu=function(){ if(fpOn){cam();return} _Eu(); };
