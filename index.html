@@ -6441,31 +6441,35 @@ window.addEventListener("keydown",function(e){
 #fpStick{display:block!important}
 #fpActs{display:flex!important}
 </style>
+
 <script>
 /*mountainBuilder*/
 (function(){
 var G=window.__game; if(!G)return;
-var KEY="cozy_garden_mb",MAXB=5,PER_TICK=2,TICK=450,CAP=28,MINS=5,MAXS=60;
+var KEY="cozy_garden_mb",MAXB=5,BLOCK_MS=15000,CAP=28,MINS=5,MAXS=60,MAXCATCH=2500,H=.92;
 var lt=Math.round(Math.sqrt(G.cells.length));
+function hs(x,z){var h=(x*374761393+z*668265263)|0;h=(h^(h>>>13))*1274126177|0;return((h^(h>>>16))>>>0)/4294967296}
 /* ---- builder types: add new ones here later ---- */
 var TYPES={
   mountain:{name:"Mountain Builder",icon:"\u26F0\uFE0F",hire:25000,block:"stone",blockCost:14,
     desc:"Builds a big mountain in your area until you stop them",
     initPeak:function(w,d){return Math.max(3,Math.min(CAP,Math.round(Math.min(w,d)*.8)))},
-    target:function(b,x,z){
+    target:function(b,x,z,pk){
+      pk=pk||b.peak;
       var A=b.area,w=A.x1-A.x0+1,d=A.z1-A.z0+1,cx=(A.x0+A.x1)/2,cz=(A.z0+A.z1)/2;
       var rx=(x-cx)/(w/2),rz=(z-cz)/(d/2),r=Math.sqrt(rx*rx+rz*rz);
       if(r>=1)return 0;
-      var h=b.peak*Math.pow(1-r,1.15)*(1+.18*Math.sin(x*.7)*Math.cos(z*.6))+(hs(x,z)-.5)*1.6;
+      var h=pk*Math.pow(1-r,1.15)*(1+.18*Math.sin(x*.7)*Math.cos(z*.6))+(hs(x,z)-.5)*1.6;
       return Math.max(1,Math.round(h));
     }}
 };
-var bs=[],picking=null,origWk=null,prevMode="wall",open=false;
-function hs(x,z){var h=(x*374761393+z*668265263)|0;h=(h^(h>>>13))*1274126177|0;return((h^(h>>>16))>>>0)/4294967296}
+var bs=[],RT={},picking=null,origWk=null,prevMode="wall",open=false;
+function R(b){return RT[b.id]||(RT[b.id]={})}
+function io(i){return i-lt/2+.5}
 function toast(m){var t=document.getElementById("toast");if(!t)return;t.textContent=m;t.classList.add("show");clearTimeout(toast.t);toast.t=setTimeout(function(){t.classList.remove("show")},2600)}
 function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
-function save(){try{localStorage.setItem(KEY,JSON.stringify(bs))}catch(e){}}
-try{bs=(JSON.parse(localStorage.getItem(KEY)||"[]")||[]).filter(function(b){return TYPES[b.type]});bs.forEach(function(b){b.run=false})}catch(e){bs=[]}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(bs.map(function(b){return{id:b.id,type:b.type,name:b.name,area:b.area,run:b.run,peak:b.peak,placed:b.placed,done:b.done,msg:b.msg,last:b.last,acc:b.acc}})))}catch(e){}}
+try{bs=(JSON.parse(localStorage.getItem(KEY)||"[]")||[]).filter(function(b){return TYPES[b.type]});bs.forEach(function(b){if(!b.area)b.run=false})}catch(e){bs=[]}
 
 /* ---- building logic ---- */
 function cellOk(x,z){
@@ -6480,55 +6484,154 @@ function cellOk(x,z){
   return true;
 }
 function ht(c){return(c.base?1:0)+(c.stack?c.stack.length:0)}
-function stop(b,msg){b.run=false;b.msg=msg||"";save();if(msg)toast(b.name+": "+msg);upd()}
-function step(b){
-  var T=TYPES[b.type],A=b.area,minH=1e9,list=[],anyOk=false;
+function tg(b){
+  var A=b.area,w=A.x1-A.x0+1,d=A.z1-A.z0+1,k=w+","+d+","+A.x0+","+A.z0+","+b.peak,r=R(b);
+  if(r.tk!==k){
+    var T=TYPES[b.type],a=new Int16Array(w*d);
+    for(var z=A.z0;z<=A.z1;z++)for(var x=A.x0;x<=A.x1;x++)a[(z-A.z0)*w+(x-A.x0)]=T.target(b,x,z);
+    r.t=a;r.tk=k;
+  }
+  return r.t;
+}
+function remain(b){
+  var A=b.area,T=TYPES[b.type],n=0;
   for(var z=A.z0;z<=A.z1;z++)for(var x=A.x0;x<=A.x1;x++){
     if(!cellOk(x,z))continue;
-    var t=T.target(b,x,z);if(t<=0)continue;
+    var t=T.target(b,x,z,CAP);
+    if(t>0){var h=ht(G.cells[z*lt+x]);if(h<t)n+=t-h}
+  }
+  return n;
+}
+function fmt(ms){
+  var m=Math.round(ms/60000);if(m<1)return "<1m";
+  var d=Math.floor(m/1440),h=Math.floor((m%1440)/60),mm=m%60;
+  return (d?d+"d ":"")+(h?h+"h ":"")+(d?"":mm+"m");
+}
+function stop(b,msg){b.run=false;b.msg=msg||"";save();if(msg)toast(b.name+": "+msg);upd()}
+/* returns 0 = stopped, 1 = placed a block, 2 = raised the peak */
+function step(b,anim,wal){
+  var T=TYPES[b.type],A=b.area,W=A.x1-A.x0+1,t=tg(b),r=R(b);
+  if(r.gx==null){r.gx=A.x0;r.gz=A.z0}
+  var minH=1e9,list=[],anyOk=false;
+  for(var z=A.z0;z<=A.z1;z++)for(var x=A.x0;x<=A.x1;x++){
+    if(!cellOk(x,z))continue;
+    var tv=t[(z-A.z0)*W+(x-A.x0)];if(tv<=0)continue;
     anyOk=true;
     var h=ht(G.cells[z*lt+x]);
-    if(h<t){if(h<minH){minH=h;list=[[x,z]]}else if(h===minH)list.push([x,z])}
+    if(h<tv){if(h<minH){minH=h;list=[[x,z]]}else if(h===minH)list.push([x,z])}
   }
-  if(!anyOk){stop(b,"no buildable tiles in the area");return false}
+  if(!anyOk){stop(b,"no buildable tiles in the area");return 0}
   if(!list.length){
-    if(b.peak<CAP){b.peak++;return false}
-    stop(b,"mountain complete!");b.done=true;return false;
+    if(b.peak<CAP){b.peak++;return 2}
+    b.done=true;stop(b,"mountain complete!");return 0;
   }
-  var coins=G.coins;
-  if(coins<T.blockCost){stop(b,"out of coins");return false}
-  var p=list[Math.floor(Math.random()*list.length)];
-  G.coins=coins-T.blockCost;
-  G.put(p[0],p[1],T.block,0,true);
+  if(wal.c<T.blockCost){stop(b,"out of coins");return 0}
+  var p=list[0],bd=1e9;
+  for(var i=0;i<list.length;i++){var dd=(list[i][0]-r.gx)*(list[i][0]-r.gx)+(list[i][1]-r.gz)*(list[i][1]-r.gz);if(dd<bd){bd=dd;p=list[i]}}
+  wal.c-=T.blockCost;
+  G.put(p[0],p[1],T.block,0,anim);
   b.placed=(b.placed|0)+1;
-  return true;
+  r.gx=p[0];r.gz=p[1];r.ty=(minH+1)*H;
+  return 1;
 }
+var lastSave=0;
 setInterval(function(){
-  if(document.hidden)return;
-  var any=false;
+  var now=Date.now(),placedAny=false;
   bs.forEach(function(b){
-    if(!b.run||!b.area)return;
-    any=true;
-    for(var i=0;i<PER_TICK;i++)if(!step(b))break;
+    if(!b.run||!b.area){return}
+    var dt=Math.max(0,Math.min(now-(b.last||now),3*86400000));b.last=now;
+    b.acc=(b.acc||0)+dt;
+    var n=Math.floor(b.acc/BLOCK_MS);if(!n)return;
+    b.acc-=n*BLOCK_MS;if(n>MAXCATCH)n=MAXCATCH;
+    var wal={c:G.coins},c0=wal.c,done=0,guard=0,anim=n<=2&&!document.hidden;
+    while(done<n&&guard++<n+CAP+5){
+      var r=step(b,anim,wal);
+      if(r===0)break;
+      if(r===1)done++;
+    }
+    if(wal.c!==c0)G.coins=wal.c;
+    if(done)placedAny=true;
   });
-  if(any){upd();if(!window.__mbSv||Date.now()-window.__mbSv>5000){window.__mbSv=Date.now();save()}}
-},TICK);
+  if(placedAny||now-lastSave>10000){lastSave=now;save()}
+  if(placedAny)upd();
+},500);
+document.addEventListener("visibilitychange",function(){if(document.hidden)save()});
+window.addEventListener("beforeunload",save);
+
+/* ---- the visible builder person ---- */
+function mkWorker(){
+  var base=window.__builder;if(!base)return null;
+  var m=base.clone();
+  m.traverse(function(o){
+    if(o.isMesh&&o.material){
+      o.material=o.material.clone();
+      var h=o.material.color.getHex();
+      if(h===0xe8a23b)o.material.color.setHex(0x3b82c4);
+      else if(h===0xc0392b)o.material.color.setHex(0xffd21a);
+    }
+  });
+  var c=m.children,w={g:m,legL:c[0],legR:c[1],armL:c[2],armR:c[3]};
+  w.hammer=w.armR&&w.armR.children[0];
+  if(w.hammer)w.hammer.visible=true;
+  if(c[9])c[9].visible=false;
+  m.visible=true;
+  return w;
+}
+var di=document.getElementById("c"),mx=-9999,my=-9999,lastF=performance.now(),lastPing=0;
+di.addEventListener("pointermove",function(e){if(e.isTrusted&&e.pointerType==="mouse"){mx=e.clientX;my=e.clientY}},true);
+function frame(now){
+  var dt=Math.min(.05,(now-lastF)/1000);lastF=now;
+  var sc=window.__builder&&window.__builder.parent,anim=false;
+  bs.forEach(function(b){
+    var r=R(b);
+    if(!b.area||!b.run||!sc){if(r.w&&r.w.g.visible){r.w.g.visible=false;anim=true}return}
+    if(!r.w){r.w=mkWorker();if(!r.w)return;sc.add(r.w.g)}
+    var w=r.w,m=w.g;
+    if(r.gx==null){
+      r.gx=b.area.x0;r.gz=b.area.z0;
+      r.ty=ht(G.cells[r.gz*lt+r.gx])*H;
+      m.position.set(io(r.gx),r.ty,io(r.gz));
+    }
+    m.visible=true;anim=true;
+    var tx=io(r.gx),tz=io(r.gz),dx=tx-m.position.x,dz=tz-m.position.z,d=Math.hypot(dx,dz);
+    if(d>.02){
+      var s=Math.min(d,2.6*dt);
+      m.position.x+=dx/d*s;m.position.z+=dz/d*s;
+      m.rotation.y=Math.atan2(dx,dz);
+      r.ph=(r.ph||0)+dt*10;
+      w.legL.rotation.x=Math.sin(r.ph)*.7;w.legR.rotation.x=-Math.sin(r.ph)*.7;
+      w.armL.rotation.x=-Math.sin(r.ph)*.6;w.armR.rotation.x=Math.sin(r.ph)*.6;
+    }else{
+      r.t=(r.t||0)+dt;
+      w.legL.rotation.x=w.legR.rotation.x=0;
+      w.armL.rotation.x=0;
+      w.armR.rotation.x=-1.4+Math.sin(r.t*9)*.7;
+    }
+    m.position.y+=((r.ty||0)-m.position.y)*Math.min(1,dt*6);
+  });
+  if(anim&&!window.__fpOn&&now-lastPing>90){
+    lastPing=now;
+    try{di.dispatchEvent(new PointerEvent("pointermove",{pointerId:987654,pointerType:"mouse",clientX:mx,clientY:my,bubbles:true}))}catch(e){}
+  }
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
 
 /* ---- UI ---- */
 var st=document.createElement("style");
 st.textContent="#mbPanel{position:fixed;inset:0;z-index:37;background:rgba(20,30,20,.5);display:none;align-items:flex-end;justify-content:center}#mbPanel.open{display:flex}#mbPanel .mp{width:100%;max-width:560px;max-height:82vh;background:#fff;border-radius:20px 20px 0 0;display:flex;flex-direction:column;padding-bottom:env(safe-area-inset-bottom);box-shadow:0 -4px 20px rgba(0,0,0,.25);font-family:system-ui,sans-serif;color:#2b3a2b}#mbPanel .mh{display:flex;align-items:center;gap:10px;padding:14px 14px 4px}#mbPanel .mh b{flex:1;font-size:17px}#mbPanel .mh .mc{font-weight:700;font-size:15px;background:#fff6d6;border-radius:999px;padding:5px 12px}#mbPanel .mh button{border:0;background:#eee;border-radius:50%;width:32px;height:32px;cursor:pointer;font-size:15px}#mbPanel .mi{padding:0 14px 8px;font-size:12px;color:#6b6b6b}#mbPanel .ml{overflow-y:auto;padding:0 14px 14px;display:flex;flex-direction:column;gap:8px}#mbPanel .mr{display:flex;align-items:center;gap:10px;background:#f5f9f5;border-radius:14px;padding:8px 10px;flex-wrap:wrap}#mbPanel .mr .ic{font-size:24px;width:34px;text-align:center}#mbPanel .mr .rn{flex:1;min-width:120px;display:flex;flex-direction:column;font-size:14px}#mbPanel .mr small{color:#6b6b6b;font-size:11px}#mbPanel .mb{display:flex;gap:6px;flex-wrap:wrap}#mbPanel .mr button{border:0;border-radius:999px;background:#2e9d57;color:#fff;font:700 13px system-ui,sans-serif;padding:8px 12px;cursor:pointer;white-space:nowrap}#mbPanel .mr button.b{background:#3b82f6}#mbPanel .mr button.o{background:#e08a1e}#mbPanel .mr button.r{background:#d64545}#mbPanel .mr button.h{background:#6b3fa0}#mbCancel{position:fixed;left:50%;top:calc(70px + env(safe-area-inset-top));transform:translateX(-50%);z-index:38;display:none;border:0;border-radius:999px;background:#d64545;color:#fff;padding:10px 18px;font:700 14px system-ui,sans-serif;box-shadow:0 2px 8px rgba(0,0,0,.3);cursor:pointer}#mbCancel.show{display:block}";
 document.head.appendChild(st);
 var ov=document.createElement("div");ov.id="mbPanel";
-ov.innerHTML='<div class="mp"><div class="mh"><b>\u26F0\uFE0F Builders</b><span class="mc"></span><button data-a="x">\u2715</button></div><div class="mi">Hire a builder, allocate an area, press Start. They build until you press Stop. Each block costs coins.</div><div class="ml"></div></div>';
+ov.innerHTML='<div class="mp"><div class="mh"><b>\u26F0\uFE0F Builders</b><span class="mc"></span><button data-a="x">\u2715</button></div><div class="mi">Hire a builder, allocate an area, press Start. One block every '+(BLOCK_MS/1000)+' seconds, so a big mountain takes about a day. They keep working while the game is closed and catch up when you return. Each block costs coins.</div><div class="ml"></div></div>';
 document.body.appendChild(ov);
 var cancel=document.createElement("button");cancel.id="mbCancel";cancel.textContent="\u2715 Cancel area";document.body.appendChild(cancel);
 var list=ov.querySelector(".ml"),coinEl=ov.querySelector(".mc");
 
 function status(b){
-  var T=TYPES[b.type];
   if(!b.area)return "Needs an area";
   var A=b.area,s=(A.x1-A.x0+1)+"\u00D7"+(A.z1-A.z0+1);
-  return (b.run?"\u{1F528} Building":(b.done?"\u2705 Complete":"\u23F8 Stopped"))+" \u00B7 area "+s+" \u00B7 peak "+b.peak+" \u00B7 "+(b.placed|0)+" blocks"+(b.msg&&!b.run?" \u00B7 "+b.msg:"");
+  var left=b.done?"":" \u00B7 ~"+fmt(remain(b)*BLOCK_MS)+" to finish";
+  return (b.run?"\u{1F528} Building":(b.done?"\u2705 Complete":"\u23F8 Stopped"))+" \u00B7 area "+s+" \u00B7 peak "+b.peak+" \u00B7 "+(b.placed|0)+" blocks"+left+(b.msg&&!b.run?" \u00B7 "+b.msg:"");
 }
 function upd(){
   if(!open)return;
@@ -6560,18 +6663,20 @@ ov.addEventListener("click",function(e){
     if(G.coins<T.hire)return toast("You need "+T.hire+" coins");
     G.coins=G.coins-T.hire;
     var id=Date.now()+Math.floor(Math.random()*1000),n=bs.filter(function(x){return x.type===btn.dataset.t}).length+1;
-    bs.push({id:id,type:btn.dataset.t,name:T.name+" #"+n,area:null,run:false,peak:0,placed:0,done:false,msg:""});
+    bs.push({id:id,type:btn.dataset.t,name:T.name+" #"+n,area:null,run:false,peak:0,placed:0,done:false,msg:"",last:0,acc:0});
     save();render();toast(T.name+" hired! Now allocate an area.");
   }
   else if(a==="area"&&b){startPick(b)}
   else if(a==="run"&&b){
     if(b.run)return stop(b,"");
     if(!b.area)return toast("Allocate an area first");
-    b.run=true;b.done=false;b.msg="";save();upd();toast(b.name+" started");
+    b.run=true;b.done=false;b.msg="";b.last=Date.now();b.acc=0;save();upd();toast(b.name+" started working");
   }
   else if(a==="fire"&&b){
     if(!confirm("Fire "+b.name+"? The mountain stays."))return;
+    var r=R(b);if(r.w&&r.w.g.parent)r.w.g.parent.remove(r.w.g);delete RT[b.id];
     bs.splice(bs.indexOf(b),1);save();render();
+    try{di.dispatchEvent(new PointerEvent("pointermove",{pointerId:987654,pointerType:"mouse",clientX:mx,clientY:my,bubbles:true}))}catch(e){}
   }
 });
 document.getElementById("hud").insertBefore((function(){
@@ -6579,7 +6684,7 @@ document.getElementById("hud").insertBefore((function(){
   b.style.cssText="pointer-events:auto;border:0;cursor:pointer;background:#ece6dc";
   b.textContent="\u26F0\uFE0F Mountains";b.addEventListener("click",openP);return b})(),document.getElementById("goal"));
 
-/* ---- area allocation: tap two corners (uses the game's walk-mode tap hook) ---- */
+/* ---- area allocation: tap two corners ---- */
 function startPick(b){
   var s=document.querySelector("#palette .item.sel");prevMode=s?s.dataset.id:"wall";
   closeP();
@@ -6602,9 +6707,10 @@ function onTap(ix,iz){
   var c=picking.c1,x0=Math.min(c[0],ix),x1=Math.max(c[0],ix),z0=Math.min(c[1],iz),z1=Math.max(c[1],iz),w=x1-x0+1,d=z1-z0+1;
   if(w<MINS||d<MINS){picking.c1=null;return toast("Too small. Minimum "+MINS+"\u00D7"+MINS+". Tap the first corner again")}
   if(w>MAXS||d>MAXS){picking.c1=null;return toast("Too big. Maximum "+MAXS+"\u00D7"+MAXS+". Tap the first corner again")}
-  var b=picking.b;
+  var b=picking.b,r=R(b);
   b.area={x0:x0,x1:x1,z0:z0,z1:z1};
   b.peak=TYPES[b.type].initPeak(w,d);b.done=false;b.msg="";b.run=false;
+  r.gx=null;r.tk=null;
   save();toast("Area set: "+w+"\u00D7"+d+". Press Start to build.");
   endPick(true);
 }
@@ -6614,7 +6720,9 @@ window.addEventListener("keydown",function(e){if(e.code==="Escape"){if(picking)e
 
 /* "New" button wipes builders too */
 var rs=document.getElementById("reset");
-rs.addEventListener("click",function(){if(rs.textContent==="Sure?"){bs=[];save();if(open)render()}},true);
+rs.addEventListener("click",function(){if(rs.textContent==="Sure?"){
+  bs.forEach(function(b){var r=R(b);if(r.w&&r.w.g.parent)r.w.g.parent.remove(r.w.g)});
+  bs=[];RT={};save();if(open)render()}},true);
 setInterval(function(){if(open)upd()},1000);
 })();
 
