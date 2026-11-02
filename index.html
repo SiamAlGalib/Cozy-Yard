@@ -6005,6 +6005,133 @@ window.addEventListener("keydown",function(e){
 });
 })();
 
+/*kingdomPicker*/
+(function(){
+var st=document.createElement("style");
+st.textContent="#kgPick{position:fixed;inset:0;z-index:36;background:rgba(20,30,20,.5);display:none;align-items:flex-end;justify-content:center}#kgPick.open{display:flex}#kgPick .kp{width:100%;max-width:560px;max-height:80vh;background:#fff;border-radius:20px 20px 0 0;display:flex;flex-direction:column;padding-bottom:env(safe-area-inset-bottom);box-shadow:0 -4px 20px rgba(0,0,0,.25);font-family:system-ui,sans-serif;color:#2b3a2b}#kgPick .kh{display:flex;align-items:center;gap:10px;padding:14px 14px 4px}#kgPick .kh b{flex:1;font-size:17px}#kgPick .kh button{border:0;background:#eee;border-radius:50%;width:32px;height:32px;cursor:pointer;font-size:15px}#kgPick .ks{padding:0 14px 8px;font-size:12px;color:#6b6b6b}#kgPick .kl{overflow-y:auto;padding:0 14px 14px;display:flex;flex-direction:column;gap:8px}#kgPick h4{margin:8px 0 0;font-size:12px;color:#6b6b6b;text-transform:uppercase;letter-spacing:.5px}#kgPick .kr{display:flex;align-items:center;gap:10px;background:#f5f9f5;border-radius:14px;padding:8px 10px}#kgPick .kr .ic{font-size:22px;width:32px;text-align:center}#kgPick .kr .rn{flex:1;min-width:0;display:flex;flex-direction:column;font-size:14px}#kgPick .kr small{color:#6b6b6b;font-size:11px}#kgPick .kr button{border:0;border-radius:999px;background:#6b3fa0;color:#fff;font:700 13px system-ui,sans-serif;padding:8px 14px;cursor:pointer}";
+document.head.appendChild(st);
+var ov=document.createElement("div");ov.id="kgPick";
+ov.innerHTML='<div class="kp"><div class="kh"><b>Where do you want to start?</b><button data-k="x">\u2715</button></div><div class="ks">Pick a place. You will appear there in first person.</div><div class="kl"></div></div>';
+document.body.appendChild(ov);
+var list=ov.querySelector(".kl"),btn=document.getElementById("enterKingdom");
+var bypass=false,opts=[],picking=false,down=null;
+var WALL={wall:1,brick:1,stone:1,wood:1,door:1,window:1},PASSK={door:1,flower:1,sunflower:1,mushroom:1};
+var LAND={fountain:["\u26F2","Fountain"],statue:["\uD83D\uDDFF","Statue"],campfire:["\uD83D\uDD25","Campfire"],tent:["\u26FA","Tent"],doghouse:["\uD83D\uDC15","Dog house"],gianttree:["\uD83C\uDF33","Giant tree"]};
+var JI={farmer:"\uD83C\uDF3E",woodcutter:"\uD83C\uDF32",fisher:"\uD83C\uDFA3"};
+function esc(t){return String(t).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
+function vx(x,z,L){var V=window.__VX;return V&&V[x+","+z+","+L]}
+function walk(x,z){
+ if(!Ql(x,z)||cgMkAt(x,z)>=0)return false;
+ var c=so(x,z);
+ if(c.stack&&c.stack.length)return false;
+ if(c.floor&&pt[c.floor.id].blocks)return false;
+ if(vx(x,z,0)||vx(x,z,1))return false;
+ if(c.base&&!PASSK[c.base.id])return false;
+ return true}
+function nearest(x,z,r){
+ var best=null,bd=1e9;
+ for(var dz=-r;dz<=r;dz++)for(var dx=-r;dx<=r;dx++){
+  var a=x+dx,b=z+dz;if(!walk(a,b))continue;
+  var d=dx*dx+dz*dz;if(d<bd){bd=d;best=[a,b]}}
+ return best}
+function yawTo(sx,sz,fx,fz){return Math.atan2(-(fx-sx),-(fz-sz))}
+function isS(x,z){
+ if(!Ql(x,z))return false;
+ var c=so(x,z);
+ if(c.top)return true;
+ if(c.base&&WALL[c.base.id])return true;
+ var v=vx(x,z,0);return !!(v&&WALL[v.id])}
+function isDoor(x,z){var c=so(x,z),v=vx(x,z,0);return !!((c.base&&c.base.id==="door")||(v&&v.id==="door"))}
+function build(){
+ var o=[],n=Ai(),off=(lt-n)/2,mid=Math.floor(lt/2),i,j;
+ var ix=Math.floor(eo.x+lt/2),iz=Math.floor(eo.z+lt/2);
+ var a=nearest(ix,iz,8);
+ if(a)o.push({sec:"Quick",icon:"\uD83D\uDCCD",name:"Where I'm looking now",sub:"Current camera spot",sx:a[0],sz:a[1],yaw:Zl});
+ var c=nearest(mid,mid,12);
+ if(c)o.push({sec:"Quick",icon:"\uD83C\uDFDE\uFE0F",name:"Centre of the land",sub:"",sx:c[0],sz:c[1],yaw:Zl});
+ o.push({sec:"Quick",icon:"\uD83D\uDDFA\uFE0F",name:"Pick a spot on the map",sub:"Then tap anywhere on your land",pick:true});
+ var vil=[];try{vil=JSON.parse(localStorage.getItem("cozy_garden_vil")||"[]")||[]}catch(e){}
+ vil.forEach(function(v){
+  var s=nearest(v.hx,v.hz+3,3);if(!s)return;
+  o.push({sec:"Villager houses",icon:JI[v.j]||"\uD83C\uDFE0",name:v.n+"'s house",sub:v.j||"",sx:s[0],sz:s[1],yaw:yawTo(s[0],s[1],v.hx,v.hz)})});
+ var seen=new Uint8Array(lt*lt),bl=[];
+ for(var z=off;z<off+n;z++)for(var x=off;x<off+n;x++){
+  if(seen[z*lt+x]||!isS(x,z))continue;
+  var q=[[x,z]],h=0,cl={cnt:0,sx:0,sz:0,x0:x,x1:x,z0:z,z1:z,doors:[]};
+  seen[z*lt+x]=1;
+  while(h<q.length){
+   var p=q[h++];cl.cnt++;cl.sx+=p[0];cl.sz+=p[1];
+   if(p[0]<cl.x0)cl.x0=p[0];if(p[0]>cl.x1)cl.x1=p[0];if(p[1]<cl.z0)cl.z0=p[1];if(p[1]>cl.z1)cl.z1=p[1];
+   if(isDoor(p[0],p[1]))cl.doors.push(p);
+   for(var dz=-1;dz<=1;dz++)for(var dx=-1;dx<=1;dx++){
+    var nx=p[0]+dx,nz=p[1]+dz;
+    if(nx<off||nz<off||nx>=off+n||nz>=off+n||seen[nz*lt+nx]||!isS(nx,nz))continue;
+    seen[nz*lt+nx]=1;q.push([nx,nz])}}
+  if(cl.cnt<6)continue;
+  var own=false;vil.forEach(function(v){if(v.hx>=cl.x0&&v.hx<=cl.x1&&v.hz>=cl.z0&&v.hz<=cl.z1)own=true});
+  if(!own)bl.push(cl)}
+ bl.sort(function(p,q){return q.cnt-p.cnt});
+ bl.slice(0,8).forEach(function(cl,k){
+  var cx=cl.sx/cl.cnt,cz=cl.sz/cl.cnt,nm="Building "+(k+1),sz=(cl.x1-cl.x0+1)+"\u00D7"+(cl.z1-cl.z0+1),best=null,bs=-1;
+  cl.doors.forEach(function(d){[[1,0],[-1,0],[0,1],[0,-1]].forEach(function(dd){
+   var tx=d[0]+dd[0],tz=d[1]+dd[1];
+   if(!walk(tx,tz))return;
+   var sc=Math.hypot(tx-cx,tz-cz);if(sc>bs){bs=sc;best={sx:tx,sz:tz,fx:d[0],fz:d[1]}}})});
+  if(best)o.push({sec:"Buildings",icon:"\uD83D\uDEAA",name:nm+" - at the door",sub:sz,sx:best.sx,sz:best.sz,yaw:yawTo(best.sx,best.sz,best.fx,best.fz)});
+  var ins=null,bd=1e9;
+  for(var zz=cl.z0;zz<=cl.z1;zz++)for(var xx=cl.x0;xx<=cl.x1;xx++){
+   if(!walk(xx,zz))continue;var d2=Math.hypot(xx-cx,zz-cz);if(d2<bd){bd=d2;ins=[xx,zz]}}
+  if(ins)o.push({sec:"Buildings",icon:"\uD83C\uDFE0",name:nm+" - inside",sub:sz,sx:ins[0],sz:ins[1],yaw:Zl})});
+ var lm=[],water=null,wd=1e9;
+ for(var z2=off;z2<off+n;z2++)for(var x2=off;x2<off+n;x2++){
+  var cc=so(x2,z2),dm=Math.hypot(x2-mid,z2-mid);
+  if(cc.base&&LAND[cc.base.id])lm.push({x:x2,z:z2,id:cc.base.id,d:dm});
+  if(cc.floor&&(cc.floor.id==="pond"||cc.floor.id==="lake")&&dm<wd){wd=dm;water={x:x2,z:z2}}}
+ lm.sort(function(p,q){return p.d-q.d});
+ lm.slice(0,10).forEach(function(m){
+  var s=nearest(m.x,m.z,6);if(!s)return;
+  o.push({sec:"Landmarks",icon:LAND[m.id][0],name:LAND[m.id][1],sub:"",sx:s[0],sz:s[1],yaw:yawTo(s[0],s[1],m.x,m.z)})});
+ if(water){var s2=nearest(water.x,water.z,6);if(s2)o.push({sec:"Landmarks",icon:"\uD83C\uDF0A",name:"Water",sub:"Nearest to the centre",sx:s2[0],sz:s2[1],yaw:yawTo(s2[0],s2[1],water.x,water.z)})}
+ return o}
+function render(){
+ var h="",sec="";
+ opts.forEach(function(o,i){
+  if(o.sec!==sec){sec=o.sec;h+="<h4>"+esc(sec)+"</h4>"}
+  h+='<div class="kr"><span class="ic">'+o.icon+'</span><div class="rn"><b>'+esc(o.name)+'</b>'+(o.sub?"<small>"+esc(o.sub)+"</small>":"")+'</div><button data-k="go" data-i="'+i+'">Go</button></div>'});
+ list.innerHTML=h}
+function go(o){
+ ov.classList.remove("open");
+ eo.x=io(o.sx);eo.z=io(o.sz);eo.y=.3;Zl=o.yaw;
+ bypass=true;btn.click();bypass=false}
+window.addEventListener("click",function(e){
+ if(bypass||!e.target.closest||!e.target.closest("#enterKingdom"))return;
+ e.stopImmediatePropagation();e.preventDefault();
+ cgShopEl.classList.remove("open");
+ opts=build();render();ov.classList.add("open")},true);
+ov.addEventListener("click",function(e){
+ if(e.target===ov){ov.classList.remove("open");return}
+ var b=e.target.closest("button");if(!b)return;
+ if(b.dataset.k==="x"){ov.classList.remove("open");return}
+ var o=opts[+b.dataset.i];if(!o)return;
+ if(o.pick){ov.classList.remove("open");picking=true;Vt("Tap the spot where you want to start (Esc cancels)");return}
+ go(o)});
+window.addEventListener("keydown",function(e){
+ if(e.code!=="Escape")return;
+ if(ov.classList.contains("open"))ov.classList.remove("open");
+ if(picking){picking=false;Vt("Cancelled")}});
+di.addEventListener("pointerdown",function(e){down=[e.clientX,e.clientY]},true);
+di.addEventListener("pointerup",function(e){
+ if(!picking)return;
+ e.stopImmediatePropagation();e.preventDefault();
+ Pn.delete(e.pointerId);if(Pn.size===0)Ht=null;
+ if(!down||Math.hypot(e.clientX-down[0],e.clientY-down[1])>10)return;
+ var t=Au(e.clientX,e.clientY);if(!t)return;
+ var s=nearest(t.ix,t.iz,6);
+ if(!s)return Vt("No free spot there. Try another place.");
+ picking=false;
+ go({sx:s[0],sz:s[1],yaw:Zl})},true);
+})();
+
 window.__game={cells:wi,put:js,tryPlace:yu,select:mo,buyLand:Mu,get coins(){return Xt},set coins(i){Xt=i,er()},get size(){return Ai()},itemCount:Xl,get bag(){return cgBg},get cgMk(){return cgMk},cgOpenShop,cgMoveTap,cgMkAt};})();
 /*! Bundled license information:
 
