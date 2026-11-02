@@ -6960,5 +6960,48 @@ document.getElementById("hud").appendChild(b);
 window.addEventListener("blur",function(){["KeyW","KeyA","KeyS","KeyD","ArrowUp","ArrowDown","ArrowLeft","ArrowRight","ShiftLeft","ShiftRight","Space","KeyC"].forEach(function(c){window.dispatchEvent(new KeyboardEvent("keyup",{code:c}))})});
 (function(){var h=document.getElementById("hud");h.addEventListener("wheel",function(e){if(e.target.closest(".pill")&&h.scrollWidth>h.clientWidth){h.scrollLeft+=e.deltaY+e.deltaX;e.preventDefault()}},{passive:false})})();
 </script>
+<style>
+#menuBtn{pointer-events:auto;border:0;cursor:pointer;background:#2b3a2b;color:#fff}
+#menuPanel{position:fixed;top:calc(60px + env(safe-area-inset-top));left:10px;right:10px;max-width:440px;max-height:72vh;overflow-y:auto;z-index:31;display:none;background:rgba(255,255,255,.97);border-radius:18px;padding:6px 12px 12px;box-shadow:0 6px 24px rgba(0,0,0,.3);font-family:system-ui,sans-serif;color:#2b3a2b;-webkit-overflow-scrolling:touch}
+#menuPanel.open{display:block}
+#menuPanel h4{margin:12px 0 6px;font-size:12px;letter-spacing:.6px;text-transform:uppercase;color:#6b6b6b}
+#menuPanel .mrow{display:flex;align-items:center;gap:10px;padding:4px 0}
+#menuPanel .mrow .pill{flex:0 0 150px;text-align:left;box-shadow:0 1px 4px rgba(0,0,0,.2);overflow:hidden;text-overflow:ellipsis}
+#menuPanel .mrow small{flex:1;font-size:12px;color:#6b6b6b;line-height:1.3}
+body.fp #menuPanel,body.fp #menuBtn{display:none!important}
+</style>
+<script>/*menuPanelInit*/
+(function(){
+var hud=document.getElementById("hud");
+function byText(t){var a=hud.querySelectorAll(".pill");for(var i=0;i<a.length;i++)if(a[i].textContent.indexOf(t)>=0)return a[i];return null}
+var groups=[
+ ["Build",[[byText("Craft"),"Make fences, benches and more from materials"],[document.getElementById("blockToggle"),"Place blocks on top of or beside other blocks"],[document.getElementById("mbBtn"),"Hire builders that make mountains for you"],[byText("Villagers"),"Hire villagers who get a house and earn coins"]]],
+ ["World",[[document.getElementById("wsUndo"),"Undo your last change (Ctrl+Z)"],[document.getElementById("wsRestore"),"Bring back items after a mass removal"],[document.getElementById("wsExport"),"Download a backup of your world"],[document.getElementById("wsImport"),"Load a backup file"],[document.getElementById("reset"),"Start a fresh plot (tap twice to confirm)"]]],
+ ["Settings",[[document.getElementById("animToggle"),"Turn off if the game feels slow"]]]
+];
+var panel=document.createElement("div");panel.id="menuPanel";
+groups.forEach(function(g){
+ var h=document.createElement("h4");h.textContent=g[0];panel.appendChild(h);
+ g[1].forEach(function(it){
+  if(!it[0])return;
+  var row=document.createElement("div");row.className="mrow";
+  var d=document.createElement("small");d.textContent=it[1];
+  it[0].parentNode.removeChild(it[0]);row.appendChild(it[0]);row.appendChild(d);panel.appendChild(row);
+ });
+});
+document.body.appendChild(panel);
+var btn=document.createElement("button");btn.className="pill";btn.id="menuBtn";btn.textContent="\u2630 Menu";
+var ek=document.getElementById("enterKingdom");ek.parentNode.insertBefore(btn,ek.nextSibling);
+function close(){panel.classList.remove("open")}
+btn.addEventListener("click",function(e){e.stopPropagation();panel.classList.toggle("open")});
+btn.addEventListener("pointerdown",function(e){e.stopPropagation()});
+panel.addEventListener("click",function(e){
+ var b=e.target.closest(".pill");
+ if(b&&b.id!=="reset")setTimeout(close,80);
+});
+document.addEventListener("pointerdown",function(e){if(!panel.contains(e.target)&&e.target!==btn)close()},true);
+window.addEventListener("keydown",function(e){if(e.code==="Escape")close()});
+})();
+</script>
 </body>
 </html>
