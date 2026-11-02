@@ -4588,7 +4588,7 @@ function blocked(x,z){
   var c=so(ix,iz);
   if(c.floor&&pt[c.floor.id].blocks)return true;
   var ct=colTop(ix,iz);if(ct>0)return py<ct-.08;
-  if(c.base&&!PASS[c.base.id]){var lh=baseH(c.base,x,z);if(lh&&py>=lh-(/^(step|stairs|landing)/.test(c.base.id)?.36:.01))return false;return true}
+  if(c.base&&!PASS[c.base.id]){var lh=baseH(c.base,x,z);if(lh&&py>=lh-(/^(step|stairs|landing)/.test(c.base.id)?.5:.01))return false;return true}
   return false;
 }
 function gh(x,z){var c=so(Math.floor(x+lt/2),Math.floor(z+lt/2));if(c){var ct0=colTop(Math.floor(x+lt/2),Math.floor(z+lt/2));if(ct0>0)return ct0}if(!c||(c.stack&&c.stack.length)||!c.base)return 0;return baseH(c.base,x,z)||0}
@@ -4647,7 +4647,7 @@ function blocked(x,z){
  }
  if(c.base&&!PASS[c.base.id]){
   var lh=baseH(c.base,x,z);
-  if(lh&&py>=lh-(/^(step|stairs|landing)/.test(c.base.id)?.36:.01))return false;
+  if(lh&&py>=lh-(/^(step|stairs|landing)/.test(c.base.id)?.5:.01))return false;
   return true;
  }
  return false;
@@ -4692,7 +4692,7 @@ function tick(now){
   var len=Math.hypot(f,r); if(len>1){f/=len;r/=len}
   var sp=((keys.ShiftLeft||keys.ShiftRight)?RUN:WALK)*dt;
   var dx=(-Math.sin(yaw)*f+Math.cos(yaw)*r)*sp, dz=(-Math.cos(yaw)*f-Math.sin(yaw)*r)*sp;
-  if(!free(px,pz)){var _u=null;for(var _r=1;_r<=8&&!_u;_r++){for(var _a=0;_a<16;_a++){var _x=px+Math.cos(_a*Math.PI/8)*_r*.1,_z=pz+Math.sin(_a*Math.PI/8)*_r*.1;if(free(_x,_z)){_u=[_x,_z];break}}}if(_u){px=_u[0];pz=_u[1]}}else{if(free(px+dx,pz))px+=dx;if(free(px,pz+dz))pz+=dz}
+  if(!free(px,pz)&&!(function(){var p0=py;for(var h=1;h<=12;h++){py=p0+h*.1;if(free(px,pz)){vy=0;return true}}py=p0;return false})()){var _u=null;for(var _r=1;_r<=8&&!_u;_r++){for(var _a=0;_a<16;_a++){var _x=px+Math.cos(_a*Math.PI/8)*_r*.1,_z=pz+Math.sin(_a*Math.PI/8)*_r*.1;if(free(_x,_z)){_u=[_x,_z];break}}}if(_u){px=_u[0];pz=_u[1]}}else{if(free(px+dx,pz))px+=dx;if(free(px,pz+dz))pz+=dz}
   var fl=gnd(px,pz);camOff+=(0-camOff)*Math.min(1,dt*12);
   if(keys.Space&&py<=fl+.001&&vy<=0)vy=7.4;
   if(window.__noclip){vy=(keys.Space?5:0)-(keys.KeyC?5:0)}else vy-=12*dt; var _py0=py; py+=vy*dt; if(vy>0&&!window.__noclip){var _hp=__headClamp(_py0,py);if(_hp<py){py=_hp;vy=0}}
