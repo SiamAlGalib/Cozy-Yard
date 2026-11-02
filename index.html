@@ -8186,11 +8186,11 @@ function claim(i){
   var sb=20*Math.min(S.streak,10);amt+=sb;msg="+"+amt+" coins (streak bonus +"+sb+")";
   if(S.streak%7===0){var ch=300*Math.min(4,S.streak/7);amt+=ch;msg="🎁 "+S.streak+"-day chest! +"+amt+" coins"}
  }
- G.coins=G.coins+amt;save();toast("🔥 "+msg);refresh(true)}
+ G.coins=G.coins+amt;if(window.__gardenLeaderboardAward)window.__gardenLeaderboardAward([100,200,400][q.tier]||100);save();toast("🔥 "+msg+" · +"+([100,200,400][q.tier]||100)+" leaderboard points");refresh(true)}
 function claimBonus(){
  if(!allClaimed()||S.bonus)return;
  var amt=Math.round(BONUS*(1+G.landLevel*.15));
- S.bonus=1;G.coins=G.coins+amt;save();toast("🎉 All quests done! +"+amt+" bonus coins");refresh(true)}
+ S.bonus=1;G.coins=G.coins+amt;if(window.__gardenLeaderboardAward)window.__gardenLeaderboardAward(300);save();toast("🎉 All quests done! +"+amt+" bonus coins · +300 leaderboard points");refresh(true)}
 
 /* ---------- UI ---------- */
 var st=document.createElement("style");
@@ -8206,7 +8206,7 @@ st.textContent="#questCard{display:none!important}"+
 ".dqI{font-size:24px;width:34px;text-align:center}.dqT{flex:1;min-width:0}.dqT b{font-size:13px;display:block}.dqT small{font-size:10px;color:#b8c9df}"+
 ".dqBar{height:7px;border-radius:9px;background:#ffffff20;margin:6px 0 4px;overflow:hidden}.dqBar i{display:block;height:100%;background:linear-gradient(90deg,#34d399,#a3e635);transition:width .3s}"+
 ".dqRow button,.dqBn{border:0;border-radius:11px;padding:9px 11px;font:900 12px system-ui,sans-serif;cursor:pointer;color:#052b3a;background:linear-gradient(100deg,#fbbf24,#f59e0b);white-space:nowrap}"+
-".dqOk{font-size:11px;font-weight:900;color:#6ee7b7;white-space:nowrap}.dqCoin{font-size:12px;font-weight:900;color:#fde68a;white-space:nowrap}"+
+".dqOk{font-size:11px;font-weight:900;color:#6ee7b7;white-space:nowrap}.dqCoin{font-size:12px;font-weight:900;color:#fde68a;white-space:nowrap}.dqRewardStack{display:flex;flex-direction:column;align-items:flex-end;gap:5px;min-width:72px}.dqLp{display:inline-flex;align-items:center;gap:4px;padding:4px 7px;border:1px solid #f8c94d75;border-radius:9px;background:linear-gradient(135deg,#62450b88,#d99a1740);color:#ffe27a;font-size:11px;font-weight:950;white-space:nowrap;box-shadow:0 2px 8px #0003}.dqLp i{width:18px;height:18px;display:grid;place-items:center;border-radius:50%;background:linear-gradient(145deg,#fff4a6,#f5a900);color:#7a4300;font-style:normal;font-size:12px;text-shadow:0 1px #fff8}.dqLp small{font-size:9px;color:#fff0b1;font-weight:900}.dqClaim{display:flex;flex-direction:column;align-items:center;gap:3px;padding:7px 9px!important}.dqClaim small{font-size:9px;color:#fff2bb}"+
 ".dqBonus{margin:4px 14px 10px;padding:11px;border-radius:14px;background:linear-gradient(100deg,#fbbf2425,#fb923c20);display:flex;align-items:center;gap:10px;font-size:12px;font-weight:800;color:#fde68a}.dqBonus span{flex:1}"+
 ".dqBn[disabled]{opacity:.4;cursor:default}.dqF{padding:2px 16px 14px;font-size:11px;color:#8fa8c5;text-align:center}body.fp #dqPanel{display:none!important}";
 document.head.appendChild(st);
@@ -8238,13 +8238,14 @@ function render(){
  for(i=1;i<=7;i++)h+='<span class="'+(i<=pos?"on":"")+'">'+(i===7?"🎁":i)+'</span>';
  h+='</div>';
  Q.forEach(function(q,i){
-  var p=Math.min(S.best[q.kind]||0,q.n),pc=Math.round(p/q.n*100),r=reward(q),a;
-  if(S.claimed[i])a='<span class="dqOk">✓ Claimed</span>';
-  else if(S.done[i])a='<button data-c="'+i+'">Claim +'+r+'</button>';
-  else a='<span class="dqCoin">🪙 '+r+'</span>';
+  var p=Math.min(S.best[q.kind]||0,q.n),pc=Math.round(p/q.n*100),r=reward(q),lp=[100,200,400][q.tier]||100,a;
+  var lpBadge='<span class="dqLp"><i>★</i> +'+lp+' <small>LP</small></span>';
+  if(S.claimed[i])a='<div class="dqRewardStack"><span class="dqOk">✓ Claimed</span>'+lpBadge+'</div>';
+  else if(S.done[i])a='<div class="dqRewardStack"><button class="dqClaim" data-c="'+i+'">Claim +'+r+'<small>🪙 coins</small></button>'+lpBadge+'</div>';
+  else a='<div class="dqRewardStack"><span class="dqCoin">🪙 '+r+' coins</span>'+lpBadge+'</div>';
   h+='<div class="dqRow'+(S.done[i]?" ok":"")+'"><div class="dqI">'+q.icon+'</div><div class="dqT"><b>'+q.text+'</b><div class="dqBar"><i style="width:'+pc+'%"></i></div><small>'+p+' / '+q.n+' · '+TIER[q.tier]+'</small></div>'+a+'</div>'});
  var br=Math.round(BONUS*(1+G.landLevel*.15));
- h+='<div class="dqBonus"><span>🎉 Finish all 3 for +'+br+' bonus coins</span>'+
+ h+='<div class="dqBonus"><span>🎉 Finish all 3 for +'+br+' bonus coins <span class="dqLp"><i>★</i> +300 <small>LP</small></span></span>'+
     (S.bonus?'<b class="dqOk">✓ Claimed</b>':'<button class="dqBn" data-a="b"'+(allClaimed()?"":" disabled")+'>Claim</button>')+'</div>';
  h+='<div class="dqF">New quests in <b id="dqCd">'+cd()+'</b> · Every 7th streak day = chest 🎁</div>';
  box.innerHTML=h}
@@ -8279,5 +8280,86 @@ setTimeout(function(){
 
 </script>
 <!--/dailyQuests2-->
+
+<!-- Global + country leaderboard -->
+<script>
+(function(){
+  "use strict";
+  var KEY="cozy_garden_leaderboard_v1";
+  var countryCodes="AD AE AF AG AI AL AM AO AQ AR AS AT AU AW AX AZ BA BB BD BE BF BG BH BI BJ BL BM BN BO BQ BR BS BT BV BW BY BZ CA CC CD CF CG CH CI CK CL CM CN CO CR CU CV CW CX CY CZ DE DJ DK DM DO DZ EC EE EG EH ER ES ET FI FJ FK FM FO FR GA GB GD GE GF GG GH GI GL GM GN GP GQ GR GS GT GU GW GY HK HM HN HR HT HU ID IE IL IM IN IO IQ IR IS IT JE JM JO JP KE KG KH KI KM KN KP KR KW KY KZ LA LB LC LI LK LR LS LT LU LV LY MA MC MD ME MF MG MH MK ML MM MN MO MP MQ MR MS MT MU MV MW MX MY MZ NA NC NE NF NG NI NL NO NP NR NU NZ OM PA PE PF PG PH PK PL PM PN PR PS PT PW PY QA RE RO RS RU RW SA SB SC SD SE SG SH SI SJ SK SL SM SN SO SR SS ST SV SX SY SZ TC TD TF TG TH TJ TK TL TM TN TO TR TT TV TW TZ UA UG UM US UY UZ VA VC VE VG VI VN VU WF WS YE YT ZA ZM ZW".split(" ");
+  var regionNames=new Intl.DisplayNames(["en"],{type:"region"});
+  var countries=countryCodes.map(function(code){return [code,regionNames.of(code)]}).filter(function(c){return c[1]&&c[1]!==c[0]});
+  function flag(code){return code?String.fromCodePoint.apply(null,code.toUpperCase().split("").map(function(c){return 127397+c.charCodeAt(0)})):"🏳️"}
+  function weekKey(){var d=new Date(),u=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()));u.setUTCDate(u.getUTCDate()+4-(u.getUTCDay()||7));var y=u.getUTCFullYear(),start=new Date(Date.UTC(y,0,1));return y+"-W"+String(Math.ceil((((u-start)/86400000)+1)/7)).padStart(2,"0")}
+  function load(){try{return JSON.parse(localStorage.getItem(KEY)||"{}")||{}}catch(e){return {}}}
+  var data=load();
+  if(typeof data.points!=="number")data.points=0;
+  if(data.week!==weekKey()){data.week=weekKey();data.weekPoints=0}
+  if(typeof data.weekPoints!=="number")data.weekPoints=0;
+  if(!data.country)data.country="";
+  if(typeof data.name!=="string")data.name="";
+  function save(){try{localStorage.setItem(KEY,JSON.stringify(data))}catch(e){}}
+  save();
+  window.__gardenLeaderboardAward=function(n){n=Math.max(0,Math.floor(Number(n)||0));data.points+=n;data.weekPoints+=n;save();submitScore();render()};
+  function submitScore(){try{if(window.ytgame&&ytgame.engagement&&typeof ytgame.engagement.sendScore==="function")ytgame.engagement.sendScore({value:data.points})}catch(e){}}
+  var hud=document.getElementById("hud");
+  var open=document.createElement("button");open.id="leaderboardOpen";open.className="pill";open.type="button";open.textContent="🏆 Rankings";open.style.pointerEvents="auto";hud.appendChild(open);
+  var style=document.createElement("style");
+  style.textContent=`#profileOverlay{position:fixed;inset:0;z-index:90;display:none;align-items:center;justify-content:center;padding:18px;background:#061321d9;backdrop-filter:blur(7px);font-family:system-ui,sans-serif}#profileOverlay.open{display:flex}#profilePanel{width:min(390px,100%);padding:23px;border:1px solid #ffffff35;border-radius:23px;background:linear-gradient(150deg,#102b43,#1b4b5a);color:#f7fbff;box-shadow:0 24px 70px #000a}#profilePanel h2{margin:0 0 7px;font-size:22px}#profilePanel p{margin:0 0 18px;color:#b7ccda;font-size:12px;line-height:1.5}#profilePanel label{display:block;margin:13px 0 6px;color:#c5d8e5;font-size:12px;font-weight:800}#profilePanel input,#profilePanel select{box-sizing:border-box;width:100%;padding:12px;border:1px solid #ffffff35;border-radius:11px;background:#0b263b;color:white;font:inherit;outline:none}#profileSave{width:100%;margin-top:18px;padding:12px;border:0;border-radius:12px;background:#e7b94e;color:#30230b;font-weight:900;font-size:14px;cursor:pointer}#profileError{min-height:15px;margin-top:8px;color:#ffb3a9;font-size:11px}#glbProfileEdit{margin:0 14px 13px;width:calc(100% - 28px);padding:10px;border:1px solid #ffffff2a;border-radius:11px;background:#ffffff12;color:#fff;font-weight:800;cursor:pointer}#leaderboardOpen{border:0;cursor:pointer;background:#173d58;color:#fff;font-weight:800}#glbOverlay{position:fixed;inset:0;z-index:75;display:none;align-items:center;justify-content:center;padding:14px;background:#061321b8;backdrop-filter:blur(5px);font-family:system-ui,sans-serif}#glbOverlay.open{display:flex}#glbPanel{width:min(430px,100%);max-height:92vh;overflow:auto;border:1px solid #ffffff30;border-radius:23px;background:linear-gradient(150deg,#102b43,#173b54);color:#f7fbff;box-shadow:0 24px 70px #0009}#glbHead{display:flex;align-items:center;gap:10px;padding:16px;background:linear-gradient(110deg,#087f70,#168ca0);border-radius:22px 22px 0 0}#glbHead strong{font-size:17px;flex:1}#glbClose{border:0;border-radius:50%;width:30px;height:30px;background:#ffffff30;color:white;font-size:20px}#glbScore{margin:14px;padding:14px;border-radius:16px;background:#ffffff12;border:1px solid #ffffff18;display:flex;align-items:center;gap:12px}#glbScore .trophy{font-size:30px}#glbScore small{display:block;color:#a9c4d6;font-size:11px}#glbScore b{font-size:23px;color:#fbd36b}#glbTabs{display:flex;gap:8px;padding:0 14px 12px}#glbTabs button,#glbPeriod button{border:1px solid #ffffff24;border-radius:11px;padding:9px 13px;background:#ffffff0d;color:#dcebf4;font-weight:800;cursor:pointer}#glbTabs button.active,#glbPeriod button.active{background:#e7b94e;color:#30230b;border-color:#e7b94e}#glbPeriod{display:flex;gap:7px;padding:0 14px 12px}#glbRows{padding:0 14px 8px}.glbRow{display:flex;align-items:center;gap:10px;padding:11px 10px;margin-bottom:7px;border-radius:13px;background:#ffffff0d;border:1px solid #ffffff12}.glbRow.you{background:#1d9c7650;border-color:#50d6ad80}.glbRank{width:25px;text-align:center;font-weight:900;color:#f7d477}.glbFlag{width:30px;height:30px;flex:0 0 30px;display:grid;place-items:center;border-radius:50%;overflow:hidden;background:radial-gradient(circle at 30% 25%,#ffffff,#d8e6ef 72%);border:2px solid #ffffff75;box-shadow:0 2px 7px #0005;font-size:17px;line-height:1;text-align:center}.glbPlayer{flex:1;min-width:0;font-weight:800;font-size:13px}.glbPlayer small{display:block;color:#a9c4d6;font-size:10px;font-weight:500}.glbPts{font-size:13px;font-weight:900;color:#f8d77d;white-space:nowrap}#glbCountry{display:flex;gap:8px;align-items:center;padding:0 14px 12px}#glbCountry label{font-size:11px;color:#aac2d4}#glbCountry select{flex:1;min-width:0;border:1px solid #ffffff2c;border-radius:10px;padding:9px;background:#173b54;color:#fff}#glbNote{padding:5px 16px 15px;color:#9fb6c8;font-size:10px;line-height:1.5;text-align:center}#glbEmpty{padding:20px;text-align:center;color:#b8cad7;font-size:12px}`;
+  document.head.appendChild(style);
+  var overlay=document.createElement("div");overlay.id="glbOverlay";
+  overlay.innerHTML='<section id="glbPanel"><header id="glbHead"><span style="font-size:23px">🏆</span><strong>Garden Leaderboard</strong><button id="glbClose" aria-label="Close">×</button></header><div id="glbScore"><span class="trophy">🌟</span><div style="flex:1"><small>YOUR LEADERBOARD POINTS</small><b id="glbMyPoints">0</b></div><div style="text-align:right"><small>THIS WEEK</small><b id="glbWeekPoints" style="font-size:17px">0</b></div></div><button id="glbProfileEdit" type="button">✏️ Edit username & country</button><nav id="glbTabs"><button data-board="global" class="active">🌐 Global</button><button data-board="country" id="glbCountryTab">🏳️</button></nav><div id="glbCountry"><label>YOUR FLAG</label><select id="glbCountrySelect"><option value="">Choose your country</option></select></div><div id="glbPeriod"><button data-period="week" class="active">This week</button><button data-period="all">All time</button></div><div id="glbRows"></div><div id="glbNote">Preview mode · Sample players are for design only. Real-time global and country rankings are not connected yet.</div></section>';
+  document.body.appendChild(overlay);
+  var profile=document.createElement("div");profile.id="profileOverlay";
+  profile.innerHTML='<section id="profilePanel"><div style="font-size:32px">🌱</div><h2 id="profileTitle">Welcome, gardener!</h2><p>Choose a username and country to personalize your garden leaderboard. You can change these anytime.</p><form id="profileForm"><label for="profileName">USERNAME</label><input id="profileName" maxlength="18" minlength="2" autocomplete="nickname" placeholder="Enter your username" required><label for="profileCountry">COUNTRY</label><select id="profileCountry" required><option value="">Select your country</option></select><button id="profileSave" type="submit">Save profile</button><div id="profileError" aria-live="polite"></div></form></section>';
+  document.body.appendChild(profile);
+  var board="global",period="week";
+  var select=overlay.querySelector("#glbCountrySelect");
+  countries.forEach(function(c){var o=document.createElement("option");o.value=c[0];o.textContent=flag(c[0])+"  "+c[1];select.appendChild(o)});
+  select.value=data.country;
+  var profileCountry=profile.querySelector("#profileCountry");
+  countries.forEach(function(c){var o=document.createElement("option");o.value=c[0];o.textContent=flag(c[0])+"  "+c[1];profileCountry.appendChild(o)});
+  function openProfile(isFirst){profile.querySelector("#profileTitle").textContent=isFirst?"Welcome, gardener!":"Edit your profile";profile.querySelector("#profileName").value=data.name||"";profileCountry.value=data.country||"";profile.querySelector("#profileError").textContent="";profile.classList.add("open");setTimeout(function(){profile.querySelector("#profileName").focus()},50)}
+  function closeProfile(){profile.classList.remove("open")}
+  function sampleRows(){
+    var global=[
+      {name:"BloomMaster",country:"JP",all:18420,week:3420},{name:"GreenThumb",country:"BR",all:16980,week:3190},
+      {name:"GardenFox",country:"US",all:15100,week:2870},{name:"PetalWizard",country:"GB",all:14350,week:2640},
+      {name:"LeafLegend",country:"IN",all:12980,week:2410},{name:data.name||"You",country:data.country,all:data.points,week:data.weekPoints,you:true}
+    ];
+    var byCountry={
+      BD:[{name:"GreenDream",country:"BD",all:9420,week:1830},{name:"FlowerCraft",country:"BD",all:8100,week:1620},{name:data.name||"You",country:"BD",all:data.points,week:data.weekPoints,you:true}],
+      US:[{name:"GardenFox",country:"US",all:15100,week:2870},{name:"OakBuilder",country:"US",all:11020,week:2210},{name:data.name||"You",country:"US",all:data.points,week:data.weekPoints,you:true}],
+      IN:[{name:"LeafLegend",country:"IN",all:12980,week:2410},{name:"PlantPro",country:"IN",all:10220,week:2100},{name:data.name||"You",country:"IN",all:data.points,week:data.weekPoints,you:true}]
+    };
+    return board==="global"?global:(byCountry[data.country]||[{name:data.name||"You",country:data.country,all:data.points,week:data.weekPoints,you:true}]);
+  }
+  function render(){
+    overlay.querySelector("#glbMyPoints").textContent=data.points.toLocaleString();
+    overlay.querySelector("#glbWeekPoints").textContent=data.weekPoints.toLocaleString();
+    overlay.querySelector("#glbCountryTab").textContent=data.country?flag(data.country):"🏳️";
+    overlay.querySelectorAll("#glbTabs button").forEach(function(b){b.classList.toggle("active",b.dataset.board===board)});
+    overlay.querySelectorAll("#glbPeriod button").forEach(function(b){b.classList.toggle("active",b.dataset.period===period)});
+    var rows=sampleRows().sort(function(a,b){return (period==="week"?b.week-a.week:b.all-a.all)});
+    var html="";
+    rows.forEach(function(r,i){html+='<div class="glbRow'+(r.you?' you':'')+'"><span class="glbRank">'+(i+1<=3?["🥇","🥈","🥉"][i]:i+1)+'</span><span class="glbFlag">'+(r.country?flag(r.country):"🏳️")+'</span><span class="glbPlayer">'+r.name+(r.you?'<small>Your current device</small>':'')+'</span><span class="glbPts">'+(period==="week"?r.week:r.all).toLocaleString()+' pts</span></div>'});
+    if(board==="country"&&!data.country)html='<div id="glbEmpty">Choose a country first to view its flag leaderboard.</div>';
+    overlay.querySelector("#glbRows").innerHTML=html;
+    overlay.querySelector("#glbNote").textContent="PREVIEW MODE · Sample players are not real users. Live global and country rankings require a secure online leaderboard backend. YouTube Playables currently restricts external network calls for most games.";
+  }
+  open.addEventListener("click",function(){overlay.classList.add("open");render()});
+  overlay.querySelector("#glbProfileEdit").addEventListener("click",function(){openProfile(false)});
+  profile.querySelector("#profileForm").addEventListener("submit",function(e){e.preventDefault();var name=profile.querySelector("#profileName").value.trim().replace(/\s+/g," ");var country=profileCountry.value;if(name.length<2){profile.querySelector("#profileError").textContent="Please enter at least 2 characters.";return}if(!country){profile.querySelector("#profileError").textContent="Please select your country.";return}data.name=name.replace(/[<>\"\'&]/g,"").slice(0,18);data.country=country;save();select.value=country;render();closeProfile()});
+  overlay.querySelector("#glbClose").addEventListener("click",function(){overlay.classList.remove("open")});
+  overlay.addEventListener("click",function(e){if(e.target===overlay)overlay.classList.remove("open")});
+  overlay.querySelector("#glbTabs").addEventListener("click",function(e){var b=e.target.closest("button[data-board]");if(!b)return;board=b.dataset.board;render()});
+  overlay.querySelector("#glbPeriod").addEventListener("click",function(e){var b=e.target.closest("button[data-period]");if(!b)return;period=b.dataset.period;render()});
+  select.addEventListener("change",function(){data.country=select.value;profileCountry.value=select.value;save();render()});
+  window.addEventListener("keydown",function(e){if(e.key==="Escape")overlay.classList.remove("open")});
+  submitScore();
+  if(!data.name||!data.country)openProfile(true);
+})();
+</script>
+
 </body>
 </html>
