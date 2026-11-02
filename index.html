@@ -102,6 +102,7 @@
   #fpActs button{border:1px solid #ffffff66;background:#101a2acc;color:#fff;border-radius:999px;padding:12px 16px;font-weight:700;font-size:14px}
   @media(pointer:coarse){#fpActs{display:flex}#fpBar{bottom:calc(160px + env(safe-area-inset-bottom))}}
 </style>
+<script src="https://www.youtube.com/game_api/v1"></script>
 </head>
 <body>
 <script>try{localStorage.setItem("cozy_builder_guide_v3","1")}catch(e){}</script>
@@ -8300,292 +8301,88 @@ setTimeout(function(){
   if(typeof data.name!=="string")data.name="";
   function save(){try{localStorage.setItem(KEY,JSON.stringify(data))}catch(e){}}
   save();
-  var CLOUD_VERSION=1;
+  var CLOUD_VERSION=1,cloudLoadPromise=null,cloudLoaded=false,cloudCanSave=false,cloudSaveQueue=Promise.resolve();
   function cloudReady(){return !!(window.ytgame&&ytgame.IN_PLAYABLES_ENV&&ytgame.game&&typeof ytgame.game.loadData==="function"&&typeof ytgame.game.saveData==="function")}
   function cloudPayload(){return JSON.stringify({version:CLOUD_VERSION,cozyGardenLeaderboard:{points:data.points,week:data.week,weekPoints:data.weekPoints,name:data.name,country:data.country}})}
-  function saveCloud(){try{if(cloudReady())ytgame.game.saveData(cloudPayload())}catch(e){}}
+  function saveCloud(){
+    if(!cloudReady())return Promise.resolve(false);
+    cloudSaveQueue=cloudSaveQueue.then(async function(){
+      if(!cloudLoaded&&cloudLoadPromise)await cloudLoadPromise;
+      if(!cloudLoaded||!cloudCanSave)return false;
+      await ytgame.game.saveData(cloudPayload());
+      return true;
+    }).catch(function(e){console.warn("YouTube cloud save failed:",e);return false});
+    return cloudSaveQueue;
+  }
   async function loadCloud(){
-    if(!cloudReady())return;
+    if(!cloudReady()){cloudLoaded=true;return;}
     try{
       var raw=await ytgame.game.loadData();
-      if(!raw)return;
-      var c=JSON.parse(raw),lb=c&&c.cozyGardenLeaderboard;
-      if(!lb)return;
-      var currentWeek=weekKey();
-      if(lb.week===currentWeek){
-        data.points=Math.max(0,Number(lb.points)||0,data.points);
-        data.week=currentWeek;
-        data.weekPoints=Math.max(0,Number(lb.weekPoints)||0,data.week===currentWeek?data.weekPoints:0);
-      }else{
-        data.points=Math.max(0,Number(lb.points)||0,data.points);
-        data.week=currentWeek;
-        data.weekPoints=0;
+      cloudCanSave=true;
+      if(raw){
+        var c=JSON.parse(raw),lb=c&&c.cozyGardenLeaderboard;
+        if(lb){
+          var currentWeek=weekKey();
+          data.points=Math.max(0,Number(lb.points)||0,data.points);
+          data.week=currentWeek;
+          data.weekPoints=lb.week===currentWeek?Math.max(0,Number(lb.weekPoints)||0,data.weekPoints):0;
+          if(typeof lb.name==="string"&&lb.name.trim())data.name=lb.name.trim().slice(0,18);
+          if(typeof lb.country==="string")data.country=lb.country;
+          save();
+        }
       }
-      if(typeof lb.name==="string"&&lb.name.trim())data.name=lb.name.trim().slice(0,18);
-      if(typeof lb.country==="string")data.country=lb.country;
-      save();
-      saveCloud();
-    }catch(e){}
+    }catch(e){console.warn("YouTube cloud load failed:",e)}
+    finally{cloudLoaded=true}
   }
-  window.__gardenLeaderboardAward=function(n){n=Math.max(0,Math.floor(Number(n)||0));data.points+=n;data.weekPoints+=n;save();saveCloud();submitScore();render()};
+  cloudLoadPromise=loadCloud();
+  window.__gardenLeaderboardAward=function(n){
+    n=Math.max(0,Math.floor(Number(n)||0));
+    data.points+=n;data.weekPoints+=n;save();
+    saveCloud();submitScore();render();
+  };
   function submitScore(){try{if(window.ytgame&&ytgame.engagement&&typeof ytgame.engagement.sendScore==="function")ytgame.engagement.sendScore({value:data.points})}catch(e){}}
   var hud=document.getElementById("hud");
   var open=document.createElement("button");open.id="leaderboardOpen";open.className="pill";open.type="button";open.textContent="🏆 Rankings";open.style.pointerEvents="auto";hud.appendChild(open);
   var style=document.createElement("style");
-  style.textContent=`#profileOverlay{position:fixed;inset:0;z-index:90;display:none;align-items:center;justify-content:center;padding:18px;background:#061321d9;backdrop-filter:blur(7px);font-family:system-ui,sans-serif}#profileOverlay.open{display:flex}#profilePanel{width:min(390px,100%);padding:23px;border:1px solid #ffffff35;border-radius:23px;background:linear-gradient(150deg,#102b43,#1b4b5a);color:#f7fbff;box-shadow:0 24px 70px #000a}#profilePanel h2{margin:0 0 7px;font-size:22px}#profilePanel p{margin:0 0 18px;color:#b7ccda;font-size:12px;line-height:1.5}#profilePanel label{display:block;margin:13px 0 6px;color:#c5d8e5;font-size:12px;font-weight:800}#profilePanel input,#profilePanel select{box-sizing:border-box;width:100%;padding:12px;border:1px solid #ffffff35;border-radius:11px;background:#0b263b;color:white;font:inherit;outline:none}#profileSave{width:100%;margin-top:18px;padding:12px;border:0;border-radius:12px;background:#e7b94e;color:#30230b;font-weight:900;font-size:14px;cursor:pointer}#profileError{min-height:15px;margin-top:8px;color:#ffb3a9;font-size:11px}#glbProfileEdit{margin:0 14px 13px;width:calc(100% - 28px);padding:10px;border:1px solid #ffffff2a;border-radius:11px;background:#ffffff12;color:#fff;font-weight:800;cursor:pointer}#leaderboardOpen{border:0;cursor:pointer;background:#173d58;color:#fff;font-weight:800}#glbOverlay{position:fixed;inset:0;z-index:75;display:none;align-items:center;justify-content:center;padding:14px;background:#061321b8;backdrop-filter:blur(5px);font-family:system-ui,sans-serif}#glbOverlay.open{display:flex}#glbPanel{width:min(430px,100%);max-height:92vh;overflow:auto;border:1px solid #ffffff30;border-radius:23px;background:linear-gradient(150deg,#102b43,#173b54);color:#f7fbff;box-shadow:0 24px 70px #0009}#glbHead{display:flex;align-items:center;gap:10px;padding:16px;background:linear-gradient(110deg,#087f70,#168ca0);border-radius:22px 22px 0 0}#glbHead strong{font-size:17px;flex:1}#glbClose{border:0;border-radius:50%;width:30px;height:30px;background:#ffffff30;color:white;font-size:20px}#glbScore{margin:14px;padding:14px;border-radius:16px;background:#ffffff12;border:1px solid #ffffff18;display:flex;align-items:center;gap:12px}#glbScore .trophy{font-size:30px}#glbScore small{display:block;color:#a9c4d6;font-size:11px}#glbScore b{font-size:23px;color:#fbd36b}#glbTabs{display:flex;gap:8px;padding:0 14px 12px}#glbTabs button,#glbPeriod button{border:1px solid #ffffff24;border-radius:11px;padding:9px 13px;background:#ffffff0d;color:#dcebf4;font-weight:800;cursor:pointer}#glbTabs button.active,#glbPeriod button.active{background:#e7b94e;color:#30230b;border-color:#e7b94e}#glbPeriod{display:flex;gap:7px;padding:0 14px 12px}#glbRows{padding:0 14px 8px;max-height:62vh;overflow:auto}.glbRow{display:flex;align-items:center;gap:10px;padding:11px 10px;margin-bottom:7px;border-radius:13px;background:#ffffff0d;border:1px solid #ffffff12}.glbRow.you{background:#1d9c7650;border-color:#50d6ad80}.glbRank{width:25px;text-align:center;font-weight:900;color:#f7d477}.glbFlag{width:30px;height:30px;flex:0 0 30px;display:grid;place-items:center;border-radius:50%;overflow:hidden;background:radial-gradient(circle at 30% 25%,#ffffff,#d8e6ef 72%);border:2px solid #ffffff75;box-shadow:0 2px 7px #0005;font-size:17px;line-height:1;text-align:center}.glbPlayer{flex:1;min-width:0;font-weight:800;font-size:13px}.glbPlayer small{display:block;color:#a9c4d6;font-size:10px;font-weight:500}.glbPts{font-size:13px;font-weight:900;color:#f8d77d;white-space:nowrap}#glbCountry{display:flex;gap:8px;align-items:center;padding:0 14px 12px}#glbCountry label{font-size:11px;color:#aac2d4}#glbCountry select{flex:1;min-width:0;border:1px solid #ffffff2c;border-radius:10px;padding:9px;background:#173b54;color:#fff}#glbNote{padding:5px 16px 15px;color:#9fb6c8;font-size:10px;line-height:1.5;text-align:center}#glbEmpty{padding:20px;text-align:center;color:#b8cad7;font-size:12px}`;
+  style.textContent=`#profileOverlay{position:fixed;inset:0;z-index:90;display:none;align-items:center;justify-content:center;padding:18px;background:#061321d9;backdrop-filter:blur(7px);font-family:system-ui,sans-serif}#profileOverlay.open{display:flex}#profilePanel{width:min(390px,100%);padding:23px;border:1px solid #ffffff35;border-radius:23px;background:linear-gradient(150deg,#102b43,#1b4b5a);color:#f7fbff;box-shadow:0 24px 70px #000a}#profilePanel h2{margin:0 0 7px;font-size:22px}#profilePanel p{margin:0 0 18px;color:#b7ccda;font-size:12px;line-height:1.5}#profilePanel label{display:block;margin:13px 0 6px;color:#c5d8e5;font-size:12px;font-weight:800}#profilePanel input,#profilePanel select{box-sizing:border-box;width:100%;padding:12px;border:1px solid #ffffff35;border-radius:11px;background:#0b263b;color:white;font:inherit;outline:none}#profileSave{width:100%;margin-top:18px;padding:12px;border:0;border-radius:12px;background:#e7b94e;color:#30230b;font-weight:900;font-size:14px;cursor:pointer}#profileError{min-height:15px;margin-top:8px;color:#ffb3a9;font-size:11px}#glbProfileEdit{margin:0 14px 13px;width:calc(100% - 28px);padding:10px;border:1px solid #ffffff2a;border-radius:11px;background:#ffffff12;color:#fff;font-weight:800;cursor:pointer}#leaderboardOpen{border:0;cursor:pointer;background:#173d58;color:#fff;font-weight:800}#glbOverlay{position:fixed;inset:0;z-index:75;display:none;align-items:center;justify-content:center;padding:14px;background:#061321b8;backdrop-filter:blur(5px);font-family:system-ui,sans-serif}#glbOverlay.open{display:flex}#glbPanel{width:min(430px,100%);max-height:92vh;overflow:auto;border:1px solid #ffffff30;border-radius:23px;background:linear-gradient(150deg,#102b43,#173b54);color:#f7fbff;box-shadow:0 24px 70px #0009}#glbHead{display:flex;align-items:center;gap:10px;padding:16px;background:linear-gradient(110deg,#087f70,#168ca0);border-radius:22px 22px 0 0}#glbHead strong{font-size:17px;flex:1}#glbClose{border:0;border-radius:50%;width:30px;height:30px;background:#ffffff30;color:white;font-size:20px}#glbScore{margin:14px;padding:14px;border-radius:16px;background:#ffffff12;border:1px solid #ffffff18;display:flex;align-items:center;gap:12px}#glbScore .trophy{font-size:30px}#glbScore small{display:block;color:#a9c4d6;font-size:11px}#glbScore b{font-size:23px;color:#fbd36b}#glbPeriod button{border:1px solid #ffffff24;border-radius:11px;padding:9px 13px;background:#ffffff0d;color:#dcebf4;font-weight:800;cursor:pointer}#glbPeriod button.active{background:#e7b94e;color:#30230b;border-color:#e7b94e}#glbPeriod{display:flex;gap:7px;padding:0 14px 12px}#glbRows{padding:0 14px 8px;max-height:62vh;overflow:auto}.glbRow{display:flex;align-items:center;gap:10px;padding:11px 10px;margin-bottom:7px;border-radius:13px;background:#ffffff0d;border:1px solid #ffffff12}.glbRow.you{background:#1d9c7650;border-color:#50d6ad80}.glbRank{width:25px;text-align:center;font-weight:900;color:#f7d477}.glbFlag{width:30px;height:30px;flex:0 0 30px;display:grid;place-items:center;border-radius:50%;overflow:hidden;background:radial-gradient(circle at 30% 25%,#ffffff,#d8e6ef 72%);border:2px solid #ffffff75;box-shadow:0 2px 7px #0005;font-size:17px;line-height:1;text-align:center}.glbPlayer{flex:1;min-width:0;font-weight:800;font-size:13px}.glbPlayer small{display:block;color:#a9c4d6;font-size:10px;font-weight:500}.glbPts{font-size:13px;font-weight:900;color:#f8d77d;white-space:nowrap}#glbNote{padding:5px 16px 15px;color:#9fb6c8;font-size:10px;line-height:1.5;text-align:center}#glbEmpty{padding:20px;text-align:center;color:#b8cad7;font-size:12px}`;
   document.head.appendChild(style);
   var overlay=document.createElement("div");overlay.id="glbOverlay";
-  overlay.innerHTML='<section id="glbPanel"><header id="glbHead"><span style="font-size:23px">🏆</span><strong>🏆 Garden Leaderboard</strong><button id="glbClose" aria-label="Close">×</button></header><div id="glbScore"><span class="trophy">🌟</span><div style="flex:1"><small>YOUR LEADERBOARD POINTS</small><b id="glbMyPoints">0</b></div><div style="text-align:right"><small>THIS WEEK</small><b id="glbWeekPoints" style="font-size:17px">0</b></div></div><button id="glbProfileEdit" type="button">✏️ Edit username & country</button><nav id="glbTabs"><button data-board="global" class="active">🌐 Global</button><button data-board="country" id="glbCountryTab">🏳️</button></nav><div id="glbCountry"><label>YOUR FLAG</label><select id="glbCountrySelect"><option value="">Choose your country</option></select></div><div id="glbPeriod"><button data-period="week" class="active">This week</button><button data-period="all">All time</button></div><div id="glbRows"></div><div id="glbNote">Firebase test mode: anonymous accounts + shared Firestore leaderboard.<div id="firebaseControls" style="display:flex;gap:7px;justify-content:center;flex-wrap:wrap;margin-top:9px"><button data-firebase-action="signin" style="border:0;border-radius:10px;padding:8px 10px;background:#ffffff14;color:#fff;font-weight:900;cursor:pointer">🟢 Anonymous Sign in</button><button data-firebase-action="setup" style="border:1px solid #ffffff22;border-radius:10px;padding:8px 10px;background:#ffffff08;color:#cfe3ee;font-weight:800;cursor:pointer">🔥 Firebase Test Setup</button><button data-firebase-action="test" style="border:1px solid #ffffff22;border-radius:10px;padding:8px 10px;background:#ffffff08;color:#cfe3ee;font-weight:800;cursor:pointer">🧪 Test Firebase</button><div id="fbInlineStatus" style="width:100%;font-size:9px;color:#8fa8c5;text-align:center">Firebase not connected yet</div></div></div></section>';
+  overlay.innerHTML='<section id="glbPanel"><header id="glbHead"><span style="font-size:23px">🏆</span><strong>🏆 Garden Leaderboard</strong><button id="glbClose" aria-label="Close">×</button></header><div id="glbScore"><span class="trophy">🌟</span><div style="flex:1"><small>YOUR LEADERBOARD POINTS</small><b id="glbMyPoints">0</b></div><div style="text-align:right"><small>THIS WEEK</small><b id="glbWeekPoints" style="font-size:17px">0</b></div></div><button id="glbProfileEdit" type="button">✏️ Edit username & country</button><div id="glbPeriod"><button data-period="week" class="active">This week</button><button data-period="all">All time</button></div><div id="glbRows"></div><div id="glbNote">Your personal best is saved to your YouTube Playables account. YouTube manages platform score rankings; this panel shows your own saved score.</div></section>';
   document.body.appendChild(overlay);
   var profile=document.createElement("div");profile.id="profileOverlay";
   profile.innerHTML='<section id="profilePanel"><div style="font-size:32px">🌱</div><h2 id="profileTitle">Welcome, gardener!</h2><p>Choose a username and country to personalize your garden leaderboard. You can change these anytime.</p><form id="profileForm"><label for="profileName">USERNAME</label><input id="profileName" maxlength="18" minlength="2" autocomplete="nickname" placeholder="Enter your username" required><label for="profileCountry">COUNTRY</label><select id="profileCountry" required><option value="">Select your country</option></select><button id="profileSave" type="submit">Save profile</button><div id="profileError" aria-live="polite"></div></form></section>';
   document.body.appendChild(profile);
-  var board="global",period="week";
-  var select=overlay.querySelector("#glbCountrySelect");
-  countries.forEach(function(c){var o=document.createElement("option");o.value=c[0];o.textContent=flag(c[0])+"  "+c[1];select.appendChild(o)});
-  select.value=data.country;
+  var period="week";
   var profileCountry=profile.querySelector("#profileCountry");
   countries.forEach(function(c){var o=document.createElement("option");o.value=c[0];o.textContent=flag(c[0])+"  "+c[1];profileCountry.appendChild(o)});
   function openProfile(isFirst){profile.querySelector("#profileTitle").textContent=isFirst?"Welcome, gardener!":"Edit your profile";profile.querySelector("#profileName").value=data.name||"";profileCountry.value=data.country||"";profile.querySelector("#profileError").textContent="";profile.classList.add("open");setTimeout(function(){profile.querySelector("#profileName").focus()},50)}
   function closeProfile(){profile.classList.remove("open")}
   function sampleRows(){
-    // Never invent leaderboard players. If real player data is supplied later,
-    // render at most the top 100; otherwise show only this device's real profile.
-    var rows=[];
-    if(Array.isArray(data.players)){
-      data.players.forEach(function(r){
-        if(!r||typeof r.name!=="string"||!r.name.trim())return;
-        rows.push({name:r.name.trim().slice(0,18),country:typeof r.country==="string"?r.country:"",all:Number(r.all)||0,week:Number(r.week)||0,you:false,id:r.id||r.playerId||null,town:r.town||null,online:!!r.online});
-      });
-    }
-    if(data.name)rows.push({name:data.name,country:data.country,all:data.points,week:data.weekPoints,you:true,id:"self",town:null,online:true});
-    var seen={};
-    rows=rows.filter(function(r){var k=r.name.toLowerCase()+"|"+r.country;if(seen[k])return false;seen[k]=1;return true});
-    return rows.sort(function(a,b){return (period==="week"?b.week-a.week:b.all-a.all)}).slice(0,100);
+    return data.name?[{name:data.name,country:data.country,all:data.points,week:data.weekPoints,you:true,id:"self"}]:[];
   }
   function render(){
     overlay.querySelector("#glbMyPoints").textContent=data.points.toLocaleString();
     overlay.querySelector("#glbWeekPoints").textContent=data.weekPoints.toLocaleString();
-    overlay.querySelector("#glbCountryTab").textContent=data.country?flag(data.country):"🏳️";
-    overlay.querySelectorAll("#glbTabs button").forEach(function(b){b.classList.toggle("active",b.dataset.board===board)});
     overlay.querySelectorAll("#glbPeriod button").forEach(function(b){b.classList.toggle("active",b.dataset.period===period)});
     var rows=sampleRows();
-    if(board==="country"&&data.country)rows=rows.filter(function(r){return r.country===data.country});
     var html="";
-    rows.forEach(function(r,i){html+='<div class="glbRow'+(r.you?' you':'')+'"><span class="glbRank">'+(i+1<=3?["🥇","🥈","🥉"][i]:i+1)+'</span><span class="glbFlag">'+(r.country?flag(r.country):"🏳️")+'</span><span class="glbPlayer">'+r.name+(r.you?'<small>Your garden</small>':(r.online?'<small>🟢 Online now</small>':'<small>⚪ Offline · saved town</small>'))+'</span><span class="glbPts">'+(period==="week"?r.week:r.all).toLocaleString()+' pts</span><button class="glbVisit" data-visit="'+i+'">🏡 Visit</button></div>'});
-    if(board==="country"&&!data.country)html='<div id="glbEmpty">Choose a country first to view its Top 100 flag leaderboard.</div>';
-    else if(!rows.length)html='<div id="glbEmpty">Create your profile to submit your score to the YouTube leaderboard.</div>';
+    rows.forEach(function(r,i){html+='<div class="glbRow'+(r.you?' you':'')+'"><span class="glbRank">'+(i+1<=3?["🥇","🥈","🥉"][i]:i+1)+'</span><span class="glbFlag">'+(r.country?flag(r.country):"🏳️")+'</span><span class="glbPlayer">'+r.name+(r.you?'<small>Your garden</small>':(r.online?'<small>🟢 Online now</small>':'<small>⚪ Offline · saved town</small>'))+'</span><span class="glbPts">'+(period==="week"?r.week:r.all).toLocaleString()+' pts</span></div>'});
+    if(!rows.length)html='<div id="glbEmpty">Create your profile to submit your score to the YouTube leaderboard.</div>';
     overlay.querySelector("#glbRows").innerHTML=html;
-    overlay.querySelectorAll(".glbVisit").forEach(function(b){b.addEventListener("click",function(){var rs=sampleRows();if(board==="country"&&data.country)rs=rs.filter(function(r){return r.country===data.country});var r=rs[+b.dataset.visit];if(r)window.__cozyVisitTown(r);})});
     overlay.querySelector("#glbNote").textContent="Your score is saved to your YouTube Playables account and submitted to YouTube. Global player rankings are shown by YouTube; this in-game panel shows only your saved profile.";
   }
   open.addEventListener("click",function(){overlay.classList.add("open");render()});
   overlay.querySelector("#glbProfileEdit").addEventListener("click",function(){openProfile(false)});
-  profile.querySelector("#profileForm").addEventListener("submit",function(e){e.preventDefault();var name=profile.querySelector("#profileName").value.trim().replace(/\s+/g," ");var country=profileCountry.value;if(name.length<2){profile.querySelector("#profileError").textContent="Please enter at least 2 characters.";return}if(!country){profile.querySelector("#profileError").textContent="Please select your country.";return}data.name=name.replace(/[<>\"\'&]/g,"").slice(0,18);data.country=country;save();saveCloud();select.value=country;render();closeProfile()});
+  profile.querySelector("#profileForm").addEventListener("submit",function(e){e.preventDefault();var name=profile.querySelector("#profileName").value.trim().replace(/\s+/g," ");var country=profileCountry.value;if(name.length<2){profile.querySelector("#profileError").textContent="Please enter at least 2 characters.";return}if(!country){profile.querySelector("#profileError").textContent="Please select your country.";return}data.name=name.replace(/[<>\"\'&]/g,"").slice(0,18);data.country=country;save();saveCloud();render();closeProfile()});
   overlay.querySelector("#glbClose").addEventListener("click",function(){overlay.classList.remove("open")});
   overlay.addEventListener("click",function(e){if(e.target===overlay)overlay.classList.remove("open")});
-  overlay.querySelector("#glbTabs").addEventListener("click",function(e){var b=e.target.closest("button[data-board]");if(!b)return;board=b.dataset.board;render()});
   overlay.querySelector("#glbPeriod").addEventListener("click",function(e){var b=e.target.closest("button[data-period]");if(!b)return;period=b.dataset.period;render()});
-  select.addEventListener("change",function(){data.country=select.value;profileCountry.value=select.value;save();saveCloud();render()});
   window.addEventListener("keydown",function(e){if(e.key==="Escape")overlay.classList.remove("open")});
-  window.__cozyLeaderboardSetPlayers=function(rows){
-    data.players=Array.isArray(rows)?rows.slice(0,100):[];
-    save();
-    render();
-  };
   submitScore();
-  loadCloud().then(function(){render();submitScore();if(!data.name||!data.country)openProfile(true)});
+  Promise.resolve(cloudLoadPromise).then(function(){render();submitScore();if(!data.name||!data.country)openProfile(true)});
 })();
 </script>
 
-<script>
-/* Cozy Garden: read-only town visitor / showcase */
-(function(){
-  "use strict";
-  var SAVE_KEY="cozy_garden_save_v2";
-  var ov=document.createElement("div"); ov.id="townVisitOverlay";
-  ov.innerHTML='<section id="townVisitPanel"><header id="townVisitHead"><div><strong id="townVisitTitle">🏡 Visiting Garden</strong><small id="townVisitStatus">Read-only showcase</small></div><button id="townVisitClose" type="button">×</button></header><div id="townVisitInfo"></div><div id="townVisitTools"><button data-z="out">−</button><button data-z="in">+</button><button data-z="reset">⌖ Center</button></div><div id="townVisitCanvasWrap"><canvas id="townVisitCanvas"></canvas></div><footer id="townVisitFoot">🔒 Read-only · You cannot build, remove, harvest, move, or damage anything in this town.</footer></section>';
-  var st=document.createElement("style");
-  st.textContent='#townVisitOverlay{position:fixed;inset:0;z-index:140;display:none;align-items:center;justify-content:center;padding:12px;background:#061321e8;backdrop-filter:blur(6px);font-family:system-ui,sans-serif}#townVisitOverlay.open{display:flex}#townVisitPanel{width:min(620px,100%);height:min(88vh,720px);display:flex;flex-direction:column;border:1px solid #ffffff30;border-radius:24px;background:linear-gradient(150deg,#102b43,#173b54);color:#f7fbff;box-shadow:0 24px 80px #000b;overflow:hidden}#townVisitHead{display:flex;align-items:center;gap:12px;padding:15px 16px;background:linear-gradient(110deg,#087f70,#168ca0)}#townVisitHead>div{flex:1;min-width:0}#townVisitHead strong{display:block;font-size:17px}#townVisitHead small{display:block;color:#d2f4ee;font-size:11px;margin-top:3px}#townVisitClose{border:0;border-radius:50%;width:32px;height:32px;background:#ffffff28;color:#fff;font-size:21px;cursor:pointer}#townVisitInfo{padding:9px 14px;color:#c0d2df;font-size:11px;background:#ffffff08}#townVisitTools{display:flex;gap:7px;padding:8px 12px;background:#0a2237}#townVisitTools button{min-width:44px;height:38px;border:1px solid #ffffff20;border-radius:11px;background:#ffffff10;color:#fff;font-weight:900;cursor:pointer}#townVisitCanvasWrap{position:relative;flex:1;min-height:220px;overflow:hidden;background:#74b95d;touch-action:none}#townVisitCanvas{display:block;width:100%;height:100%;cursor:grab}#townVisitCanvas.drag{cursor:grabbing}#townVisitFoot{padding:10px 13px;color:#9fb6c8;font-size:10px;text-align:center;background:#091d30}#townVisitInfo b{color:#f9d477}.glbVisit{border:0;border-radius:10px;padding:8px 9px;background:linear-gradient(100deg,#fbbf24,#f59e0b);color:#30230b;font-weight:900;font-size:11px;cursor:pointer;white-space:nowrap}.glbRow{flex-wrap:wrap}.glbPlayer{min-width:80px}';
-  document.head.appendChild(st); document.body.appendChild(ov);
-  var cv=ov.querySelector('#townVisitCanvas'),ctx=cv.getContext('2d'),wrap=ov.querySelector('#townVisitCanvasWrap');
-  var zoom=1,ox=0,oy=0,drag=null,current=null;
-  var icon={tree:'🌳',bigtree:'🌳',gianttree:'🌲',pine:'🌲',cherry:'🌸',palm:'🌴',bush:'🌿',hedge:'🌿',flower:'🌷',sunflower:'🌻',wall:'🧱',brick:'🧱',stone:'🪨',wood:'🪵',fence:'🪵',stairs:'🪜',house:'🏠',lamp:'🏮',campfire:'🔥',pond:'💧',lake:'💧',path:'🟫',stonepath:'⬜',sand:'🟨',deck:'🪵',grass:'🟩',bench:'🪑',table:'🪵',chair:'🪑'};
-  function currentTown(){try{var raw=localStorage.getItem(SAVE_KEY);return raw?JSON.parse(raw):null}catch(e){return null}}
-  function normalizeTown(t){if(!t)return null;if(Array.isArray(t.list))return {lt:+t.lt||24,coins:+t.coins||0,landLevel:+t.landLevel||0,list:t.list};if(t.save&&Array.isArray(t.save.list))return normalizeTown(t.save);return null}
-  function tileInfo(r){var out=[];if(r[2])out.push(r[2]);if(r[3])out.push(r[3]);if(r[5])out.push(r[5]);if(Array.isArray(r[6]))r[6].forEach(function(x){if(x&&x[0])out.push(x[0])});return out}
-  function draw(){var dpr=Math.min(2,window.devicePixelRatio||1),w=wrap.clientWidth,h=wrap.clientHeight;if(!w||!h)return;cv.width=Math.round(w*dpr);cv.height=Math.round(h*dpr);ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,w,h);ctx.fillStyle='#72b85d';ctx.fillRect(0,0,w,h);if(!current)return;var n=current.lt||24,size=Math.min(w,h)*.82*zoom,tile=Math.max(7,size/n),sx=w/2+ox-size/2,sy=h/2+oy-size/2;ctx.fillStyle='rgba(255,255,255,.06)';ctx.fillRect(sx,sy,size,size);var map={};(current.list||[]).forEach(function(a){if(a&&a.length>=2)map[a[0]+','+a[1]]=a});for(var i=0;i<n*n;i++){var x=i%n,y=Math.floor(i/n),r=map[x+','+y];ctx.strokeStyle='rgba(255,255,255,.08)';ctx.strokeRect(sx+x*tile,sy+y*tile,tile,tile);if(!r)continue;var ids=tileInfo(r);if(ids.length){var em=icon[ids[ids.length-1]]||'•';ctx.font=Math.max(8,Math.min(24,tile*.72))+'px serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(em,sx+x*tile+tile/2,sy+y*tile+tile/2)}}ctx.strokeStyle='rgba(255,255,255,.55)';ctx.lineWidth=2;ctx.strokeRect(sx,sy,size,size)}
-  function openTown(r){current=normalizeTown(r&&r.town)||(r&&r.you?normalizeTown(currentTown()):null);zoom=1;ox=0;oy=0;ov.querySelector('#townVisitTitle').textContent='🏡 '+(r&&r.name?r.name:'Garden')+(r&&r.you?' · Your Town':'');ov.querySelector('#townVisitStatus').textContent=(r&&r.online?'🟢 Online now · live activity is not exposed by the Playables SDK':'⚪ Offline snapshot · read-only town');var count=current&&Array.isArray(current.list)?current.list.filter(function(a){return a&&(a[2]||a[3]||a[5]||(a[6]&&a[6].length))}).length:0;ov.querySelector('#townVisitInfo').innerHTML=current?'<b>'+count+'</b> decorated tiles · Land level <b>'+(current.landLevel||0)+'</b> · Explore with drag and zoom':'This player\'s town data is not available to this game yet. YouTube does not currently expose another player\'s saved town through loadData().';ov.classList.add('open');setTimeout(draw,20)}
-  window.__cozyVisitTown=openTown;
-  ov.querySelector('#townVisitClose').onclick=function(){ov.classList.remove('open')};
-  ov.addEventListener('click',function(e){if(e.target===ov)ov.classList.remove('open');var z=e.target.closest('[data-z]');if(!z)return;if(z.dataset.z==='in')zoom=Math.min(2.5,zoom*1.2);if(z.dataset.z==='out')zoom=Math.max(.5,zoom/1.2);if(z.dataset.z==='reset'){zoom=1;ox=0;oy=0}draw()});
-  wrap.addEventListener('pointerdown',function(e){drag={x:e.clientX,y:e.clientY,ox:ox,oy:oy};cv.classList.add('drag');wrap.setPointerCapture(e.pointerId)});wrap.addEventListener('pointermove',function(e){if(!drag)return;ox=drag.ox+e.clientX-drag.x;oy=drag.oy+e.clientY-drag.y;draw()});wrap.addEventListener('pointerup',function(){drag=null;cv.classList.remove('drag')});wrap.addEventListener('wheel',function(e){e.preventDefault();zoom=Math.max(.5,Math.min(2.5,zoom*(e.deltaY<0?1.12:.89)));draw()},{passive:false});window.addEventListener('resize',function(){if(ov.classList.contains('open'))draw()});window.addEventListener('keydown',function(e){if(e.key==='Escape'&&ov.classList.contains('open'))ov.classList.remove('open')});
-})();
-</script>
-<script type="module">
-/* Cozy Garden Firebase test backend — anonymous auth + live Firestore leaderboard */
-import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/13.1.0/firebase-app.js";
-import { getAuth, signInAnonymously, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/13.1.0/firebase-auth.js";
-import { getFirestore, doc, setDoc, getDoc, collection, query, orderBy, limit, getDocs, serverTimestamp } from "https://www.gstatic.com/firebasejs/13.1.0/firebase-firestore.js";
 
-(function(){
-  "use strict";
-  var CONFIG_KEY="cozy_garden_firebase_config_v1";
-  var app=null,auth=null,db=null,user=null,ready=false,syncBusy=false,authListenerSet=false;
-  var CONFIG={};
-  try{CONFIG=JSON.parse(localStorage.getItem(CONFIG_KEY)||"{}")||{}}catch(e){CONFIG={}};
-
-  function validConfig(c){return c&&typeof c.apiKey==="string"&&c.apiKey&&typeof c.projectId==="string"&&c.projectId}
-  function esc(s){return String(s||"").replace(/[&<>\"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]})}
-  function toast(m){if(typeof window.Vt==="function")return window.Vt(m);var t=document.getElementById("toast");if(t){t.textContent=m;t.classList.add("show");clearTimeout(t.__fg);t.__fg=setTimeout(function(){t.classList.remove("show")},3200)}}
-  function currentTown(){try{var raw=localStorage.getItem("cozy_garden_save_v2");return raw?JSON.parse(raw):null}catch(e){return null}}
-  function compactTown(t){if(!t||!Array.isArray(t.list))return null;return {lt:+t.lt||24,coins:+t.coins||0,goalIndex:+t.goalIndex||0,landLevel:+t.landLevel||0,bag:t.bag||{},cgMk:Array.isArray(t.cgMk)?t.cgMk.slice(0,100):[],list:t.list.slice(0,6000)}}
-  function weekKey(){var d=new Date(),u=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()));u.setUTCDate(u.getUTCDate()+4-(u.getUTCDay()||7));var y=u.getUTCFullYear(),start=new Date(Date.UTC(y,0,1));return y+"-W"+String(Math.ceil((((u-start)/86400000)+1)/7)).padStart(2,"0")}
-  function getLeaderboardName(){try{return JSON.parse(localStorage.getItem("cozy_garden_leaderboard_v1")||"{}")||{}}catch(e){return {}}}
-  function statusText(){return ready?(user?"🟢 Firebase connected · Anonymous account "+user.uid.slice(0,8):"🟡 Firebase connected · creating anonymous account…"):"⚪ Firebase not connected"}
-  function errorText(e){return (e&&e.code?e.code+" — ":"")+(e&&e.message?e.message:String(e))}
-
-  function showFirebaseError(msg){
-    console.error("Cozy Garden Firebase:",msg);
-    toast("❌ Firebase: "+msg);
-    var p=document.getElementById("firebaseTestPanel");
-    var st=p&&p.querySelector("#fbStatus");
-    if(st)st.textContent="❌ "+msg;
-  }
-
-  function configUI(){
-    var old=document.getElementById("firebaseTestPanel");if(old)old.remove();
-    var ov=document.createElement("div");ov.id="firebaseTestPanel";
-    ov.innerHTML='<section><header><b>🔥 Firebase Test Setup</b><button data-fb="x">×</button></header><p>Testing mode uses Firebase Anonymous Authentication. Paste your Firebase Web app <b>firebaseConfig</b> once, then the game will create an anonymous account automatically.</p><textarea id="fbConfigInput" spellcheck="false" placeholder=\'{"apiKey":"...","authDomain":"...","projectId":"...","storageBucket":"...","messagingSenderId":"...","appId":"..."}\'></textarea><div class="fbHelp">Firebase Console → Authentication → Sign-in method → <b>Anonymous: Enabled</b>. Firestore must also be created.</div><div class="fbBtns"><button data-fb="save">Save & Connect</button><button data-fb="test">🧪 Test Firebase</button></div><div id="fbStatus">'+esc(statusText())+'</div></section>';
-    var st=document.createElement("style");st.textContent='#firebaseTestPanel{position:fixed;inset:0;z-index:500;display:none;align-items:center;justify-content:center;padding:14px;background:#061321dd;backdrop-filter:blur(6px);font-family:system-ui,sans-serif}#firebaseTestPanel.open{display:flex}#firebaseTestPanel section{width:min(600px,100%);border-radius:22px;background:linear-gradient(145deg,#10243c,#173b54);color:#f8fbff;border:1px solid #ffffff30;box-shadow:0 24px 80px #000b;padding:16px}#firebaseTestPanel header{display:flex;align-items:center;gap:10px;font-size:17px}#firebaseTestPanel header b{flex:1}#firebaseTestPanel header button{border:0;border-radius:50%;width:30px;height:30px;background:#ffffff20;color:#fff;font-size:20px}#firebaseTestPanel p{font-size:12px;line-height:1.5;color:#c7d8e5}#fbConfigInput{width:100%;height:150px;resize:vertical;border:1px solid #ffffff25;border-radius:12px;background:#071827;color:#dff5ff;padding:11px;font:12px ui-monospace,SFMono-Regular,Consolas,monospace}#firebaseTestPanel .fbHelp{font-size:10px;line-height:1.5;color:#9fb6c8;margin:9px 0}.fbBtns{display:flex;gap:8px;margin-top:10px}.fbBtns button{flex:1;border:0;border-radius:11px;padding:10px;background:linear-gradient(100deg,#fbbf24,#f59e0b);font-weight:900;cursor:pointer}.fbBtns button+button{background:#ffffff12;color:#fff;border:1px solid #ffffff20}#fbStatus{margin-top:10px;font-size:11px;color:#a7d7c4;text-align:center;line-height:1.5;word-break:break-word}';document.head.appendChild(st);document.body.appendChild(ov);
-    var input=ov.querySelector("#fbConfigInput");input.value=Object.keys(CONFIG).length?JSON.stringify(CONFIG,null,2):"";
-    ov.addEventListener("click",function(e){if(e.target===ov||e.target.closest('[data-fb="x"]')){ov.classList.remove("open");return}var b=e.target.closest("[data-fb]");if(!b)return;if(b.dataset.fb==="save")connectFromInput();if(b.dataset.fb==="test")testFirebase();});
-    return ov;
-  }
-
-  async function connectFromInput(){
-    var panel=document.getElementById("firebaseTestPanel"),input=panel&&panel.querySelector("#fbConfigInput"),c;
-    try{c=JSON.parse(input.value)}catch(e){panel.querySelector("#fbStatus").textContent="Invalid JSON. Paste the exact firebaseConfig object.";return}
-    if(!validConfig(c)){panel.querySelector("#fbStatus").textContent="Config must include at least apiKey and projectId.";return}
-    localStorage.setItem(CONFIG_KEY,JSON.stringify(c));CONFIG=c;
-    try{await initFirebase();panel.querySelector("#fbStatus").textContent=statusText();toast("🔥 Firebase connected");await ensureAnonymous();await syncOwnPlayer();await loadFirebaseLeaderboard();}
-    catch(e){showFirebaseError(errorText(e))}
-  }
-
-  async function ensureAnonymous(){
-    if(!auth)return null;
-    if(auth.currentUser){user=auth.currentUser;updateFirebaseButtons();return user}
-    try{
-      var cred=await signInAnonymously(auth);
-      user=cred.user;
-      updateFirebaseButtons();
-      toast("✅ Anonymous Firebase account created");
-      return user;
-    }catch(e){
-      showFirebaseError(errorText(e)+". Check Authentication → Sign-in method → Anonymous is Enabled.");
-      throw e;
-    }
-  }
-
-  async function initFirebase(){
-    if(!validConfig(CONFIG))return false;
-    try{
-      app=getApps().length?getApp():initializeApp(CONFIG);
-      auth=getAuth(app);db=getFirestore(app);ready=true;
-      if(!authListenerSet){
-        authListenerSet=true;
-        onAuthStateChanged(auth,async function(u){
-          user=u;updateFirebaseButtons();
-          if(u){try{await syncOwnPlayer();}catch(e){};await loadFirebaseLeaderboard();}
-          else{await loadFirebaseLeaderboard();}
-        });
-      }
-      if(!auth.currentUser)await ensureAnonymous(); else user=auth.currentUser;
-      updateFirebaseButtons();
-      return true;
-    }catch(e){ready=false;showFirebaseError(errorText(e));throw e}
-  }
-
-  async function anonymousLogin(){
-    try{if(!ready){var p=document.getElementById("firebaseTestPanel")||configUI();p.classList.add("open");return}await ensureAnonymous();await syncOwnPlayer();await loadFirebaseLeaderboard();}
-    catch(e){}
-  }
-  async function logout(){try{if(auth)await signOut(auth);user=null;updateFirebaseButtons();toast("Signed out of Firebase test account")}catch(e){showFirebaseError(errorText(e))}}
-
-  function updateFirebaseButtons(){
-    document.querySelectorAll("[data-firebase-action]").forEach(function(b){if(b.dataset.firebaseAction==="signin")b.textContent=user?"🟢 Anonymous account":"🟢 Anonymous Sign in";if(b.dataset.firebaseAction==="setup")b.textContent="🔥 Firebase Test Setup"});
-    var s=document.getElementById("fbInlineStatus");if(s)s.textContent=statusText();
-  }
-
-  async function syncOwnPlayer(){
-    if(!ready||!db||!user||syncBusy)return false;
-    syncBusy=true;
-    try{
-      var lb=getLeaderboardName(),town=compactTown(currentTown());
-      var payload={name:String(lb.name||"Gardener-"+user.uid.slice(-6)).replace(/[<>]/g,"").slice(0,18),country:String(lb.country||"").slice(0,2),points:Number(lb.points)||0,weekPoints:Number(lb.weekPoints)||0,week:String(lb.week||weekKey()),town:town,online:true,updatedAt:serverTimestamp()};
-      await setDoc(doc(db,"players",user.uid),payload,{merge:true});
-      return true;
-    }catch(e){showFirebaseError("Firestore save failed: "+errorText(e));return false}
-    finally{syncBusy=false}
-  }
-
-  async function markOffline(){if(!ready||!db||!user)return;try{await setDoc(doc(db,"players",user.uid),{online:false,updatedAt:serverTimestamp()},{merge:true})}catch(e){}}
-
-  async function loadFirebaseLeaderboard(){
-    if(!ready||!db)return [];
-    try{
-      var q=query(collection(db,"players"),orderBy("points","desc"),limit(100));
-      var snap=await getDocs(q),rows=[];
-      snap.forEach(function(d){var r=d.data()||{};rows.push({id:d.id,name:r.name||"Gardener",country:r.country||"",all:Number(r.points)||0,week:Number(r.weekPoints)||0,town:r.town||null,online:!!r.online,you:user&&d.id===user.uid});});
-      window.__firebaseLeaderboardRows=rows;
-      if(typeof window.__cozyLeaderboardSetPlayers==="function")window.__cozyLeaderboardSetPlayers(rows);
-      window.dispatchEvent(new CustomEvent("cozy-firebase-leaderboard",{detail:rows}));
-      return rows;
-    }catch(e){showFirebaseError("Leaderboard read failed: "+errorText(e));return []}
-  }
-
-  async function getPlayerTown(id){if(!ready||!db||!id)return null;try{var s=await getDoc(doc(db,"players",id));return s.exists()?s.data():null}catch(e){return null}}
-
-  async function testFirebase(){
-    try{
-      if(!ready)await initFirebase();
-      await ensureAnonymous();
-      var saved=await syncOwnPlayer();
-      var me=await getDoc(doc(db,"players",user.uid));
-      var rows=await loadFirebaseLeaderboard();
-      var msg="Auth OK · UID "+user.uid.slice(0,10)+" · Firestore "+(me.exists()?"WRITE OK":"WRITE MISSING")+" · Leaderboard "+rows.length+" player(s)";
-      var st=document.getElementById("firebaseTestPanel")?.querySelector("#fbStatus");if(st)st.textContent=(saved&&me.exists()?"✅ ":"⚠️ ")+msg;
-      toast((saved&&me.exists()?"✅ ":"⚠️ ")+msg);
-    }catch(e){showFirebaseError(errorText(e))}
-  }
-
-  window.__cozyFirebase={init:initFirebase,signIn:anonymousLogin,signOut:logout,setup:function(){var p=document.getElementById("firebaseTestPanel")||configUI();p.classList.add("open")},sync:syncOwnPlayer,loadLeaderboard:loadFirebaseLeaderboard,getPlayerTown:getPlayerTown,test:testFirebase,get currentUser(){return user},get ready(){return ready}};
-
-  window.addEventListener("beforeunload",function(){markOffline()});
-  setInterval(async function(){if(user){await syncOwnPlayer();await loadFirebaseLeaderboard()}},10000);
-  document.addEventListener("visibilitychange",async function(){if(!document.hidden&&user){await syncOwnPlayer();await loadFirebaseLeaderboard()}});
-
-  function addFirebaseControls(){
-    var host=document.getElementById("firebaseControls");
-    if(!host)return;
-    if(host.dataset.fbBound)return;
-    host.dataset.fbBound="1";
-    host.addEventListener("click",function(e){
-      var b=e.target.closest("[data-firebase-action]");
-      if(!b)return;
-      if(b.dataset.firebaseAction==="signin")anonymousLogin();
-      else if(b.dataset.firebaseAction==="setup")configUI().classList.add("open");
-      else if(b.dataset.firebaseAction==="test")testFirebase();
-    });
-    updateFirebaseButtons();
-  }
-
-  async function boot(){
-    configUI();addFirebaseControls();
-    if(validConfig(CONFIG)){try{await initFirebase();await syncOwnPlayer();await loadFirebaseLeaderboard()}catch(e){console.warn(e)}}
-  }
-  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",boot);else boot();
-})();
-</script>
 </body>
 </html>
