@@ -4463,7 +4463,7 @@ function y0(i,e=0){let t=new un;switch(i){case"wall":os(t,15851192);break;case"b
  for(var k=0;k<4;k++){var nb=B(x-D[k][0],z-D[k][1]);if(nb&&nb.id==="stairs"&&((nb.v|0)&3)===k)return ((nb.v|0)>>2)+1}
  for(var k2=0;k2<4;k2++){var nl=B(x+D[k2][0],z+D[k2][1]);if(nl&&nl.id==="landing")return nl.v||3}
  return 3}
-function yu(i,e){if(!Ql(i,e))return Vt("This land is not yours yet. Tap a plant to expand.");if(qn==="walk")return window.wkGo(i,e);if(qn==="move")return cgMoveTap(i,e);{let m=cgMkAt(i,e);if(m>=0)return cgOpenShop(m)}let t=so(i,e);if(qn==="erase"){let r=t.top?"top":t.stack&&t.stack.length?"stack":t.base?"base":t.floor?"floor":null;if(!r)return;let id0;if(r==="stack"){let item=t.stack.pop();id0=item.id;fo.remove(item.obj);an=!0}else{id0=t[r].id;xu(t,r)}cgBg[id0]=(cgBg[id0]|0)+1;Vt("Removed – "+pt[id0].name+" is back in your bag");ql();return}let n=pt[qn];if(n.layer==="top"){if(n.id!=="ceiling"&&(!t.base||!pt[t.base.id].wallish))return Vt("Roofs go on top of walls");if(t.top)return Vt("This wall already has a roof")}else if(n.layer==="floor"){if(t.floor)return Vt("This tile already has flooring. Use Remove first.");if(n.blocks&&t.base)return Vt("Remove what is on this tile first")}else if(t.floor&&pt[t.floor.id].blocks)return Vt("You can't build on water");/*PAYMODE*/if((cgBg[n.id]|0)>0)cgBg[n.id]--;else if(Xt>=n.cost)Xt-=n.cost;else return Vt("Not enough coins for "+n.name+" ("+n.cost+")");let v=0;if(n.id==="stairs"||n.id==="landing")v=stairVar(n.id,i,e);if(n.id==="flower")v=Math.floor(Math.random()*Wl.length);if(n.id==="fence"){let r=(l,c)=>{if(l<0||c<0||l>=lt||c>=lt)return!1;let h=so(l,c).base;return!!(h&&h.id==="fence")},a=r(i-1,e)||r(i+1,e);v=(r(i,e-1)||r(i,e+1))&&!a?1:0}js(i,e,n.id,v,!0);playBlockPlace();ql()}function playBlockPlace(){try{let C=window.AudioContext||window.webkitAudioContext;if(!window.__blockAudio)window.__blockAudio=new C;let c=window.__blockAudio;c.resume();let o=c.createOscillator(),g=c.createGain();o.type="triangle";o.frequency.setValueAtTime(210+Math.random()*65,c.currentTime);o.frequency.exponentialRampToValueAtTime(95,c.currentTime+.095);g.gain.setValueAtTime(.0001,c.currentTime);g.gain.exponentialRampToValueAtTime(.16,c.currentTime+.008);g.gain.exponentialRampToValueAtTime(.0001,c.currentTime+.14);o.connect(g);g.connect(c.destination);o.start();o.stop(c.currentTime+.15)}catch(e){}}var ec=()=>(window.innerWidth<window.innerHeight?1.7:1.3)*(Ai()*.9+6.5);function Mu(){if(rn>=oo.length-1)return Vt("Your land is already the maximum size!");let i=Hl[rn];if(Xt<i)return Vt(`You need ${i} coins for more land`);Xt-=i,rn++,jl(),Xn=ec(),Vt(`New land! Your plot is now ${Ai()}\xD7${Ai()}`),ql()}var b0=["wall","brick","stone","wood","door","window"],ui=[{text:"Build 4 walls",test:()=>gn(...b0)>=4,reward:40},{text:"Add a door",test:()=>gn("door")>=1,reward:30},{text:"Put a roof on your house",test:()=>gn("roof","roofblue","roofbrown","spire")>=1,reward:40},{text:"Plant 3 flowers",test:()=>gn("flower","sunflower")>=3,reward:30},{text:"Plant a tree",test:()=>gn("tree","pine","cherry","palm")>=1,reward:30},{text:"Dig a pond",test:()=>gn("pond")>=1,reward:40},{text:"Lay 5 path tiles",test:()=>gn("path","stonepath","deck","sand")>=5,reward:50},{text:"Add 2 windows",test:()=>gn("window")>=2,reward:40},{text:"Buy more land (\u{1F331} button)",test:()=>rn>=1,reward:100},{text:"Place a bench and a lamp",test:()=>gn("bench")>=1&&gn("lamp")>=1,reward:60},{text:"Build a fountain",test:()=>gn("fountain")>=1,reward:100},{text:"Place 50 items",test:()=>Xl()>=50,reward:200},{text:"Grow your land to 14\xD714",test:()=>rn>=3,reward:300},{text:"Place 150 items",test:()=>Xl()>=150,reward:500}];function Su(){for(;_n<ui.length&&ui[_n].test();)Xt+=ui[_n].reward,Vt(`Goal complete! +${ui[_n].reward} coins`),_n++}(function(){var b=document.body,K="cozy_garden_ui";function sv(){try{localStorage.setItem(K,JSON.stringify([b.classList.contains("hideTop"),b.classList.contains("hideBot")]))}catch(e){}}
+function yu(i,e){if(!Ql(i,e))return Vt("This land is not yours yet. Tap a plant to expand.");if(qn==="walk")return window.wkGo(i,e);if(qn==="move")return cgMoveTap(i,e);{let m=cgMkAt(i,e);if(m>=0)return cgOpenShop(m)}let t=so(i,e);if(qn==="erase"){let r=t.top?"top":t.stack&&t.stack.length?"stack":t.base?"base":t.floor?"floor":null;if(!r)return;let id0;if(r==="stack"){let item=t.stack.pop();id0=item.id;fo.remove(item.obj);an=!0}else{id0=t[r].id;xu(t,r)}cgBg[id0]=(cgBg[id0]|0)+1;Vt("Removed – "+pt[id0].name+" is back in your bag");ql();return}let n=pt[qn];if(n.layer==="top"){if(n.id!=="ceiling"&&(!t.base||!pt[t.base.id].wallish))return Vt("Roofs go on top of walls");if(t.top)return Vt("This wall already has a roof")}else if(n.layer==="floor"){if(t.floor)return Vt("This tile already has flooring. Use Remove first.");if(n.blocks&&t.base)return Vt("Remove what is on this tile first")}else if(t.floor&&pt[t.floor.id].blocks)return Vt("You can't build on water");/*PAYMODE*/if((cgBg[n.id]|0)>0)cgBg[n.id]--;else if(Xt>=n.cost)Xt-=n.cost;else return Vt("Not enough coins for "+n.name+" ("+n.cost+")");let v=0;if(n.id==="stairs"||n.id==="landing")v=stairVar(n.id,i,e);if(n.id==="flower")v=Math.floor(Math.random()*Wl.length);if(n.id==="fence"){let r=(l,c)=>{if(l<0||c<0||l>=lt||c>=lt)return!1;let h=so(l,c).base;return!!(h&&h.id==="fence")},a=r(i-1,e)||r(i+1,e);v=(r(i,e-1)||r(i,e+1))&&!a?1:0}js(i,e,n.id,v,!0);playBlockPlace();ql()}function playBlockPlace(){if(window.__sfx&&window.__sfx.place((window.__fpOn&&window.__fpx&&window.__fpx.getSel&&window.__fpx.getSel())||qn))return;try{let C=window.AudioContext||window.webkitAudioContext;if(!window.__blockAudio)window.__blockAudio=new C;let c=window.__blockAudio;c.resume();let o=c.createOscillator(),g=c.createGain();o.type="triangle";o.frequency.setValueAtTime(210+Math.random()*65,c.currentTime);o.frequency.exponentialRampToValueAtTime(95,c.currentTime+.095);g.gain.setValueAtTime(.0001,c.currentTime);g.gain.exponentialRampToValueAtTime(.16,c.currentTime+.008);g.gain.exponentialRampToValueAtTime(.0001,c.currentTime+.14);o.connect(g);g.connect(c.destination);o.start();o.stop(c.currentTime+.15)}catch(e){}}var ec=()=>(window.innerWidth<window.innerHeight?1.7:1.3)*(Ai()*.9+6.5);function Mu(){if(rn>=oo.length-1)return Vt("Your land is already the maximum size!");let i=Hl[rn];if(Xt<i)return Vt(`You need ${i} coins for more land`);Xt-=i,rn++,jl(),Xn=ec(),Vt(`New land! Your plot is now ${Ai()}\xD7${Ai()}`),ql()}var b0=["wall","brick","stone","wood","door","window"],ui=[{text:"Build 4 walls",test:()=>gn(...b0)>=4,reward:40},{text:"Add a door",test:()=>gn("door")>=1,reward:30},{text:"Put a roof on your house",test:()=>gn("roof","roofblue","roofbrown","spire")>=1,reward:40},{text:"Plant 3 flowers",test:()=>gn("flower","sunflower")>=3,reward:30},{text:"Plant a tree",test:()=>gn("tree","pine","cherry","palm")>=1,reward:30},{text:"Dig a pond",test:()=>gn("pond")>=1,reward:40},{text:"Lay 5 path tiles",test:()=>gn("path","stonepath","deck","sand")>=5,reward:50},{text:"Add 2 windows",test:()=>gn("window")>=2,reward:40},{text:"Buy more land (\u{1F331} button)",test:()=>rn>=1,reward:100},{text:"Place a bench and a lamp",test:()=>gn("bench")>=1&&gn("lamp")>=1,reward:60},{text:"Build a fountain",test:()=>gn("fountain")>=1,reward:100},{text:"Place 50 items",test:()=>Xl()>=50,reward:200},{text:"Grow your land to 14\xD714",test:()=>rn>=3,reward:300},{text:"Place 150 items",test:()=>Xl()>=150,reward:500}];function Su(){for(;_n<ui.length&&ui[_n].test();)Xt+=ui[_n].reward,Vt(`Goal complete! +${ui[_n].reward} coins`),_n++}(function(){var b=document.body,K="cozy_garden_ui";function sv(){try{localStorage.setItem(K,JSON.stringify([b.classList.contains("hideTop"),b.classList.contains("hideBot")]))}catch(e){}}
 function lb(){document.getElementById("vtTop").textContent=(b.classList.contains("hideTop")?"\u{1F441} Show":"\u{1F441} Hide")+" top";document.getElementById("vtBot").textContent=(b.classList.contains("hideBot")?"\u{1F441} Show":"\u{1F441} Hide")+" items"}
 try{var u=JSON.parse(localStorage.getItem(K)||"null");u&&(u[0]&&b.classList.add("hideTop"),u[1]&&b.classList.add("hideBot"))}catch(e){}
 document.getElementById("vtTop").addEventListener("click",function(){b.classList.toggle("hideTop");lb();sv()});
@@ -4557,7 +4557,7 @@ var _mo=mo;mo=function(i){_mo(i);wkTab.classList.toggle("sel",i==="walk")};
 /* Lightweight synthesized crafting sound effects; audio starts only after a
    user gesture, as required by modern browsers. */
 var craftAudio=null;
-function craftSound(){
+function craftSound(){if(window.__sfx&&window.__sfx.play("craft"))return;
   try{
     var AC=window.AudioContext||window.webkitAudioContext;
     if(!AC)return;
@@ -4688,7 +4688,7 @@ function blocked(x,z){
 }
 function gh(x,z){var c=so(Math.floor(x+lt/2),Math.floor(z+lt/2));if(c){var ct0=colTop(Math.floor(x+lt/2),Math.floor(z+lt/2));if(ct0>0)return ct0}if(!c||(c.stack&&c.stack.length)||!c.base)return 0;return baseH(c.base,x,z)||0}
 function gnd(x,z){return Math.max(gh(x-RADIUS,z-RADIUS),gh(x+RADIUS,z-RADIUS),gh(x-RADIUS,z+RADIUS),gh(x+RADIUS,z+RADIUS))}
-function stepSound(){
+function stepSound(){if(window.__sfx&&window.__sfx.play("step"))return;
   try{
     var C=window.AudioContext||window.webkitAudioContext; if(!C)return;
     var a=window.__blockAudio||(window.__blockAudio=new C); if(a.state==="suspended")a.resume();
@@ -4955,7 +4955,7 @@ function brk(){
 }
 
 /* ---- sounds ---- */
-function coinSound(){
+function coinSound(){if(window.__sfx&&window.__sfx.play("coin"))return;
   try{
     var C=window.AudioContext||window.webkitAudioContext; if(!C)return;
     var a=window.__blockAudio||(window.__blockAudio=new C); if(a.state==="suspended")a.resume();
@@ -6246,7 +6246,7 @@ di.addEventListener("pointerup",function(e){
  go({sx:s[0],sz:s[1],yaw:Zl})},true);
 })();
 
-window.__game={redraw(){an=!0},cells:wi,put:js,tryPlace:yu,select:mo,buyLand:Mu,get coins(){return Xt},set coins(i){Xt=i,er()},get size(){return Ai()},get landLevel(){return rn},get landPrices(){return Hl.slice(0,oo.length)},get maxLandLevel(){return oo.length-1},itemCount:Xl,get bag(){return cgBg},get cgMk(){return cgMk},cgOpenShop,cgMoveTap,cgMkAt};})();
+window.__game={items:mu,redraw(){an=!0},cells:wi,put:js,tryPlace:yu,select:mo,buyLand:Mu,get coins(){return Xt},set coins(i){Xt=i,er()},get size(){return Ai()},get landLevel(){return rn},get landPrices(){return Hl.slice(0,oo.length)},get maxLandLevel(){return oo.length-1},itemCount:Xl,get bag(){return cgBg},get cgMk(){return cgMk},cgOpenShop,cgMoveTap,cgMkAt};})();
 /*! Bundled license information:
 
 three/build/three.core.js:
@@ -7178,10 +7178,10 @@ function rainSound(){
       rainGain=a.createGain();rainGain.gain.value=0;
       s.connect(hp);hp.connect(lp);lp.connect(rainGain);rainGain.connect(a.destination);s.start();
     }
-    rainGain.gain.setTargetAtTime(cfg.sound&&cfg.fx?W.ri*.07:0,a.currentTime,.4);
+    rainGain.gain.setTargetAtTime(cfg.sound&&cfg.fx?W.ri*.07*(window.__sfx?window.__sfx.vol("rain"):1):0,a.currentTime,.4);
   }catch(e){}
 }
-function thunder(){
+function thunder(){if(window.__sfx&&window.__sfx.play("thunder"))return;
   try{
     if(!cfg.sound||!cfg.fx)return;
     var a=actx();if(!a||a.state!=="running")return;
@@ -7579,7 +7579,7 @@ body.fp #questDock{display:none!important}
   {sel:"#tabs",icon:"🗂️",title:"Building categories",text:"These tabs sort the available pieces into groups. Choose a category—such as building parts, decorations or nature—to find the type of item you need.",tip:"Swipe the category row sideways if you can't see every tab."},
   {sel:"#palette",icon:"🧱",title:"Your item palette",text:"Each tile is a building piece. Tap one to select it; the selected tile gets a bright border. Then tap an open spot in your world to place it.",tip:"Scroll the item row sideways to browse more pieces. Some items may show a coin cost."},
   {sel:"#questDock",icon:"🏆",title:"Daily build challenge",text:"Your daily challenge gives you a small creative goal, like placing pieces, flowers or trees. Open Daily build to see today's task and watch your progress.",tip:"Your challenge progress is saved on this device."},
-  {sel:"#menuPanel",icon:"☰",title:"Menu — explore every option",text:"I opened the Menu for you. It groups extra tools into three sections. Build contains Craft, Block placement, Builders and Villagers. World contains Undo, Restore, Export, Import and Reset. Settings lets you turn animations off if the game feels slow. Read the descriptions beside each option. Nothing is activated just by reviewing this menu.",tip:"Scroll inside the menu to review every option. Avoid Reset unless you really want to start over."}
+  {sel:"#menuPanel",icon:"☰",title:"Menu — explore every option",text:"I opened the Menu for you. It groups extra tools into three sections. Build contains Craft, Block placement, Builders and Villagers. World contains Undo, Restore, Export, Import and Reset. Settings lets you turn animations off if the game feels slow. Help replays this tour, and Sounds lets you choose what each item sounds like. Read the descriptions beside each option. Nothing is activated just by reviewing this menu.",tip:"Scroll inside the menu to review every option. Avoid Reset unless you really want to start over."}
  ];
  let index=0,typingTimer=null,typingToken=0,activeTarget=null;
  function clearFocus(){document.querySelectorAll(".coach-focus").forEach(el=>el.classList.remove("coach-focus"));activeTarget=null}
@@ -7671,5 +7671,109 @@ body.fp #questDock{display:none!important}
 }
 </style>
 
+<script>
+/*sfxMenu*/
+(function(){
+var G=window.__game;if(!G||!G.items)return;
+var KEY="cozy_sfx_v1";
+var PROFILES=[["pop","Pop (classic)"],["wood","Wood knock"],["stone","Stone thud"],["leaf","Leaf rustle"],["splash","Water splash"],["glass","Glass tap"],["clink","Metal clink"],["chime","Chime"],["soft","Soft thump"],["sparkle","Sparkle"],["boing","Boing"],["off","Silent"]];
+var DEF={wall:"stone",brick:"stone",stone:"stone",wood:"wood",door:"wood",window:"glass",roof:"wood",roofblue:"wood",roofbrown:"wood",ceiling:"wood",stairs:"stone",landing:"stone",spire:"stone",grass:"leaf",path:"soft",stonepath:"stone",sand:"soft",deck:"wood",lake:"splash",pond:"splash",flower:"leaf",sunflower:"leaf",bush:"leaf",hedge:"leaf",fence:"wood",tree:"leaf",bigtree:"leaf",gianttree:"leaf",waterblock:"splash",waterfall:"splash",pine:"leaf",cherry:"leaf",palm:"leaf",rocks:"stone",mushroom:"boing",bench:"wood",lamp:"clink",mailbox:"clink",fountain:"splash",statue:"stone",gnome:"boing",table:"soft",campfire:"sparkle",flag:"soft",tent:"soft",doghouse:"wood",haystack:"soft"};
+var EVENTS=[["step","\u{1F463} Footsteps (walking)"],["coin","\u{1FA99} Coin pickup"],["craft","\u{1F528} Crafting starts"],["thunder","\u26C8 Thunder"]];
+var CATS=["House","Floor","Garden","Decor"];
+var S={vol:100,rain:100,items:{},ev:{}};
+try{var sv=JSON.parse(localStorage.getItem(KEY)||"null");if(sv){S.vol=+sv.vol>=0?+sv.vol:100;S.rain=+sv.rain>=0?+sv.rain:100;S.items=sv.items||{};S.ev=sv.ev||{}}}catch(e){}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+function toast(m){var t=document.getElementById("toast");if(!t)return;t.textContent=m;t.classList.add("show");clearTimeout(toast.t);toast.t=setTimeout(function(){t.classList.remove("show")},1800)}
+
+/* ---- synth ---- */
+function ctx(){var C=window.AudioContext||window.webkitAudioContext;if(!C)return null;
+ if(!window.__blockAudio){try{window.__blockAudio=new C}catch(e){return null}}
+ var a=window.__blockAudio;if(a.state==="suspended")a.resume();return a}
+var nbuf=null;
+function noise(a){if(!nbuf||nbuf.sampleRate!==a.sampleRate){nbuf=a.createBuffer(1,a.sampleRate,a.sampleRate);var d=nbuf.getChannelData(0);for(var i=0;i<d.length;i++)d[i]=Math.random()*2-1}return nbuf}
+function env(a,t,dur,g,v){var n=a.createGain();n.gain.setValueAtTime(.0001,t);n.gain.exponentialRampToValueAtTime(Math.max(.0002,g*v),t+.008);n.gain.exponentialRampToValueAtTime(.0001,t+dur);n.connect(a.destination);return n}
+function tone(a,t,type,f0,f1,dur,g,v,delay){t+=delay||0;var o=a.createOscillator();o.type=type;o.frequency.setValueAtTime(f0,t);o.frequency.exponentialRampToValueAtTime(Math.max(20,f1),t+dur);o.connect(env(a,t,dur,g,v));o.start(t);o.stop(t+dur+.03)}
+function hiss(a,t,ft,f0,f1,dur,g,v,delay){t+=delay||0;var s=a.createBufferSource();s.buffer=noise(a);var f=a.createBiquadFilter();f.type=ft;f.frequency.setValueAtTime(f0,t);f.frequency.exponentialRampToValueAtTime(Math.max(20,f1),t+dur);s.connect(f);f.connect(env(a,t,dur,g,v));s.start(t);s.stop(t+dur+.03)}
+var FX={
+ pop:function(a,t,v){tone(a,t,"triangle",210+Math.random()*65,95,.095,.16,v)},
+ wood:function(a,t,v){tone(a,t,"triangle",320+Math.random()*40,130,.08,.2,v);hiss(a,t,"bandpass",1500,700,.04,.08,v)},
+ stone:function(a,t,v){tone(a,t,"sine",150,55,.13,.28,v);hiss(a,t,"lowpass",1200,300,.06,.12,v)},
+ leaf:function(a,t,v){hiss(a,t,"highpass",2200,3800,.13,.07,v);tone(a,t,"sine",520,420,.05,.04,v)},
+ splash:function(a,t,v){hiss(a,t,"bandpass",500,2200,.22,.12,v);tone(a,t,"sine",420,900,.09,.07,v)},
+ glass:function(a,t,v){tone(a,t,"sine",1900,1800,.22,.08,v);tone(a,t,"sine",2800,2700,.15,.04,v)},
+ clink:function(a,t,v){tone(a,t,"triangle",1250,1100,.14,.09,v);tone(a,t,"sine",1900,1800,.1,.05,v)},
+ chime:function(a,t,v){tone(a,t,"sine",880,880,.35,.09,v);tone(a,t,"sine",1320,1320,.35,.06,v,.07)},
+ soft:function(a,t,v){tone(a,t,"sine",190,100,.09,.16,v);hiss(a,t,"lowpass",700,250,.05,.05,v)},
+ sparkle:function(a,t,v){[1200,1600,2000].forEach(function(f,i){tone(a,t,"sine",f,f*1.02,.1,.06,v,i*.055)})},
+ boing:function(a,t,v){tone(a,t,"sine",160,520,.16,.13,v)}
+};
+function handle(m){
+ if(m==="off")return true;
+ if(!FX[m])return false;
+ var a=ctx();if(!a)return false;
+ try{FX[m](a,a.currentTime,S.vol/100)}catch(e){return false}
+ return true}
+window.__sfx={
+ place:function(id){return handle(S.items[id]||DEF[id]||"pop")},
+ play:function(ev){var m=S.ev[ev]||"default";if(m==="default")return false;return handle(m)},
+ vol:function(n){return n==="rain"?S.rain/100:S.vol/100}
+};
+function preview(m){if(m==="default")toast("Original game sound (heard in-game)");else handle(m)}
+
+/* ---- panel ---- */
+var st=document.createElement("style");
+st.textContent="#guideOpen{display:none!important}#sfxPanel{position:fixed;inset:0;z-index:38;background:rgba(20,30,20,.5);display:none;align-items:flex-end;justify-content:center}#sfxPanel.open{display:flex}#sfxPanel .sp{width:100%;max-width:560px;max-height:84vh;background:#fff;border-radius:20px 20px 0 0;display:flex;flex-direction:column;padding-bottom:env(safe-area-inset-bottom);box-shadow:0 -4px 20px rgba(0,0,0,.25);font-family:system-ui,sans-serif;color:#2b3a2b}#sfxPanel .sh{display:flex;align-items:center;gap:10px;padding:14px 14px 6px}#sfxPanel .sh b{flex:1;font-size:17px}#sfxPanel .sh button{border:0;background:#eee;border-radius:50%;width:32px;height:32px;cursor:pointer;font-size:15px}#sfxPanel .sb{overflow-y:auto;padding:0 14px 10px}#sfxPanel h4{margin:12px 0 6px;font-size:12px;letter-spacing:.6px;text-transform:uppercase;color:#6b6b6b}#sfxPanel .sr{display:flex;align-items:center;gap:10px;background:#f5f9f5;border-radius:12px;padding:6px 10px;margin-bottom:6px}#sfxPanel .sr .sn{flex:1;font-size:14px;min-width:0}#sfxPanel .sr .sn i{font-style:normal;color:#6b6b6b;font-size:12px;margin-left:4px}#sfxPanel .sr .ic{font-size:20px;width:26px;text-align:center}#sfxPanel select{border:1px solid #cfd9cf;border-radius:10px;padding:6px 8px;font:600 13px system-ui,sans-serif;background:#fff;max-width:150px;color:#2b3a2b}#sfxPanel .pv{border:0;border-radius:999px;background:#2e9d57;color:#fff;width:32px;height:32px;cursor:pointer;font-size:12px}#sfxPanel input[type=range]{width:140px}#sfxPanel .sf{display:flex;gap:8px;padding:8px 14px 12px}#sfxPanel .sf button{flex:1;border:0;border-radius:999px;padding:10px;font:700 14px system-ui,sans-serif;cursor:pointer;background:#fde8e8;color:#8a2b2b}#sfxPanel .sf button.g{background:#2e9d57;color:#fff}";
+document.head.appendChild(st);
+var ov=document.createElement("div");ov.id="sfxPanel";document.body.appendChild(ov);
+function opt(list,cur){return list.map(function(p){return '<option value="'+p[0]+'"'+(p[0]===cur?" selected":"")+'>'+p[1]+'</option>'}).join("")}
+function render(){
+ var h='<div class="sp"><div class="sh"><b>\u{1F50A} Sounds</b><button data-a="x">\u2715</button></div><div class="sb">';
+ h+='<div class="sr"><span class="sn">Master volume<i id="sfxVv">'+S.vol+'%</i></span><input type="range" min="0" max="150" value="'+S.vol+'" data-r="vol"></div>';
+ h+='<div class="sr"><span class="sn">Rain volume<i id="sfxRv">'+S.rain+'%</i></span><input type="range" min="0" max="200" value="'+S.rain+'" data-r="rain"></div>';
+ h+='<h4>Events</h4>';
+ var evList=[["default","Original game sound"]].concat(PROFILES);
+ EVENTS.forEach(function(e){h+='<div class="sr"><span class="sn">'+e[1]+'</span><select data-ev="'+e[0]+'">'+opt(evList,S.ev[e[0]]||"default")+'</select><button class="pv" data-a="pv">\u25B6</button></div>'});
+ CATS.forEach(function(c){
+  h+='<h4>'+c+' items (when placed)</h4>';
+  G.items.filter(function(i){return i.cat===c}).forEach(function(i){
+   h+='<div class="sr"><span class="ic">'+i.icon+'</span><span class="sn">'+i.name+'</span><select data-it="'+i.id+'">'+opt(PROFILES,S.items[i.id]||DEF[i.id]||"pop")+'</select><button class="pv" data-a="pv">\u25B6</button></div>'});
+ });
+ h+='</div><div class="sf"><button data-a="reset">Reset all</button><button class="g" data-a="x">Done</button></div></div>';
+ ov.innerHTML=h}
+function openP(){render();ov.classList.add("open")}
+function closeP(){ov.classList.remove("open")}
+ov.addEventListener("change",function(e){
+ var s=e.target;if(s.tagName!=="SELECT")return;
+ if(s.dataset.ev)S.ev[s.dataset.ev]=s.value;else if(s.dataset.it)S.items[s.dataset.it]=s.value;
+ save();preview(s.value)});
+ov.addEventListener("input",function(e){
+ var r=e.target;if(!r.dataset||!r.dataset.r)return;
+ S[r.dataset.r]=+r.value;
+ document.getElementById(r.dataset.r==="vol"?"sfxVv":"sfxRv").textContent=r.value+"%";save()});
+ov.addEventListener("click",function(e){
+ if(e.target===ov)return closeP();
+ var b=e.target.closest("button");if(!b)return;
+ var a=b.dataset.a;
+ if(a==="x")closeP();
+ else if(a==="reset"){S.vol=100;S.rain=100;S.items={};S.ev={};save();var sc=ov.querySelector(".sb").scrollTop;render();ov.querySelector(".sb").scrollTop=sc;toast("Sounds reset")}
+ else if(a==="pv"){var sel=b.parentNode.querySelector("select");if(sel)preview(sel.value)}});
+window.addEventListener("keydown",function(e){if(e.code==="Escape"&&ov.classList.contains("open"))closeP()});
+
+/* ---- Menu entries: Help + Sounds ---- */
+var mp=document.getElementById("menuPanel");
+if(mp){
+ function add(title,rows){
+  var h=document.createElement("h4");h.textContent=title;mp.appendChild(h);
+  rows.forEach(function(d){
+   var r=document.createElement("div");r.className="mrow";
+   var b=document.createElement("button");b.className="pill";b.textContent=d[0];
+   b.style.cssText="pointer-events:auto;border:0;cursor:pointer;background:"+d[2];
+   var s=document.createElement("small");s.textContent=d[1];
+   b.addEventListener("click",d[3]);r.appendChild(b);r.appendChild(s);mp.appendChild(r)})}
+ add("Help",[["\u2728 Quick guide","Replay the step-by-step tour of the game","#e6f0ff",function(){if(window.__openCozyGardenTour)window.__openCozyGardenTour()}]]);
+ add("Sounds",[["\u{1F50A} Sounds...","Choose the sound each item and event makes, and set volume","#e6f8ec",openP]]);
+}
+})();
+</script>
 </body>
 </html>
