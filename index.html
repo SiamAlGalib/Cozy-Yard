@@ -6246,7 +6246,7 @@ di.addEventListener("pointerup",function(e){
  go({sx:s[0],sz:s[1],yaw:Zl})},true);
 })();
 
-window.__game={redraw(){an=!0},cells:wi,put:js,tryPlace:yu,select:mo,buyLand:Mu,get coins(){return Xt},set coins(i){Xt=i,er()},get size(){return Ai()},itemCount:Xl,get bag(){return cgBg},get cgMk(){return cgMk},cgOpenShop,cgMoveTap,cgMkAt};})();
+window.__game={redraw(){an=!0},cells:wi,put:js,tryPlace:yu,select:mo,buyLand:Mu,get coins(){return Xt},set coins(i){Xt=i,er()},get size(){return Ai()},get landLevel(){return rn},get landPrices(){return Hl.slice(0,oo.length)},get maxLandLevel(){return oo.length-1},itemCount:Xl,get bag(){return cgBg},get cgMk(){return cgMk},cgOpenShop,cgMoveTap,cgMkAt};})();
 /*! Bundled license information:
 
 three/build/three.core.js:
@@ -7373,6 +7373,303 @@ if(mp){
 window.__weather={rain:function(){startRain()},stop:function(){W.left=0},state:W};
 })();
 </script>
+
+
+<!-- First-time guide + daily building challenge -->
+<style>
+#questDock{position:fixed;right:14px;top:calc(74px + env(safe-area-inset-top));z-index:28;display:flex;flex-direction:column;gap:9px;align-items:flex-end;font-family:system-ui,sans-serif}
+.qdBtn{border:1px solid #ffffff70;border-radius:16px;padding:10px 14px;color:#fff;font-weight:800;font-size:13px;cursor:pointer;box-shadow:0 8px 24px #10233b35;backdrop-filter:blur(12px);background:linear-gradient(135deg,#2563eb,#7c3aed)}
+.qdBtn.daily{background:linear-gradient(135deg,#0f9b72,#16a6bd)}
+#questCard{display:none;width:min(310px,calc(100vw - 28px));padding:15px;border:1px solid #ffffffa8;border-radius:20px;background:linear-gradient(145deg,#10243cfa,#172d4dfa);color:#f8fbff;box-shadow:0 16px 42px #08162970}
+#questCard.open{display:block;animation:qIn .2s ease-out}
+@keyframes qIn{from{opacity:0;transform:translateY(-7px) scale(.98)}to{opacity:1;transform:none}}
+.qHead{display:flex;align-items:center;gap:9px}.qIcon{width:38px;height:38px;display:grid;place-items:center;border-radius:13px;background:linear-gradient(135deg,#fbbf24,#f97316);font-size:21px}
+.qTitle{font-size:15px;font-weight:900;flex:1}.qClose{border:0;border-radius:50%;width:28px;height:28px;background:#ffffff20;color:#fff;font-size:17px}
+.qSub{font-size:11px;color:#b8c9df;margin:10px 0 12px}.qTask{padding:11px;border-radius:14px;background:#ffffff0e;border:1px solid #ffffff19}
+.qTask strong{font-size:13px}.qTask small{display:block;color:#b8c9df;margin-top:4px}
+.qTrack{height:8px;background:#ffffff20;border-radius:99px;overflow:hidden;margin-top:10px}.qFill{height:100%;width:0;background:linear-gradient(90deg,#34d399,#a3e635);border-radius:99px;transition:width .25s}
+.qMeta{display:flex;justify-content:space-between;align-items:center;margin-top:9px;font-size:11px;color:#c8d7e9}
+.qReward{margin-top:11px;padding:9px 10px;border-radius:12px;background:linear-gradient(100deg,#fbbf2425,#fb923c20);color:#fde68a;font-size:12px;font-weight:800}
+.qFoot{font-size:10px;color:#8fa8c5;margin-top:10px}
+#guideShade{position:fixed;inset:0;z-index:80;display:none;align-items:center;justify-content:center;padding:18px;background:#071426b8;backdrop-filter:blur(7px);font-family:system-ui,sans-serif}
+#guideShade.show{display:flex}
+#guideBox{width:min(440px,100%);border:1px solid #ffffff70;border-radius:25px;overflow:hidden;background:linear-gradient(145deg,#f8fbff,#eaf2ff);box-shadow:0 24px 70px #02081780;color:#14243b}
+#gBanner{padding:20px 22px 17px;background:linear-gradient(120deg,#2563eb,#6d4aff 65%,#a855f7);color:white;position:relative}
+#gEyebrow{font-size:10px;font-weight:900;letter-spacing:1.5px;opacity:.8}#gTitle{font-size:22px;font-weight:950;margin-top:6px}#gDesc{font-size:13px;line-height:1.55;color:#e9edff;margin-top:7px}
+#gBody{padding:18px 22px 20px}.gStep{display:flex;gap:12px;align-items:flex-start}.gNum{flex:0 0 34px;height:34px;border-radius:12px;display:grid;place-items:center;background:#dbeafe;color:#1d4ed8;font-weight:950}
+#gInstruction{font-size:14px;font-weight:800;line-height:1.45}#gTip{font-size:12px;color:#60718a;line-height:1.5;margin-top:5px}
+#gDots{display:flex;gap:6px;margin:18px 0 15px}.gDot{height:5px;flex:1;border-radius:9px;background:#d8e1ee}.gDot.on{background:linear-gradient(90deg,#2563eb,#8b5cf6)}
+#gActions{display:flex;gap:9px}#gSkip,#gNext{border:0;border-radius:13px;padding:11px 15px;font-weight:850;cursor:pointer}#gSkip{background:#e5eaf2;color:#526176}#gNext{flex:1;color:#fff;background:linear-gradient(100deg,#2563eb,#7c3aed);box-shadow:0 6px 15px #4f46e544}
+body.fp #questDock{display:none!important}
+@media(max-width:600px){#questDock{top:calc(115px + env(safe-area-inset-top));right:8px}.qdBtn{padding:9px 11px;font-size:12px}#questCard{width:min(285px,calc(100vw - 16px))}}
+</style>
+<div id="questDock">
+ <button class="qdBtn" id="guideOpen" type="button">✨ Quick guide</button>
+ <button class="qdBtn daily" id="dailyOpen">🏆 Daily build</button>
+ <section id="questCard">
+  <div class="qHead"><div class="qIcon">🏡</div><div class="qTitle">Today's Garden Quest</div><button class="qClose" id="questClose">×</button></div>
+  <div class="qSub" id="questDate"></div>
+  <div class="qTask"><strong id="questName">Build something wonderful</strong><small id="questHint">Your progress is saved on this device.</small><div class="qTrack"><div class="qFill" id="questFill"></div></div><div class="qMeta"><span id="questProgress">0 / 5 actions</span><span id="questPct">0%</span></div></div>
+  <div class="qReward" id="questReward">🎁 Reward: Daily Garden Star</div>
+  <div class="qFoot" id="questFoot">A fresh challenge arrives every day.</div>
+ </section>
+</div>
+<div id="guideShade" role="dialog" aria-modal="true" aria-label="First-time building tutorial">
+ <div id="guideBox">
+  <div id="gBanner"><div id="gEyebrow">COZY GARDEN BUILDER · START HERE</div><div id="gTitle">Welcome, little builder! 🌱</div><div id="gDesc">A few quick steps will help you feel at home in your garden.</div></div>
+  <div id="gBody"><div class="gStep"><div class="gNum" id="gNum">1</div><div><div id="gInstruction">Look around your garden</div><div id="gTip">Drag to rotate the camera. Use the wheel or pinch to zoom in and out.</div></div></div><div id="gDots"></div><div id="gActions"><button id="gSkip">Skip</button><button id="gNext">Next step →</button></div></div>
+ </div>
+</div>
+<script>
+(function(){
+ const $=id=>document.getElementById(id), guideKey="cozy_builder_guide_v1", questKey="cozy_builder_daily_v1";
+ const steps=[
+  ["Look around your garden","Drag with your mouse to rotate the view. Right-drag to move the camera, and scroll to zoom.","🧭"],
+  ["Choose what to build","Pick a category, then tap an item in the bottom palette. The selected item gets a bright outline.","🧱"],
+  ["Place your first piece","Tap an empty spot on your land to place your selected item. Try walls, paths, flowers, or trees.","✨"],
+  ["Explore first-person mode","Tap “Enter Kingdom” to walk around your creation. Use WASD or the on-screen controls to move.","🚶"]
+ ];
+ let step=0;
+ function renderGuide(){
+  $("gNum").textContent=step+1;$("gTitle").textContent=steps[step][2]+" "+["Explore your garden","Pick your building pieces","Start creating","Walk inside your world"][step];
+  $("gDesc").textContent=["Get comfortable with the camera and your space.","Building starts with choosing the right piece.","Place pieces on your land to bring your ideas to life.","Switch viewpoints and experience your build up close."][step];
+  $("gInstruction").textContent=steps[step][0];$("gTip").textContent=steps[step][1];
+  $("gDots").innerHTML=steps.map((_,i)=>'<span class="gDot '+(i<=step?"on":"")+'"></span>').join("");
+  $("gNext").textContent=step===steps.length-1?"Let's build! ✓":"Next step →";
+ }
+ function closeGuide(done){$("guideShade").classList.remove("show");if(done)try{localStorage.setItem(guideKey,"1")}catch(e){}}
+ function openGuide(){step=0;renderGuide();$("guideShade").classList.add("show")}
+ /* Quick guide is connected to the interactive spotlight tour below. */
+ $("gNext").addEventListener("click",()=>{if(step<steps.length-1){step++;renderGuide()}else closeGuide(true)});
+ $("gSkip").addEventListener("click",()=>closeGuide(true));
+ $("guideShade").addEventListener("click",e=>{if(e.target===$("guideShade"))closeGuide(true)});
+ /* first-time tour is handled by the spotlight guide below */
+
+ // Daily quests rotate by local calendar date and persist independently from the world save.
+ const day=new Date(),dateKey=[day.getFullYear(),String(day.getMonth()+1).padStart(2,"0"),String(day.getDate()).padStart(2,"0")].join("-");
+ const quests=[
+  {name:"Make a welcoming garden",hint:"Place 5 building pieces anywhere on your land.",target:5,kind:"any",reward:"🏅 Daily Garden Star"},
+  {name:"Bring color to your garden",hint:"Select Flowers and place 3 flower pieces.",target:3,kind:"flower",reward:"🌸 Bloom Master badge"},
+  {name:"Create a leafy corner",hint:"Select Trees and place 2 trees.",target:2,kind:"tree",reward:"🌳 Green Thumb badge"},
+  {name:"Design a lovely walkway",hint:"Select a path-style item and place 4 tiles.",target:4,kind:"path",reward:"🪨 Path Designer badge"}
+ ];
+ const daySeed=Math.floor(new Date(day.getFullYear(),day.getMonth(),day.getDate()).getTime()/86400000);
+ const quest=quests[((daySeed%quests.length)+quests.length)%quests.length];
+ let saved={date:dateKey,count:0,done:false};
+ try{let old=JSON.parse(localStorage.getItem(questKey)||"null");if(old&&old.date===dateKey)saved=old}catch(e){}
+ function selectedId(){
+  const el=document.querySelector("#palette .item.sel");
+  return el?(el.dataset.id||el.getAttribute("data-id")||el.textContent||"").toLowerCase():"";
+ }
+ function matches(id){
+  if(quest.kind==="any")return !!id;
+  if(quest.kind==="flower")return /flower|tulip|rose|sunflower|daisy/.test(id);
+  if(quest.kind==="tree")return /tree|pine|cherry|palm|oak/.test(id);
+  return /path|stonepath|deck|sand/.test(id);
+ }
+ function save(){try{localStorage.setItem(questKey,JSON.stringify(saved))}catch(e){}}
+ function update(){
+  const n=Math.min(saved.count,quest.target),pct=Math.round(n/quest.target*100);
+  $("questDate").textContent="📅 "+day.toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric"});
+  $("questName").textContent=quest.name;$("questHint").textContent=quest.hint;
+  $("questFill").style.width=pct+"%";$("questProgress").textContent=n+" / "+quest.target+" placements";$("questPct").textContent=pct+"%";
+  $("questReward").textContent=saved.done?"🎉 Completed! "+quest.reward:"🎁 Reward: "+quest.reward;
+  $("questFoot").textContent=saved.done?"Amazing work. Come back tomorrow for a new challenge.":"Your progress is saved on this device. Place items using the bottom palette.";
+  $("dailyOpen").textContent=saved.done?"🏆 Quest complete":"🏆 Daily build";
+ }
+ $("dailyOpen").addEventListener("click",()=>{$("questCard").classList.toggle("open")});
+ $("questClose").addEventListener("click",()=>$("questCard").classList.remove("open"));
+ // Count only a real canvas interaction while a buildable palette item is selected.
+ const canvas=$("c");let last=0;
+ canvas.addEventListener("pointerup",()=>{
+  const now=Date.now();if(now-last<250)return;last=now;
+  const id=selectedId();if(!matches(id)||saved.done)return;
+  saved.count=Math.min(quest.target,saved.count+1);
+  if(saved.count>=quest.target)saved.done=true;
+  save();update();
+ },true);
+ update();
+})();
+</script>
+
+
+<style>
+/* Interactive spotlight tour */
+#guideShade{display:none!important}
+#coachLayer{position:fixed;inset:0;z-index:99990;display:none;pointer-events:auto;font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
+#coachLayer.active{display:block}
+#coachDim{position:absolute;inset:0;background:#07142678;backdrop-filter:blur(1.5px);pointer-events:auto}
+.coach-focus{position:relative!important;z-index:93!important;outline:4px solid #fbbf24!important;outline-offset:4px!important;box-shadow:0 0 0 8px #fbbf2440,0 0 28px 8px #60a5fa!important;border-radius:13px!important}
+/* Make every character of the highlighted control visibly bold */
+.coach-focus,
+.coach-focus *,
+#land.coach-focus,
+#land.coach-focus *{
+  font-weight:1000!important;
+  -webkit-text-stroke:.65px currentColor!important;
+  text-shadow:0 0 .6px currentColor,0 0 .6px currentColor!important;
+}
+#land.coach-focus{
+  background:linear-gradient(110deg,#fbbf24,#f59e0b)!important;
+  color:#172554!important;
+  border:2px solid #fff!important;
+  transform:scale(1.09);
+  letter-spacing:.2px!important;
+  box-shadow:0 0 0 8px #fbbf2455,0 0 30px 10px #f59e0b!important
+}
+
+#coachCard{position:fixed;z-index:100;left:50%;top:50%;transform:translate(-50%,-50%);width:min(360px,calc(100vw - 28px));padding:0;border:1px solid #ffffff50;border-radius:21px;overflow:hidden;background:linear-gradient(145deg,#10243c,#172f50 65%,#243b63);color:#f8fbff;box-shadow:0 20px 70px #020817a8;pointer-events:auto}
+#coachTop{display:flex;align-items:center;gap:10px;padding:13px 15px 10px;background:linear-gradient(105deg,#2563eb,#7048e8 65%,#a855f7)}
+#coachIcon{width:39px;height:39px;flex:0 0 39px;display:grid;place-items:center;border-radius:13px;background:#ffffff25;font-size:21px}
+#coachMeta{flex:1;min-width:0}#coachEyebrow{font-size:9px;font-weight:900;letter-spacing:1.4px;color:#dbeafe}
+#coachHeading{font-size:15px;font-weight:900;margin-top:2px}
+#coachClose{border:0;border-radius:50%;width:29px;height:29px;background:#ffffff25;color:white;font-size:18px;cursor:pointer}
+#coachMessage{padding:15px 17px 7px;font-size:13px;line-height:1.65;min-height:74px;color:#edf4ff}
+#coachMessage:after{content:"";display:inline-block;width:2px;height:14px;background:#67e8f9;vertical-align:-2px;margin-left:3px;animation:coachBlink .7s steps(2) infinite}
+@keyframes coachBlink{50%{opacity:0}}
+#coachTip{margin:0 17px 12px;padding:9px 11px;border-radius:12px;background:#ffffff10;border:1px solid #ffffff18;color:#bfe4ff;font-size:11px;line-height:1.5}
+#coachBottom{display:flex;align-items:center;gap:8px;padding:0 15px 14px}
+#coachCount{font-size:10px;font-weight:800;color:#a9c1df;white-space:nowrap}
+#coachProgress{height:5px;flex:1;border-radius:9px;background:#ffffff20;overflow:hidden}
+#coachProgress i{display:block;height:100%;width:0;background:linear-gradient(90deg,#34d399,#67e8f9,#a78bfa);transition:width .25s}
+#coachBack,#coachNext{border:0;border-radius:11px;padding:9px 12px;font-size:11px;font-weight:900;cursor:pointer}
+#coachBack{background:#ffffff18;color:#e4edfb}#coachNext{background:linear-gradient(100deg,#34d399,#0ea5e9);color:#052b3a;min-width:94px}
+#coachLayer .coach-focus{pointer-events:auto}
+#landPreviewRows .land-preview-row{display:flex;justify-content:space-between;gap:8px;align-items:center;padding:7px 9px;border-radius:9px;background:#ffffff10;font-size:10px;font-weight:800}#landPreviewRows .land-preview-row.current{background:#0ea5e933;outline:1px solid #67e8f9}#landPreviewRows .land-preview-row.next{background:#f59e0b22;outline:1px solid #fbbf24}#landPreviewRows .land-preview-row small{font-size:9px;color:#cbd5e1;font-weight:700}#landPreviewRows .land-preview-row b{color:#fde68a;white-space:nowrap}
+@media(max-width:600px){#coachCard{width:min(340px,calc(100vw - 22px))}#coachMessage{font-size:12px;min-height:66px}}
+</style>
+<div id="coachLayer" aria-live="polite">
+ <div id="coachDim"></div>
+ <section id="coachCard">
+  <div id="coachTop"><div id="coachIcon">🌱</div><div id="coachMeta"><div id="coachEyebrow">YOUR GARDEN TOUR · 01</div><div id="coachHeading">Welcome, builder!</div></div><button id="coachClose" aria-label="Close guide">×</button></div>
+  <div id="coachMessage"></div><div id="coachTip"></div>
+  <div id="landPreview" aria-label="Land expansion preview" style="display:none;margin:0 17px 13px;padding:12px;border:1px solid #fbbf2466;border-radius:14px;background:linear-gradient(145deg,#183b3d,#19324c);color:#f8fbff">
+   <div style="font-size:12px;font-weight:950;margin-bottom:8px;color:#fde68a">🌱 LAND EXPANSION PREVIEW</div>
+   <div id="landPreviewCurrent" style="font-size:11px;margin-bottom:8px;color:#dbeafe"></div>
+   <div id="landPreviewRows" style="display:grid;gap:5px"></div>
+   <div style="font-size:10px;color:#a7f3d0;margin-top:9px">Preview only — no coins will be spent.</div>
+  </div>
+  <div id="coachBottom"><span id="coachCount">1 / 10</span><div id="coachProgress"><i></i></div><button id="coachBack">Back</button><button id="coachNext">Next →</button></div>
+ </section>
+</div>
+<script>
+(function(){
+ const $=id=>document.getElementById(id);
+ const layer=$("coachLayer"),card=$("coachCard"),msg=$("coachMessage"),tip=$("coachTip");
+ const landPreview=$("landPreview");
+ function updateLandPreview(){
+  const g=window.__game;if(!g||!Array.isArray(g.landPrices))return;
+  const prices=g.landPrices,level=g.landLevel,size=g.size;
+  $("landPreviewCurrent").textContent="Your current garden: "+size+" × "+size+" tiles";
+  $("landPreviewRows").innerHTML=prices.map((price,i)=>{
+   const state=i===level?"current":i===level+1?"next":"";
+   const label=i===level?"CURRENT LAND":i===level+1?"NEXT EXPANSION":"EXPANSION "+(i+1);
+   const cost=i===prices.length-1?"MAX LEVEL":(i===level?"Owned":price.toLocaleString()+" coins");
+   return '<div class="land-preview-row '+state+'"><span>'+label+'</span><b>'+cost+'</b></div>';
+  }).join("");
+ }
+ const steps=[
+  {sel:"#c",icon:"🌍",title:"Your garden world",text:"This is your creative space! Click or tap an empty area to place the item you selected. You can build a home, paths, gardens and a whole little world here.",tip:"Try dragging to look around. Scroll or pinch to zoom."},
+  {sel:"#coins",icon:"🪙",title:"Your coins",text:"This counter shows how many coins you have. Building pieces and special items may cost coins, so keep an eye on your balance as you create.",tip:"If an item is locked or too expensive, visit the Land/shop area for more options."},
+  {sel:"#land",icon:"🌱",title:"Land & shop",text:"Open Land to manage or expand your building area and explore available land options. More space means more room for your ideas.",tip:"I opened a safe preview of your land expansion options. Review the levels and costs below—nothing is purchased."},
+  {sel:"#reset",icon:"🧹",title:"Start a new world",text:"This button starts a fresh world. Use it only when you really want to reset your current build—your existing garden may be replaced.",tip:"Be careful: don't press this just to explore."},
+  {sel:"#hint",icon:"🧭",title:"Helpful controls",text:"This hint bar reminds you how to control the camera and move around. Mouse drag rotates, right-drag pans, and the wheel zooms. Keyboard controls help you move and rotate.",tip:"On a touch screen, use finger gestures to look around and zoom."},
+  {sel:"#vtTop",icon:"👁️",title:"Top view",text:"Use Top to switch to a higher, more overhead view. It's useful when you want to plan layouts, line up walls, or see where everything fits.",tip:"Switch back whenever you want a closer view."},
+  {sel:"#vtBot",icon:"🧰",title:"Show or hide items",text:"This button controls the bottom building panel. Hide it when you want a clearer view of your garden; bring it back when you're ready to build.",tip:"If the palette disappears, use this button to show it again."},
+  {sel:"#tabs",icon:"🗂️",title:"Building categories",text:"These tabs sort the available pieces into groups. Choose a category—such as building parts, decorations or nature—to find the type of item you need.",tip:"Swipe the category row sideways if you can't see every tab."},
+  {sel:"#palette",icon:"🧱",title:"Your item palette",text:"Each tile is a building piece. Tap one to select it; the selected tile gets a bright border. Then tap an open spot in your world to place it.",tip:"Scroll the item row sideways to browse more pieces. Some items may show a coin cost."},
+  {sel:"#questDock",icon:"🏆",title:"Daily build challenge",text:"Your daily challenge gives you a small creative goal, like placing pieces, flowers or trees. Open Daily build to see today's task and watch your progress.",tip:"Your challenge progress is saved on this device."},
+  {sel:"#menuPanel",icon:"☰",title:"Menu — explore every option",text:"I opened the Menu for you. It groups extra tools into three sections. Build contains Craft, Block placement, Builders and Villagers. World contains Undo, Restore, Export, Import and Reset. Settings lets you turn animations off if the game feels slow. Read the descriptions beside each option. Nothing is activated just by reviewing this menu.",tip:"Scroll inside the menu to review every option. Avoid Reset unless you really want to start over."}
+ ];
+ let index=0,typingTimer=null,typingToken=0,activeTarget=null;
+ function clearFocus(){document.querySelectorAll(".coach-focus").forEach(el=>el.classList.remove("coach-focus"));activeTarget=null}
+ function typeText(text){
+  clearInterval(typingTimer);const token=++typingToken;msg.textContent="";let n=0;
+  typingTimer=setInterval(()=>{if(token!==typingToken){clearInterval(typingTimer);return}msg.textContent=text.slice(0,++n);if(n>=text.length)clearInterval(typingTimer)},17);
+ }
+ function positionCard(target){
+  const r=target.getBoundingClientRect(),w=Math.min(360,innerWidth-22),h=card.offsetHeight;
+  let left=Math.max(11,Math.min(innerWidth-w-11,r.left+r.width/2-w/2));
+  let top=r.bottom+14;
+  if(top+h>innerHeight-10)top=r.top-h-14;
+  if(top<10)top=Math.max(10,(innerHeight-h)/2);
+  card.style.left=left+"px";card.style.top=top+"px";card.style.transform="none";
+ }
+ function render(){
+  clearFocus();
+  const s=steps[index];
+  const menuPanel=document.getElementById("menuPanel");
+  if(menuPanel){
+   if(index===steps.length-1)menuPanel.classList.add("open");
+   else menuPanel.classList.remove("open");
+  }
+  const target=document.querySelector(s.sel);
+  $("coachIcon").textContent=s.icon;$("coachHeading").textContent=s.title;
+  $("coachEyebrow").textContent="YOUR GARDEN TOUR · "+String(index+1).padStart(2,"0");
+  $("coachCount").textContent=(index+1)+" / "+steps.length;
+  $("coachProgress").firstElementChild.style.width=((index+1)/steps.length*100)+"%";
+  $("coachBack").style.visibility=index===0?"hidden":"visible";
+  $("coachNext").textContent=index===steps.length-1?"Finish tour ✓":"Next →";
+  tip.textContent="💡 "+s.tip;
+  landPreview.style.display=index===2?"block":"none";if(index===2)updateLandPreview();
+  if(target){
+   activeTarget=target;target.classList.add("coach-focus");
+   if(s.sel!=="#c"&&s.sel!=="#questDock")target.scrollIntoView({block:"nearest",inline:"nearest",behavior:"smooth"});
+   requestAnimationFrame(()=>positionCard(target));
+  }else{card.style.left="50%";card.style.top="50%";card.style.transform="translate(-50%,-50%)"}
+  typeText(s.text);
+ }
+ function open(){index=0;layer.classList.add("active");render()}
+ function close(){clearInterval(typingTimer);clearFocus();layer.classList.remove("active")}
+ window.__openCozyGardenTour=open;
+ $("guideOpen").addEventListener("click",function(e){e.preventDefault();e.stopImmediatePropagation();open()},{capture:true});
+ $("coachNext").addEventListener("click",()=>{if(index<steps.length-1){index++;render()}else close()});
+ $("coachBack").addEventListener("click",()=>{if(index>0){index--;render()}});
+ $("coachClose").addEventListener("click",close);
+ $("coachDim").addEventListener("click",close);
+ window.addEventListener("resize",()=>{if(layer.classList.contains("active")&&activeTarget)positionCard(activeTarget)});
+ try{if(!localStorage.getItem("cozy_builder_guide_v3"))setTimeout(()=>{open();localStorage.setItem("cozy_builder_guide_v3","1")},1100)}catch(e){setTimeout(open,1100)}
+})();
+</script>
+
+
+<style id="coach-viewport-fix">
+#coachCard{
+  max-height:calc(100vh - 24px)!important;
+  max-height:calc(100dvh - 24px)!important;
+  overflow-y:auto!important;
+  overscroll-behavior:contain;
+  scrollbar-width:thin;
+  scrollbar-color:#6ee7b7 #ffffff18;
+}
+#coachCard #coachBottom{
+  position:sticky!important;
+  bottom:0!important;
+  z-index:5;
+  flex:0 0 auto;
+  background:linear-gradient(180deg,#172f50f2,#10243cfb);
+  border-top:1px solid #ffffff20;
+  padding-top:10px!important;
+  margin-top:4px;
+}
+#landPreview{max-height: min(34vh,260px); overflow:hidden}
+#landPreviewRows{
+  max-height:min(19vh,150px);
+  overflow-y:auto;
+  overscroll-behavior:contain;
+  padding-right:3px;
+  scrollbar-width:thin;
+  scrollbar-color:#67e8f9 #ffffff18;
+}
+#coachMessage{min-height:0!important}
+@media(max-height:650px){
+ #coachCard{max-height:calc(100dvh - 14px)!important}
+ #landPreview{max-height:27vh}
+ #landPreviewRows{max-height:13vh}
+ #coachMessage{padding-top:10px!important}
+ #coachTip{margin-bottom:8px!important}
+}
+</style>
 
 </body>
 </html>
