@@ -104,6 +104,7 @@
 </style>
 </head>
 <body>
+<script>try{localStorage.setItem("cozy_builder_guide_v3","1")}catch(e){}</script>
 <script>/*animEarly*/window.__turn=function(a,b){var d=((b-a+Math.PI)%(Math.PI*2)+Math.PI*2)%(Math.PI*2)-Math.PI;return Math.abs(d)<.01?b:a+d*.2};</script>
 <script>/*dprCap*/(function(){try{var d=window.devicePixelRatio||1;Object.defineProperty(window,"devicePixelRatio",{configurable:true,get:function(){return Math.min(d,1.5)}})}catch(e){}})();</script>
 <script>/* landGrow200: shift extra saved data when land grew 100 -> 200 */
@@ -7775,5 +7776,324 @@ if(mp){
 }
 })();
 </script>
+<!--tourFix2-->
+<style>
+/* ---- clear ON/OFF switches in the menu ---- */
+#menuPanel .mrow .pill{flex:0 0 190px!important;white-space:normal!important;text-overflow:clip!important;overflow:visible!important;line-height:1.25;border-radius:16px}
+#menuPanel .mrow small{min-width:0}
+#menuPanel .pill.tg-on{background:#c9f2d5!important;color:#14532d!important}
+#menuPanel .pill.tg-off{background:#e5e7eb!important;color:#6b7280!important}
+#menuPanel .pill.tg-on::before,#menuPanel .pill.tg-off::before{content:"";display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:7px;vertical-align:-1px}
+#menuPanel .pill.tg-on::before{background:#22c55e;box-shadow:0 0 6px #22c55e}
+#menuPanel .pill.tg-off::before{background:#9ca3af}
+
+/* ---- new spotlight tour ---- */
+#tourLayer{position:fixed;inset:0;z-index:99990;display:none;font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
+#tourLayer.active{display:block}
+#tourShield{position:absolute;inset:0;background:transparent}
+#tourSpot{position:fixed;left:0;top:0;width:0;height:0;border-radius:14px;border:4px solid #fbbf24;pointer-events:none;
+  box-shadow:0 0 0 9999px rgba(7,20,38,.74),0 0 0 7px rgba(251,191,36,.35),0 0 30px 10px rgba(96,165,250,.85);
+  transition:left .22s,top .22s,width .22s,height .22s}
+#tourSpot.none{left:50%!important;top:50%!important;width:0!important;height:0!important;border-color:transparent;box-shadow:0 0 0 9999px rgba(7,20,38,.38)}
+#tourTag{position:fixed;z-index:2;pointer-events:none;background:#fbbf24;color:#172554;font:900 11px system-ui,sans-serif;letter-spacing:.6px;padding:4px 10px;border-radius:999px;box-shadow:0 3px 10px rgba(0,0,0,.4);white-space:nowrap}
+.tour-bold,.tour-bold *{font-weight:900!important;-webkit-text-stroke:.6px currentColor!important}
+#tourCard{position:fixed;z-index:3;left:50%;top:50%;width:min(370px,calc(100vw - 20px));max-height:calc(100vh - 20px);max-height:calc(100dvh - 20px);overflow-y:auto;
+  border:1px solid #ffffff50;border-radius:21px;background:linear-gradient(145deg,#10243c,#172f50 65%,#243b63);color:#f8fbff;box-shadow:0 20px 70px #020817c0;overscroll-behavior:contain}
+#tourTop{display:flex;align-items:center;gap:10px;padding:13px 15px 10px;background:linear-gradient(105deg,#2563eb,#7048e8 65%,#a855f7)}
+#tourIcon{width:39px;height:39px;flex:0 0 39px;display:grid;place-items:center;border-radius:13px;background:#ffffff25;font-size:21px}
+#tourMeta{flex:1;min-width:0}#tourEye{font-size:9px;font-weight:900;letter-spacing:1.4px;color:#dbeafe}
+#tourHead{font-size:15px;font-weight:900;margin-top:2px}
+#tourClose{border:0;border-radius:50%;width:29px;height:29px;background:#ffffff25;color:#fff;font-size:18px;cursor:pointer}
+#tourMsg{padding:14px 17px 6px;font-size:13px;line-height:1.6;color:#edf4ff}
+#tourTip{margin:6px 17px 12px;padding:9px 11px;border-radius:12px;background:#ffffff10;border:1px solid #ffffff18;color:#bfe4ff;font-size:11px;line-height:1.5}
+#tourLand{display:none;margin:0 17px 12px;padding:11px;border:1px solid #fbbf2466;border-radius:14px;background:linear-gradient(145deg,#183b3d,#19324c)}
+#tourLand b{display:block;font-size:11px;color:#fde68a;margin-bottom:6px}
+#tourLandCur{font-size:11px;color:#dbeafe;margin-bottom:6px}
+#tourLandRows{display:grid;gap:4px;max-height:110px;overflow-y:auto}
+#tourLandRows .lr{display:flex;justify-content:space-between;gap:8px;padding:6px 9px;border-radius:9px;background:#ffffff10;font-size:10px;font-weight:800}
+#tourLandRows .lr.cur{background:#0ea5e933;outline:1px solid #67e8f9}
+#tourLandRows .lr.nxt{background:#f59e0b22;outline:1px solid #fbbf24}
+#tourLandRows .lr em{font-style:normal;color:#fde68a}
+#tourBottom{position:sticky;bottom:0;display:flex;align-items:center;gap:8px;padding:10px 15px 13px;background:linear-gradient(180deg,#172f50f2,#10243cfb);border-top:1px solid #ffffff20}
+#tourCount{font-size:10px;font-weight:800;color:#a9c1df;white-space:nowrap}
+#tourProg{height:5px;flex:1;border-radius:9px;background:#ffffff20;overflow:hidden}
+#tourProg i{display:block;height:100%;width:0;background:linear-gradient(90deg,#34d399,#67e8f9,#a78bfa);transition:width .25s}
+#tourBack,#tourNext{border:0;border-radius:11px;padding:9px 12px;font-size:11px;font-weight:900;cursor:pointer}
+#tourBack{background:#ffffff18;color:#e4edfb}
+#tourNext{background:linear-gradient(100deg,#34d399,#0ea5e9);color:#052b3a;min-width:94px}
+body.fp #tourLayer{display:none!important}
+</style>
+
+<div id="tourLayer">
+ <div id="tourShield"></div>
+ <div id="tourSpot"></div>
+ <div id="tourTag"></div>
+ <section id="tourCard">
+  <div id="tourTop"><div id="tourIcon">🌱</div><div id="tourMeta"><div id="tourEye"></div><div id="tourHead"></div></div><button id="tourClose" aria-label="Close guide">×</button></div>
+  <div id="tourMsg"></div>
+  <div id="tourTip"></div>
+  <div id="tourLand"><b>🌱 LAND EXPANSION PREVIEW (nothing is bought)</b><div id="tourLandCur"></div><div id="tourLandRows"></div></div>
+  <div id="tourBottom"><span id="tourCount"></span><div id="tourProg"><i></i></div><button id="tourBack">Back</button><button id="tourNext">Next →</button></div>
+ </section>
+</div>
+
+<script>
+(function(){
+var $=function(i){return document.getElementById(i)};
+function all(s){return [].slice.call(document.querySelectorAll(s))}
+var layer=$("tourLayer"),spot=$("tourSpot"),tag=$("tourTag"),card=$("tourCard"),msg=$("tourMsg"),tip=$("tourTip"),land=$("tourLand");
+var menu=$("menuPanel"),body=document.body,hint=$("hint");
+
+/* ---------- ON/OFF switches inside the Menu ---------- */
+function syncTg(){all("#menuPanel .pill").forEach(function(b){
+  var t=b.textContent;
+  b.classList.toggle("tg-on",/:\s*ON\s*$/.test(t));
+  b.classList.toggle("tg-off",/:\s*OFF\s*$/.test(t));
+})}
+setInterval(syncTg,300);syncTg();
+if(menu)menu.addEventListener("click",function(e){
+  var b=e.target.closest&&e.target.closest(".pill");
+  if(b&&/:\s*(ON|OFF)\s*$/.test(b.textContent))setTimeout(function(){menu.classList.add("open");syncTg()},85);
+});
+
+/* ---------- helpers to find things ---------- */
+function mrow(re){
+  var rs=all("#menuPanel .mrow");
+  for(var i=0;i<rs.length;i++){
+    var p=rs[i].querySelector(".pill,button");
+    if(p&&re.test((p.id||"")+" "+p.textContent))return rs[i];
+  }
+  return null;
+}
+function tabByText(re){return all("#tabs .tab").filter(function(t){return re.test(t.textContent)})}
+
+/* ---------- tour steps ---------- */
+var steps=[
+ {label:"YOUR WORLD",icon:"🌍",title:"Your garden world",none:1,
+  text:"This is your garden. Click or tap an empty tile to place the item you selected. Drag to rotate the camera, right-drag (or two fingers) to pan, scroll or pinch to zoom, and right-click a spot to glide there. Zoom in very close to look around inside your buildings.",
+  tip:"Nothing is placed during this tour. Your clicks are safely blocked."},
+ {label:"COINS",icon:"🪙",title:"Your coins",el:function(){return $("coins")},
+  text:"This is your coin balance. The small +N/min next to it is passive income that your buildings and plants earn over time. Placing items costs coins, unless you already have them in your bag.",
+  tip:"Items in your bag show ×number instead of a price."},
+ {label:"LAND",icon:"🌱",title:"Land & expansion",el:function(){return $("land")},land:1,
+  text:"The Land button buys a bigger plot so you have more room to build. The price is shown on the button. Below you can preview the next levels.",
+  tip:"This is only a preview. No coins are spent."},
+ {label:"MENU",icon:"☰",title:"The Menu button",el:function(){return $("menuBtn")},
+  text:"Menu holds all the extra tools: Craft, Block mode, Builders, Villagers, Undo, save files, animation and weather settings, sounds and this guide. I will open it and show you each option one by one.",
+  tip:"Tap anywhere outside the menu to close it."},
+ {label:"ENTER KINGDOM",icon:"🚶",title:"Enter Kingdom",el:function(){return $("enterKingdom")},
+  text:"This puts you inside your garden in first person. You pick where to start (near the camera, a house, a landmark, or any spot you tap). You can walk, jump, place and break blocks, collect coins and meet chickens, with a day and night cycle.",
+  tip:"Press the Leave kingdom button (top right) to come back."},
+ {label:"HELP BAR",icon:"🧭",title:"Controls hint",el:function(){return $("hint")},hint:1,
+  text:"This bar reminds you of the camera controls: drag to rotate, right-drag to pan, right-click to glide, WASD to move, Q/E to rotate, scroll to zoom, 1-9 to pick items, [ ] to switch category, X to remove, H to hide the UI and Home to recentre. It fades away by itself after a few seconds.",
+  tip:"I made it visible for the tour."},
+ {label:"HIDE TOP BAR",icon:"👁️",title:"Hide / show the top bar",el:function(){return $("vtTop")},
+  text:"This button hides the top bar (coins, Menu and so on) to give you a cleaner view of your garden. Press it again to bring the bar back. Press H on the keyboard to hide everything at once.",
+  tip:"Its label switches between Hide top and Show top."},
+ {label:"HIDE ITEMS",icon:"🧰",title:"Hide / show the item bar",el:function(){return $("vtBot")},
+  text:"This hides or shows the bottom building panel (categories and items). Hide it for screenshots or a full view, show it when you want to build again.",
+  tip:"If the item bar ever disappears, press this button."},
+ {label:"WEATHER",icon:"🌧",title:"Weather chip",el:function(){return $("wxChip")},
+  text:"This chip shows the weather and a countdown to the next rain. Tap it to start or stop rain right away. Rain waters your garden and gives bonus coins (more plants means more coins), and a rainbow with an extra bonus appears afterwards.",
+  tip:"Rain and clouds can be switched off in Menu > Weather."},
+ {label:"DAILY BUILD",icon:"🏆",title:"Daily build challenge",el:function(){return $("dailyOpen")},
+  text:"A small goal that changes every day, like placing flowers, trees or path tiles. Open it to see today's task and your progress. It is saved on this device.",
+  tip:"Come back every day for a new challenge."},
+ {label:"CATEGORIES",icon:"🗂️",title:"Building categories",el:function(){return all("#tabs .tab[data-cat]")},
+  text:"These tabs sort items into House, Floor, Garden and Decor. Pick a category and the item row below changes to match it.",
+  tip:"Keyboard: [ and ] switch category."},
+ {label:"WALK",icon:"🧍",title:"Walk mode",el:function(){return tabByText(/Walk/)},
+  text:"Select Walk, then tap any tile to send your little builder there. When you place items normally, the builder also walks over and works on them.",
+  tip:"The builder wears a jetpack when building high up."},
+ {label:"REMOVE",icon:"🧹",title:"Remove tool",el:function(){return all("#tabs .tab.erase")},
+  text:"Select Remove, then tap something to take it away. It goes back into your bag, so nothing is lost. In first person, right-click or press X to break a block.",
+  tip:"Keyboard: X in the building view."},
+ {label:"VIEW OPTIONS",icon:"▦",title:"Item bar layout",el:function(){return all("#tabs .tab.pal")},
+  text:"These three small buttons change the item bar: collapse it to save space, switch to a grid that shows everything at once, or use compact icons without names.",
+  tip:"Your choice is remembered."},
+ {label:"ITEMS",icon:"🧱",title:"Your item palette",el:function(){return $("palette")},
+  text:"Each tile is something you can build. Tap one to select it (a green border appears), then tap an open tile in your garden. Tiles show a coin price, or ×number if you have it in your bag.",
+  tip:"Keyboard: keys 1 to 9 pick the first nine items. Scroll sideways for more."},
+ {label:"MOVE PAD",icon:"🕹️",title:"On-screen move pad",el:function(){return $("snPad")},
+  text:"Hold the arrows to move the camera, use the curved arrows to rotate, + and − to zoom, and ⌂ to jump back to the centre of your land. Great for touch screens.",
+  tip:"On a keyboard you can use WASD, Q/E and the mouse wheel."},
+
+ {label:"CRAFT",icon:"🔨",title:"Craft",menu:1,el:function(){return mrow(/Craft|🔨/)},
+  text:"Combine materials from your bag into new items. For example 1 wood becomes 3 fences, and stone, rocks and wood become benches, lamps, campfires, gnomes, fountains and statues. Your builder hammers while crafting.",
+  tip:"The recipe list shows what you have and what you need."},
+ {label:"BLOCK MODE",icon:"🧱",title:"Block mode",menu:1,el:function(){return mrow(/blockToggle/)},
+  text:"When ON, you can place a block on the top or side of any existing block, like Minecraft. Use it for towers, bridges and tall walls. The yellow preview box shows where it will go.",
+  tip:"Keyboard: B turns it on or off."},
+ {label:"BUILDERS",icon:"🏗️",title:"Builders",menu:1,el:function(){return mrow(/mbBtn/)},
+  text:"Hire a Mountain Builder for 25,000 coins. Give them an area by tapping two corners, press Start, and they place one stone every 15 seconds, even while the game is closed. Each block costs coins.",
+  tip:"You can have up to 5 builders."},
+ {label:"VILLAGERS",icon:"👥",title:"Villagers",menu:1,el:function(){return mrow(/Villagers/)},
+  text:"Hire a farmer, woodcutter or fisher for 150 coins. They get a house built for them and earn coins by working near flowers, trees or water. You can choose where their house goes or change their job later.",
+  tip:"Plant flowers, trees and ponds so they have work."},
+ {label:"UNDO",icon:"↩",title:"Undo",menu:1,el:function(){return mrow(/wsUndo/)},
+  text:"Takes back your last change, so a wrong click is never a disaster. You can keep pressing it to step back further.",
+  tip:"Keyboard: Ctrl + Z."},
+ {label:"RESTORE",icon:"↺",title:"Restore",menu:1,el:function(){return mrow(/wsRestore/)},
+  text:"This button only appears after many items disappear at once, for example by accident. It brings your world back to the moment before.",
+  tip:"If you do not see the button, nothing needs restoring."},
+ {label:"SAVE / LOAD FILE",icon:"💾",title:"Save file and Load file",menu:1,el:function(){return [mrow(/wsExport/),mrow(/wsImport/)]},
+  text:"Save file downloads a backup of your whole world. Load file brings a backup back, even on another device. Do this before big experiments.",
+  tip:"Loading replaces your current world, but you can still Undo."},
+ {label:"NEW WORLD",icon:"🧹",title:"New (fresh plot)",menu:1,el:function(){return mrow(/^reset /)},
+  text:"Starts a brand new empty plot. Tap it twice (it asks Sure?). Your garden, builders and villagers are cleared, so use it carefully.",
+  tip:"Save a file first if you might want your garden again."},
+ {label:"ANIMATIONS",icon:"✨",title:"Animations ON / OFF",menu:1,el:function(){return mrow(/animToggle/)},
+  text:"Switches the swaying trees, flickering fire, moving water and drifting clouds. The button shows a green dot with ON, or a grey dot with OFF. Turn it OFF if the game feels slow on your device.",
+  tip:"The menu now stays open so you can see the switch change."},
+ {label:"WEATHER FX",icon:"🌧",title:"Weather FX ON / OFF",menu:1,el:function(){return mrow(/Weather FX/)},
+  text:"Turns clouds, rain, lightning and the screen darkening on or off. Switch it OFF for a faster, always-sunny game.",
+  tip:"Green = ON, grey = OFF."},
+ {label:"RAIN SOUND",icon:"🔊",title:"Rain sound ON / OFF",menu:1,el:function(){return mrow(/Rain sound/)},
+  text:"Turns the rain and thunder audio on or off without changing the weather itself.",
+  tip:"Use Menu > Sounds to change the volume."},
+ {label:"MAKE IT RAIN",icon:"🌧",title:"Make it rain / Stop rain",menu:1,el:function(){return mrow(/Make it rain|Stop rain/)},
+  text:"Starts rain immediately, or stops it if it is already raining. Rain gives bonus coins, and a rainbow bonus when it ends.",
+  tip:"The weather chip does the same thing."},
+ {label:"QUICK GUIDE",icon:"✨",title:"Quick guide",menu:1,el:function(){return mrow(/Quick guide/)},
+  text:"This replays the tour you are watching now, whenever you want.",
+  tip:"You can also press Esc to leave the tour at any time."},
+ {label:"SOUNDS",icon:"🔊",title:"Sounds",menu:1,el:function(){return mrow(/Sounds\.\.\./)},
+  text:"Choose the sound each item makes when placed (wood, stone, leaf, splash, chime and more), change footsteps, coins, crafting and thunder, and set the master volume.",
+  tip:"The ▶ buttons let you preview each sound."},
+
+ {label:"KINGDOM CONTROLS",icon:"🎮",title:"First-person controls",none:1,
+  text:"Inside Enter Kingdom: WASD walk, Shift run, Space jump. Left-click places the selected item, right-click or X breaks it, mouse wheel or Q/E changes the item. G places stairs ahead of you and R rotates a stair. Look straight down and click to build a pillar under you and rise up. V toggles fly mode (Space up, C down).",
+  tip:"On a phone, use the on-screen stick and the Jump, Place and Break buttons."}
+];
+
+/* ---------- state ---------- */
+var active=false,idx=0,tgt=[],lastKey="",saved={},typeT=null,tok=0;
+
+function clearBold(){all(".tour-bold").forEach(function(e){e.classList.remove("tour-bold")})}
+function typeText(t){
+  clearInterval(typeT);var my=++tok,n=0;msg.textContent="";
+  typeT=setInterval(function(){
+    if(my!==tok){clearInterval(typeT);return}
+    msg.textContent=t.slice(0,n+=2);
+    if(n>=t.length){msg.textContent=t;clearInterval(typeT)}
+  },11);
+}
+function landPreview(){
+  var g=window.__game;if(!g||!g.landPrices){land.style.display="none";return}
+  var L=g.landLevel,max=g.maxLandLevel,h="";
+  $("tourLandCur").textContent="Your garden now: "+g.size+" × "+g.size+" tiles";
+  for(var i=L;i<=Math.min(L+6,max);i++){
+    var sz=8+2*i,cls=i===L?"cur":i===L+1?"nxt":"";
+    var lab=i===L?"CURRENT":i===L+1?"NEXT":"LEVEL "+(i+1);
+    var cost=i===L?"Owned":(g.landPrices[i-1]||0).toLocaleString()+" coins";
+    h+='<div class="lr '+cls+'"><span>'+lab+" · "+sz+"×"+sz+'</span><em>'+cost+"</em></div>";
+  }
+  $("tourLandRows").innerHTML=h;land.style.display="block";
+}
+
+function render(){
+  var s=steps[idx];
+  if(s.menu)menu.classList.add("open");else menu.classList.remove("open");
+  if(s.hint)hint.classList.remove("hide");else if(saved.hint)hint.classList.add("hide");
+  clearBold();
+  tgt=s.el?[].concat(s.el()||[]).filter(Boolean):[];
+  tgt.forEach(function(e){
+    var b=e.classList.contains("mrow")?(e.querySelector(".pill")||e):e;
+    if(b.id!=="c")b.classList.add("tour-bold");
+  });
+  if(tgt[0]&&tgt[0].scrollIntoView)try{tgt[0].scrollIntoView({block:"center",inline:"center"})}catch(e){}
+  $("tourIcon").textContent=s.icon;$("tourHead").textContent=s.title;
+  $("tourEye").textContent="YOUR GARDEN TOUR · "+("0"+(idx+1)).slice(-2);
+  $("tourCount").textContent=(idx+1)+" / "+steps.length;
+  $("tourProg").firstElementChild.style.width=((idx+1)/steps.length*100)+"%";
+  $("tourBack").style.visibility=idx===0?"hidden":"visible";
+  $("tourNext").textContent=idx===steps.length-1?"Finish ✓":"Next →";
+  tip.textContent="💡 "+s.tip;
+  if(s.land)landPreview();else land.style.display="none";
+  tag.textContent="▼ "+s.label;
+  card.scrollTop=0;lastKey="";
+  typeText(s.text);
+}
+
+function rect(){
+  var r=null;
+  tgt.forEach(function(e){
+    var b=e.getBoundingClientRect();
+    if(!b.width||!b.height)return;
+    r=r?{l:Math.min(r.l,b.left),t:Math.min(r.t,b.top),r:Math.max(r.r,b.right),b:Math.max(r.b,b.bottom)}:{l:b.left,t:b.top,r:b.right,b:b.bottom};
+  });
+  return r;
+}
+function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
+function place(r){
+  var w=card.offsetWidth,h=card.offsetHeight,W=innerWidth,H=innerHeight;
+  if(!r){
+    spot.classList.add("none");tag.style.display="none";
+    card.style.left=clamp((W-w)/2,8,W)+"px";card.style.top=clamp((H-h)/2,8,H)+"px";return;
+  }
+  spot.classList.remove("none");tag.style.display="block";
+  var P=7,sl=r.l-P,st=r.t-P,sw=r.r-r.l+2*P,sh=r.b-r.t+2*P;
+  spot.style.left=sl+"px";spot.style.top=st+"px";spot.style.width=sw+"px";spot.style.height=sh+"px";
+  var tagBelow=st<38;
+  tag.style.left=clamp(sl,8,W-tag.offsetWidth-8)+"px";
+  tag.style.top=(tagBelow?st+sh+8:st-30)+"px";
+  if(tagBelow)tag.textContent=tag.textContent.replace("▼","▲");
+  var below=H-(st+sh)-(tagBelow?34:0),above=st-(tagBelow?0:34),top;
+  if(below>=h+16)top=st+sh+(tagBelow?40:14);
+  else if(above>=h+16)top=st-(tagBelow?0:34)-h-14;
+  else top=(st+sh/2<H/2)?H-h-10:10;
+  card.style.top=clamp(top,8,Math.max(8,H-h-8))+"px";
+  card.style.left=clamp(sl+sw/2-w/2,10,Math.max(10,W-w-10))+"px";
+}
+function frame(){
+  if(!active)return;
+  requestAnimationFrame(frame);
+  var r=rect(),key=(r?[r.l,r.t,r.r,r.b].join():"n")+"|"+card.offsetHeight+"|"+innerWidth+"|"+innerHeight;
+  if(key===lastKey)return;
+  lastKey=key;place(r);
+}
+
+function open(){
+  if(window.__fpOn)return;
+  saved={hT:body.classList.contains("hideTop"),hB:body.classList.contains("hideBot"),pc:body.classList.contains("pcollapsed"),hint:hint?hint.classList.contains("hide"):false};
+  body.classList.remove("hideTop","hideBot","pcollapsed");
+  var sh=$("shop");if(sh)sh.classList.remove("open");
+  idx=0;active=true;layer.classList.add("active");
+  render();requestAnimationFrame(frame);
+}
+function close(){
+  active=false;clearInterval(typeT);tok++;
+  layer.classList.remove("active");menu.classList.remove("open");clearBold();
+  body.classList[saved.hT?"add":"remove"]("hideTop");
+  body.classList[saved.hB?"add":"remove"]("hideBot");
+  body.classList[saved.pc?"add":"remove"]("pcollapsed");
+  if(hint)hint.classList[saved.hint?"add":"remove"]("hide");
+  try{localStorage.setItem("cozy_builder_guide_v4","1")}catch(e){}
+}
+function next(){if(idx<steps.length-1){idx++;render()}else close()}
+function back(){if(idx>0){idx--;render()}}
+$("tourNext").addEventListener("click",next);
+$("tourBack").addEventListener("click",back);
+$("tourClose").addEventListener("click",close);
+
+/* keep the Menu from closing while the tour is clicked, and block game hotkeys */
+window.addEventListener("pointerdown",function(e){
+  if(active&&e.target.closest&&e.target.closest("#tourLayer"))e.stopPropagation();
+},true);
+window.addEventListener("keydown",function(e){
+  if(!active)return;
+  e.stopImmediatePropagation();
+  if(e.code==="Escape")close();
+  else if(e.code==="ArrowRight"||e.code==="Enter"){e.preventDefault();next()}
+  else if(e.code==="ArrowLeft"){e.preventDefault();back()}
+},true);
+
+/* every way to open the guide now uses the new tour */
+window.__openCozyGardenTour=open;
+var go=$("guideOpen");if(go)go.addEventListener("click",function(e){e.preventDefault();e.stopImmediatePropagation();open()},true);
+try{if(!localStorage.getItem("cozy_builder_guide_v4"))setTimeout(open,1300)}catch(e){}
+})();
+</script>
+
 </body>
 </html>
