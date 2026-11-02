@@ -104,6 +104,7 @@
 </style>
 </head>
 <body>
+<script>/*dprCap*/(function(){try{var d=window.devicePixelRatio||1;Object.defineProperty(window,"devicePixelRatio",{configurable:true,get:function(){return Math.min(d,1.5)}})}catch(e){}})();</script>
 <script>/* landGrow200: shift extra saved data when land grew 100 -> 200 */
 (function(){try{
 var m=localStorage.getItem("cozy_garden_save_v2"),d=m?JSON.parse(m):null;
@@ -6724,6 +6725,67 @@ rs.addEventListener("click",function(){if(rs.textContent==="Sure?"){
   bs.forEach(function(b){var r=R(b);if(r.w&&r.w.g.parent)r.w.g.parent.remove(r.w.g)});
   bs=[];RT={};save();if(open)render()}},true);
 setInterval(function(){if(open)upd()},1000);
+})();
+
+</script>
+<script>
+/*smoothNav2*/
+(function(){
+var $=function(s){return document.querySelector(s)};
+/* ---- smoother touch + scrolling ---- */
+var st=document.createElement("style");
+st.textContent="html,body{overscroll-behavior:none}"+
+"#palette,#tabs{scroll-behavior:smooth;-webkit-overflow-scrolling:touch;scroll-snap-type:x proximity;scrollbar-width:none}"+
+"#palette::-webkit-scrollbar,#tabs::-webkit-scrollbar{display:none}"+
+".item{scroll-snap-align:start;transition:transform .08s,background .12s}"+
+".item:active,.pill:active,.tab:active{transform:scale(.94)}"+
+".tab,.item,.pill,.vt{touch-action:manipulation}"+
+"#c{will-change:transform}";
+document.head.appendChild(st);
+
+/* ---- throttle mouse-hover picking (the heaviest per-move work) ---- */
+var di=$("#c"),lastMove=0;
+di.addEventListener("pointermove",function(e){
+  if(!e.isTrusted||e.buttons||e.pointerType!=="mouse")return;
+  var n=performance.now();
+  if(n-lastMove<45){e.stopImmediatePropagation();return}
+  lastMove=n;
+},true);
+
+/* ---- keyboard shortcuts (orbit view only) ---- */
+function typing(e){var t=e.target&&e.target.tagName;return t==="INPUT"||t==="TEXTAREA"||t==="SELECT"}
+function panelOpen(){return !!document.querySelector("#shop.open,#kgPick.open,#mbPanel.open")}
+window.addEventListener("keydown",function(e){
+  if(window.__fpOn||typing(e)||e.ctrlKey||e.metaKey||e.altKey)return;
+  if(e.code==="Escape"){
+    var s=$("#shop");if(s)s.classList.remove("open");
+    var k=$("#kgPick");if(k)k.classList.remove("open");
+    return;
+  }
+  if(panelOpen()||e.repeat)return;
+  var c=e.code,m;
+  if((m=/^Digit([1-9])$/.exec(c))){
+    var it=document.querySelectorAll("#palette .item")[+m[1]-1];
+    if(it){it.click();it.scrollIntoView({block:"nearest",inline:"nearest"})}
+  }else if(c==="BracketLeft"||c==="BracketRight"){
+    var tabs=[].slice.call(document.querySelectorAll("#tabs .tab[data-cat]")),i=-1;
+    tabs.forEach(function(t,j){if(t.classList.contains("sel"))i=j});
+    if(tabs.length)tabs[(i+(c==="BracketRight"?1:-1)+tabs.length)%tabs.length].click();
+  }else if(c==="KeyX"){var er=$("#tabs .tab.erase");if(er)er.click()}
+  else if(c==="KeyB"){var bt=$("#blockToggle");if(bt)bt.click()}
+  else if(c==="KeyH"){
+    var hide=!document.body.classList.contains("hideTop");
+    if(document.body.classList.contains("hideTop")!==hide)$("#vtTop").click();
+    if(document.body.classList.contains("hideBot")!==hide)$("#vtBot").click();
+  }else if(c==="Home"){
+    var hb=[].slice.call(document.querySelectorAll("#snPad button")).filter(function(b){return b.textContent==="\u2302"})[0];
+    if(hb)hb.click();
+  }
+});
+
+/* ---- clearer on-screen hint ---- */
+var h=$("#hint");
+if(h)h.textContent="Drag: rotate \u00B7 Right-drag: pan \u00B7 Right-click: glide \u00B7 WASD move \u00B7 Q/E rotate \u00B7 Scroll zoom \u00B7 1-9 pick item \u00B7 [ ] category \u00B7 X remove \u00B7 H hide UI \u00B7 Home recentre";
 })();
 
 </script>
