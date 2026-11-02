@@ -7003,5 +7003,50 @@ document.addEventListener("pointerdown",function(e){if(!panel.contains(e.target)
 window.addEventListener("keydown",function(e){if(e.code==="Escape")close()});
 })();
 </script>
+<style>/*uiPatch1*/
+/* Hide top / Hide items -> top-right corner */
+.vt{position:fixed!important;left:auto!important;right:8px;top:calc(58px + env(safe-area-inset-top))!important;
+  transform:none!important;padding:5px 10px;font-size:11px;z-index:32}
+#vtBot{right:98px}
+body.hideTop .vt{top:calc(8px + env(safe-area-inset-top))!important}
+
+/* Bottom items bar */
+#bottom{background:rgba(255,255,255,.96);border-radius:18px 18px 0 0;box-shadow:0 -3px 14px rgba(0,0,0,.2)}
+#tabs{padding:7px 10px 0;gap:5px}
+#palette{padding:6px 10px 8px;gap:6px}
+.item{width:62px;min-height:66px;padding:4px 2px;border-radius:12px;gap:1px}
+.item .ic{font-size:22px}
+.item .nm,.item .co{font-size:10px}
+.tab.pal{background:#eef1ee;color:#2b3a2b;padding:6px 11px;margin-left:0}
+.tab.pal.on{background:#2e9d57;color:#fff}
+#tabs .tab.erase{margin-left:auto}
+body.pgrid #palette{flex-wrap:wrap;max-height:34vh;overflow-y:auto;overflow-x:hidden;justify-content:flex-start}
+body.pcompact .item{width:50px;min-height:50px}
+body.pcompact .item .nm{display:none}
+body.pcollapsed #palette{display:none}
+body.pcollapsed #toast{bottom:calc(60px + env(safe-area-inset-bottom))}
+</style>
+<script>/*uiPatch1*/
+(function(){
+var K="cozy_pal",b=document.body,tabs=document.getElementById("tabs");
+var S={grid:0,compact:0,collapsed:0};
+try{S=Object.assign(S,JSON.parse(localStorage.getItem(K)||"{}"))}catch(e){}
+function apply(){
+  b.classList.toggle("pgrid",!!S.grid);
+  b.classList.toggle("pcompact",!!S.compact);
+  b.classList.toggle("pcollapsed",!!S.collapsed);
+  btns.forEach(function(x){x.el.classList.toggle("on",!!S[x.k])});
+  try{localStorage.setItem(K,JSON.stringify(S))}catch(e){}
+}
+var btns=[["collapsed","\u25BE","Collapse items"],["grid","\u25A6","Grid view"],["compact","\u25AB","Compact icons"]].map(function(d){
+  var el=document.createElement("button");
+  el.className="tab pal";el.textContent=d[1];el.title=d[2];
+  el.addEventListener("click",function(){S[d[0]]=S[d[0]]?0:1;apply()});
+  tabs.appendChild(el);return {k:d[0],el:el};
+});
+apply();
+})();
+</script>
+
 </body>
 </html>
