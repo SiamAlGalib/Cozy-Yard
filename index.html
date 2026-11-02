@@ -8095,5 +8095,189 @@ try{if(!localStorage.getItem("cozy_builder_guide_v4"))setTimeout(open,1300)}catc
 })();
 </script>
 
+<!--dailyQuests2-->
+<script>
+/*dailyQuests2*/
+(function(){
+var G=window.__game;if(!G)return;
+var KEY="cozy_daily_v2",lt=Math.round(Math.sqrt(G.cells.length));
+function $(i){return document.getElementById(i)}
+function toast(m){var t=$("toast");if(!t)return;t.textContent=m;t.classList.add("show");clearTimeout(toast.t);toast.t=setTimeout(function(){t.classList.remove("show")},3200)}
+var SETS={
+ flower:["flower","sunflower"],
+ tree:["tree","pine","cherry","palm","bigtree","gianttree"],
+ path:["path","stonepath","deck","sand"],
+ wall:["wall","brick","stone","wood"],
+ water:["pond","lake","waterblock","waterfall","fountain"],
+ decor:["bench","lamp","mailbox","statue","gnome","table","campfire","flag","tent","doghouse","haystack"],
+ roof:["roof","roofblue","roofbrown","spire","ceiling"],
+ glass:["window","door"],
+ lawn:["grass"]};
+var POOL={
+ any:{i:"🧱",t:"Place {n} items of any kind",g:[8,20,45]},
+ flower:{i:"🌷",t:"Plant {n} flowers",g:[3,8,16]},
+ tree:{i:"🌳",t:"Plant {n} trees",g:[2,5,10]},
+ path:{i:"🪨",t:"Lay {n} path tiles",g:[4,10,22]},
+ wall:{i:"🏗️",t:"Build {n} wall blocks",g:[4,10,24]},
+ water:{i:"💧",t:"Add {n} water pieces",g:[2,5,10]},
+ decor:{i:"🛋️",t:"Place {n} decorations",g:[2,4,8]},
+ roof:{i:"🏠",t:"Place {n} roof pieces",g:[2,5,12]},
+ glass:{i:"🪟",t:"Add {n} windows or doors",g:[2,4,8]},
+ lawn:{i:"🟩",t:"Lay {n} lawn tiles",g:[4,12,30]}};
+var TIER=["Easy","Medium","Hard"],BASE=[60,130,260],BONUS=200;
+
+function dayNum(){var d=new Date();return Math.floor(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate())/864e5)}
+function rng(s){return function(){s|=0;s=s+1831565813|0;var t=Math.imul(s^s>>>15,1|s);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function quests(day){
+ var r=rng(day*7919+13),keys=Object.keys(POOL),i,j,t;
+ for(i=keys.length-1;i>0;i--){j=Math.floor(r()*(i+1));t=keys[i];keys[i]=keys[j];keys[j]=t}
+ return [0,1,2].map(function(tier){var k=keys[tier],p=POOL[k],n=p.g[tier];
+  return{kind:k,icon:p.i,n:n,text:p.t.replace("{n}",n),coins:BASE[tier],tier:tier}})}
+function reward(q){return Math.round(q.coins*(1+G.landLevel*.15))}
+
+function counts(){
+ var n=G.size,off=(lt-n)/2,ids={},z,x,c,k,s,key,kind;
+ function add(o){if(o&&o.id)ids[o.id]=(ids[o.id]||0)+1}
+ for(z=off;z<off+n;z++)for(x=off;x<off+n;x++){
+  c=G.cells[z*lt+x];add(c.floor);add(c.base);add(c.top);
+  if(c.stack)for(k=0;k<c.stack.length;k++)add(c.stack[k])}
+ var V=window.__VX;if(V)for(s in V)add(V[s]);
+ var out={any:0};
+ for(key in ids)out.any+=ids[key];
+ for(kind in SETS){out[kind]=0;SETS[kind].forEach(function(id){out[kind]+=ids[id]||0})}
+ return out}
+
+function fresh(day,prev){
+ prev=prev||{};
+ return{day:day,base:counts(),best:{},done:[0,0,0],claimed:[0,0,0],bonus:0,
+  streak:prev.streak||0,last:prev.last||0,longest:prev.longest||0,total:prev.total||0}}
+function load(){try{var s=JSON.parse(localStorage.getItem(KEY)||"null");if(s&&s.base)return s}catch(e){}return null}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+var S=load();
+if(!S||S.day!==dayNum()){S=fresh(dayNum(),S);save()}
+
+function streakNow(){return(S.last===S.day||S.last===S.day-1)?S.streak:0}
+function claimable(){
+ var n=0,i;for(i=0;i<3;i++)if(S.done[i]&&!S.claimed[i])n++;
+ if(allClaimed()&&!S.bonus)n++;return n}
+function allClaimed(){return S.claimed[0]&&S.claimed[1]&&S.claimed[2]}
+
+function tick(){
+ if(document.hidden)return;
+ var d=dayNum();
+ if(d!==S.day){S=fresh(d,S);save();toast("🌅 New daily quests are ready!")}
+ var c=counts(),ch=false,k,v,Q=quests(S.day);
+ for(k in c){v=Math.max(0,c[k]-(S.base[k]||0));if(v>(S.best[k]||0)){S.best[k]=v;ch=true}}
+ Q.forEach(function(q,i){
+  if((S.best[q.kind]||0)>=q.n&&!S.done[i]){S.done[i]=1;ch=true;
+   toast("🏆 Quest complete: "+q.text+". Open Daily build to claim!")}});
+ if(ch)save();
+ refresh();
+}
+
+function claim(i){
+ var Q=quests(S.day),q=Q[i];
+ if(!q||!S.done[i]||S.claimed[i])return;
+ S.claimed[i]=1;
+ var amt=reward(q),msg="+"+amt+" coins";
+ if(S.last!==S.day){
+  S.streak=(S.last===S.day-1)?S.streak+1:1;S.last=S.day;
+  S.longest=Math.max(S.longest,S.streak);S.total++;
+  var sb=20*Math.min(S.streak,10);amt+=sb;msg="+"+amt+" coins (streak bonus +"+sb+")";
+  if(S.streak%7===0){var ch=300*Math.min(4,S.streak/7);amt+=ch;msg="🎁 "+S.streak+"-day chest! +"+amt+" coins"}
+ }
+ G.coins=G.coins+amt;save();toast("🔥 "+msg);refresh(true)}
+function claimBonus(){
+ if(!allClaimed()||S.bonus)return;
+ var amt=Math.round(BONUS*(1+G.landLevel*.15));
+ S.bonus=1;G.coins=G.coins+amt;save();toast("🎉 All quests done! +"+amt+" bonus coins");refresh(true)}
+
+/* ---------- UI ---------- */
+var st=document.createElement("style");
+st.textContent="#questCard{display:none!important}"+
+"#dailyOpen{position:relative}.dqB{position:absolute;top:-7px;right:-7px;min-width:20px;height:20px;border-radius:99px;background:#ef4444;color:#fff;font:900 11px system-ui,sans-serif;display:grid;place-items:center;padding:0 5px;box-shadow:0 2px 6px #0006;animation:dqP 1.3s infinite}"+
+"@keyframes dqP{50%{transform:scale(1.18)}}"+
+"#dqPanel{position:fixed;inset:0;z-index:60;background:#07142699;display:none;align-items:center;justify-content:center;padding:14px;font-family:system-ui,sans-serif;backdrop-filter:blur(4px)}#dqPanel.open{display:flex}"+
+"#dqBox{width:min(400px,100%);max-height:92vh;overflow-y:auto;border-radius:22px;background:linear-gradient(145deg,#10243c,#172f50);color:#f8fbff;box-shadow:0 20px 60px #020817c0;border:1px solid #ffffff40}"+
+".dqH{display:flex;align-items:center;gap:10px;padding:14px 16px;background:linear-gradient(105deg,#0f9b72,#16a6bd);border-radius:22px 22px 0 0}.dqH b{flex:1;font-size:16px}.dqH button{border:0;border-radius:50%;width:30px;height:30px;background:#ffffff30;color:#fff;font-size:18px;cursor:pointer}"+
+".dqS{display:flex;align-items:center;gap:10px;padding:12px 16px 4px}.dqFire{font-size:26px}.dqS div{flex:1}.dqS b{font-size:15px}.dqS small{display:block;color:#b8c9df;font-size:11px;margin-top:2px}"+
+".dqWk{display:flex;gap:5px;padding:6px 16px 10px}.dqWk span{flex:1;height:26px;border-radius:9px;background:#ffffff14;display:grid;place-items:center;font-size:11px;font-weight:800;color:#8fa8c5}.dqWk span.on{background:linear-gradient(135deg,#fbbf24,#f97316);color:#3b1d00}"+
+".dqRow{display:flex;align-items:center;gap:10px;margin:0 14px 8px;padding:10px;border-radius:14px;background:#ffffff0f;border:1px solid #ffffff18}.dqRow.ok{border-color:#34d39980;background:#34d39914}"+
+".dqI{font-size:24px;width:34px;text-align:center}.dqT{flex:1;min-width:0}.dqT b{font-size:13px;display:block}.dqT small{font-size:10px;color:#b8c9df}"+
+".dqBar{height:7px;border-radius:9px;background:#ffffff20;margin:6px 0 4px;overflow:hidden}.dqBar i{display:block;height:100%;background:linear-gradient(90deg,#34d399,#a3e635);transition:width .3s}"+
+".dqRow button,.dqBn{border:0;border-radius:11px;padding:9px 11px;font:900 12px system-ui,sans-serif;cursor:pointer;color:#052b3a;background:linear-gradient(100deg,#fbbf24,#f59e0b);white-space:nowrap}"+
+".dqOk{font-size:11px;font-weight:900;color:#6ee7b7;white-space:nowrap}.dqCoin{font-size:12px;font-weight:900;color:#fde68a;white-space:nowrap}"+
+".dqBonus{margin:4px 14px 10px;padding:11px;border-radius:14px;background:linear-gradient(100deg,#fbbf2425,#fb923c20);display:flex;align-items:center;gap:10px;font-size:12px;font-weight:800;color:#fde68a}.dqBonus span{flex:1}"+
+".dqBn[disabled]{opacity:.4;cursor:default}.dqF{padding:2px 16px 14px;font-size:11px;color:#8fa8c5;text-align:center}body.fp #dqPanel{display:none!important}";
+document.head.appendChild(st);
+
+var ov=document.createElement("div");ov.id="dqPanel";
+ov.innerHTML='<div id="dqBox"></div>';document.body.appendChild(ov);
+var box=ov.firstChild,sig="";
+
+var old=$("dailyOpen"),btn=old.cloneNode(true);
+old.parentNode.replaceChild(btn,old);
+Object.defineProperty(btn,"textContent",{get:function(){return"🏆 Daily build"},set:function(){},configurable:true});
+var lastBtn="";
+function setBtn(){
+ var n=claimable(),t=allClaimed()&&S.bonus?"🏆 All done ✓":"🏆 Daily build";
+ var h=t+(n?'<span class="dqB">'+n+'</span>':"");
+ if(h!==lastBtn){lastBtn=h;btn.innerHTML=h}}
+
+function cd(){
+ var n=new Date(),m=new Date(n.getFullYear(),n.getMonth(),n.getDate()+1),ms=m-n,h=Math.floor(ms/36e5),mm=Math.floor(ms%36e5/6e4);
+ return h+"h "+mm+"m"}
+
+function render(){
+ var Q=quests(S.day),sk=streakNow(),h="",i;
+ h+='<div class="dqH"><span style="font-size:22px">🏆</span><b>Daily Garden Quests</b><button data-a="x">×</button></div>';
+ h+='<div class="dqS"><span class="dqFire">'+(sk?"🔥":"💤")+'</span><div><b>'+(sk?sk+"-day streak":"No streak yet")+'</b><small>'+
+    (sk?"Claim a quest every day to keep it. Best: "+S.longest+" days":"Claim any quest today to start a streak")+'</small></div></div>';
+ h+='<div class="dqWk">';
+ var pos=sk?((sk-1)%7)+1:0;
+ for(i=1;i<=7;i++)h+='<span class="'+(i<=pos?"on":"")+'">'+(i===7?"🎁":i)+'</span>';
+ h+='</div>';
+ Q.forEach(function(q,i){
+  var p=Math.min(S.best[q.kind]||0,q.n),pc=Math.round(p/q.n*100),r=reward(q),a;
+  if(S.claimed[i])a='<span class="dqOk">✓ Claimed</span>';
+  else if(S.done[i])a='<button data-c="'+i+'">Claim +'+r+'</button>';
+  else a='<span class="dqCoin">🪙 '+r+'</span>';
+  h+='<div class="dqRow'+(S.done[i]?" ok":"")+'"><div class="dqI">'+q.icon+'</div><div class="dqT"><b>'+q.text+'</b><div class="dqBar"><i style="width:'+pc+'%"></i></div><small>'+p+' / '+q.n+' · '+TIER[q.tier]+'</small></div>'+a+'</div>'});
+ var br=Math.round(BONUS*(1+G.landLevel*.15));
+ h+='<div class="dqBonus"><span>🎉 Finish all 3 for +'+br+' bonus coins</span>'+
+    (S.bonus?'<b class="dqOk">✓ Claimed</b>':'<button class="dqBn" data-a="b"'+(allClaimed()?"":" disabled")+'>Claim</button>')+'</div>';
+ h+='<div class="dqF">New quests in <b id="dqCd">'+cd()+'</b> · Every 7th streak day = chest 🎁</div>';
+ box.innerHTML=h}
+
+function refresh(force){
+ setBtn();
+ if(!ov.classList.contains("open"))return;
+ var s=JSON.stringify([S.best,S.done,S.claimed,S.bonus,S.streak,S.day,G.landLevel]);
+ if(force||s!==sig){sig=s;render()}
+ var c=$("dqCd");if(c)c.textContent=cd()}
+
+btn.addEventListener("click",function(e){e.stopPropagation();sig="";ov.classList.add("open");tick();render()});
+ov.addEventListener("click",function(e){
+ if(e.target===ov)return ov.classList.remove("open");
+ var b=e.target.closest("button");if(!b)return;
+ if(b.dataset.a==="x")ov.classList.remove("open");
+ else if(b.dataset.a==="b")claimBonus();
+ else if(b.dataset.c!==undefined)claim(+b.dataset.c)});
+window.addEventListener("keydown",function(e){if(e.code==="Escape"&&ov.classList.contains("open"))ov.classList.remove("open")});
+
+setInterval(tick,1200);
+setInterval(function(){if(ov.classList.contains("open")){var c=$("dqCd");if(c)c.textContent=cd()}},1000);
+document.addEventListener("visibilitychange",function(){if(!document.hidden)tick()});
+tick();
+setTimeout(function(){
+ var n=claimable(),sk=streakNow();
+ if(n)toast("🎁 You have "+n+" daily reward"+(n>1?"s":"")+" to claim!");
+ else if(sk&&S.last!==S.day)toast("🔥 "+sk+"-day streak. Claim a quest today to keep it!");
+ else if(!sk&&!S.done[0])toast("🏆 Today's daily quests are ready");
+},2500);
+})();
+
+</script>
+<!--/dailyQuests2-->
 </body>
 </html>
