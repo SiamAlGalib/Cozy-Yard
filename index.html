@@ -4488,7 +4488,7 @@ var navMode=false;
 var Pn=new Map,Ht=null,Kl=0,wu=()=>{let[i,e]=[...Pn.values()];return Math.hypot(i.x-e.x,i.y-e.y)||1};
 di.addEventListener("contextmenu",e=>{if(navMode)e.preventDefault()});
 di.addEventListener("pointerdown",i=>{di.setPointerCapture(i.pointerId);Pn.set(i.pointerId,{x:i.clientX,y:i.clientY,button:i.button});Pn.size===1?(Ht={x:i.clientX,y:i.clientY,t:performance.now(),moved:!1,button:i.button},navMode?Wt.visible=false:$l(i.clientX,i.clientY)):(Ht&&(Ht.moved=!0),Kl=wu(),Wt.visible=!1)});
-di.addEventListener("pointermove",i=>{let e=Pn.get(i.pointerId);if(!e){i.pointerType==="mouse"&&!navMode&&$l(i.clientX,i.clientY);return}if(Pn.size===1){let t=i.clientX-e.x,n=i.clientY-e.y;e.x=i.clientX,e.y=i.clientY;Ht&&!Ht.moved&&Math.hypot(i.clientX-Ht.x,i.clientY-Ht.y)>8&&(Ht.moved=!0);if(Ht&&Ht.moved){Wt.visible=!1;if(navMode){if(i.pointerType==="mouse"&&(i.buttons&2)){Zl-=t*.008;ao=Jl(ao+n*.006,window.__aoLo?window.__aoLo():.35,window.__aoHi?window.__aoHi():1.3)}else{let k=sn*.0017,cs=Math.cos(Zl),ss=Math.sin(Zl);eo.x+=(-t*cs+n*ss)*k;eo.z+=(t*ss+n*cs)*k;let edge=lt/2+4;eo.x=Jl(eo.x,-edge,edge);eo.z=Jl(eo.z,-edge,edge)}}else{Zl-=t*.008;ao=Jl(ao+n*.006,window.__aoLo?window.__aoLo():.35,window.__aoHi?window.__aoHi():1.3)}an=true}else if(!navMode)$l(i.clientX,i.clientY)}else if(Pn.size===2){e.x=i.clientX,e.y=i.clientY;let t=wu();sn=Jl(sn*(Kl/t),window.__zmin?window.__zmin(null):5,90),Xn=null,Kl=t,an=true}});
+di.addEventListener("pointermove",i=>{let e=Pn.get(i.pointerId);if(!e){i.pointerType==="mouse"&&!navMode&&$l(i.clientX,i.clientY);return}if(Pn.size===1){let t=i.clientX-e.x,n=i.clientY-e.y;e.x=i.clientX,e.y=i.clientY;Ht&&!Ht.moved&&Math.hypot(i.clientX-Ht.x,i.clientY-Ht.y)>8&&(Ht.moved=!0);if(Ht&&Ht.moved){Wt.visible=!1;if(navMode){if(i.pointerType==="mouse"&&(i.buttons&2)){Zl-=t*.008;ao=Jl(ao+n*.006,window.__aoLo?window.__aoLo():.35,window.__aoHi?window.__aoHi():1.3)}else{let k=sn*.0017,cs=Math.cos(Zl),ss=Math.sin(Zl);eo.x+=(-t*cs+n*ss)*k;eo.z+=(t*ss+n*cs)*k;let edge=lt/2+4;eo.x=Jl(eo.x,-edge,edge);eo.z=Jl(eo.z,-edge,edge)}}else{Zl-=t*.008;ao=Jl(ao+n*.006,window.__aoLo?window.__aoLo():.35,window.__aoHi?window.__aoHi():1.3)}an=true}else if(!navMode)$l(i.clientX,i.clientY)}else if(Pn.size===2){e.x=i.clientX,e.y=i.clientY;let t=wu();sn=Jl(sn*(Kl/t),window.__zmin?window.__zmin(null):5,200),Xn=null,Kl=t,an=true}});
 function Ru(i,e){if(Pn.has(i.pointerId)){if(e&&Pn.size===1&&Ht&&!Ht.moved&&performance.now()-Ht.t<500){let t=Au(i.clientX,i.clientY);if(t&&focusMode){eo.set(io(t.ix),.65,io(t.iz));sn=8;Xn=null;focusMode=false;focusButton.textContent="🎯 Focus on click";focusButton.style.background="#285c48";Wt.visible=false;Eu();an=true;Vt("Zoomed in on selected spot")}else if(t&&!navMode)yu(t.ix,t.iz)}Pn.delete(i.pointerId),Pn.size===0&&(Ht=null,i.pointerType!=="mouse"&&(Wt.visible=false,an=true))}}
 di.addEventListener("pointerup",i=>Ru(i,true));di.addEventListener("pointercancel",i=>Ru(i,false));
 di.addEventListener("wheel",i=>{i.preventDefault();let before=Au(i.clientX,i.clientY),old=sn;sn=Jl(sn*(1+i.deltaY*.001),5,90);if(before){let k=(old-sn)/Math.max(old,1);eo.x+=(io(before.ix)-eo.x)*k;eo.z+=(io(before.iz)-eo.z)*k}Xn=null;Eu();an=true},{passive:false});
@@ -5795,11 +5795,10 @@ function hitAt(px,py){
   var r=di.getBoundingClientRect();
   du.set((px-r.left)/r.width*2-1,-((py-r.top)/r.height)*2+1);
   Gl.setFromCamera(du,In);
-  var hs=Gl.intersectObjects(fo.children,true);
-  if(hs.length)return hs[0].point.clone();
+  
   if(Gl.ray.intersectPlane(R0,Vl))return Vl.clone();
   return null}
-function zoom(v,anchor){if(!zActive)zt=sn;zAnchor=anchor||null;var __v=window.__zfix?window.__zfix(v):v;zt=Jl(__v,window.__zmin?window.__zmin(anchor):5,90);zActive=true;Xn=null}
+function zoom(v,anchor){if(!zActive)zt=sn;zAnchor=anchor||null;var __v=window.__zfix?window.__zfix(v):v;zt=Jl(__v,window.__zmin?window.__zmin(anchor):5,200);/*groundZoom*/zActive=true;Xn=null}
 function glideTo(ix,iz){
   glide={x:io(ix),z:io(iz),d:(window.__ins?sn:Math.min(sn,Math.max(7,sn*.6)))};
   fl.x=fl.y=0;zActive=false;Xn=null}
