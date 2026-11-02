@@ -7089,7 +7089,7 @@ var cam=null,cd=new V3();
 function obr(r,s,c){cam=c}
 
 /* ---------- weather state ---------- */
-var W={phase:"clear",left:rnd(50,90),dur:0,ri:0,tgt:0,rbt:0,flash:0,nextL:8};
+var W={phase:"clear",left:(function(){/*rainRare*/try{var t=+localStorage.getItem("cozy_rain_next");if(t>Date.now())return(t-Date.now())/1000}catch(e){}var d=rnd(30*60,90*60);try{localStorage.setItem("cozy_rain_next",Date.now()+d*1000)}catch(e){}return d})(),dur:0,ri:0,tgt:0,rbt:0,flash:0,nextL:8};
 var bt=0,nb=0,nbSum=0;
 function score(){
   var n=G.size,off=(lt-n)/2,s=0,PW={flower:1,sunflower:2,bush:1,hedge:1,tree:2,pine:2,cherry:3,palm:2,bigtree:5,gianttree:10,mushroom:1};
@@ -7100,10 +7100,10 @@ function score(){
   }
   return s;
 }
-function startRain(d){W.phase="rain";W.left=d||rnd(70,130);W.dur=W.left;W.tgt=1;W.nextL=rnd(5,12);bt=0}
+function startRain(d){W.phase="rain";W.left=d||60;W.dur=W.left;W.tgt=1;W.nextL=rnd(5,12);bt=0}
 function endRain(){
   var ran=W.dur-W.left;
-  W.phase="clear";W.left=rnd(120,240);W.tgt=0;
+  W.phase="clear";W.left=rnd(60*60,90*60);W.tgt=0;try{localStorage.setItem("cozy_rain_next",Date.now()+W.left*1000)}catch(e){}
   if(ran>30){
     W.rbt=55;
     var b=Math.round(score()*3)+50;
