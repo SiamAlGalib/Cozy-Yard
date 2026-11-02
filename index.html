@@ -8473,14 +8473,46 @@ import { getFirestore, doc, setDoc, getDoc, collection, query, orderBy, limit, g
     if(!validConfig(CONFIG))return false;
     var app=getApps().length?getApps()[0]:initializeApp(CONFIG);
     auth=getAuth(app);db=getFirestore(app);ready=true;
-    onAuthStateChanged(auth,function(u){user=u;updateFirebaseButtons();if(u){syncOwnPlayer();loadFirebaseLeaderboard();}else loadFirebaseLeaderboard();});
+    onAuthStateChanged(auth,function(u){
+      user=u;
+      updateFirebaseButtons();
+      if(u){syncOwnPlayer();loadFirebaseLeaderboard();}
+      else loadFirebaseLeaderboard();
+    });
+    // For this Firebase test build, automatically create an anonymous account
+    // after Firebase is connected. This avoids requiring Google sign-in.
+    if(!auth.currentUser){
+      try{
+        await signInAnonymously(auth);
+        toast("✅ Anonymous Firebase account created");
+      }catch(e){
+        var msg=e&&e.code?e.code+" — ":"";
+        msg+=(e&&e.message?e.message:String(e));
+        console.error("Firebase anonymous sign-in failed",e);
+        toast("❌ Firebase anonymous sign-in failed: "+msg);
+        var panel=document.getElementById("firebaseTestPanel");
+        var st=panel&&panel.querySelector("#fbStatus");
+        if(st)st.textContent="❌ "+msg+" | Enable Authentication → Sign-in method → Anonymous.";
+      }
+    }
     return true;
   }
 
   async function anonymousLogin(){
     if(!ready){var p=document.getElementById("firebaseTestPanel")||configUI();p.classList.add("open");return}
-    try{await signInAnonymously(auth);toast("✅ Signed in anonymously");}
-    catch(e){toast("Firebase sign-in failed: "+(e&&e.message?e.message:"try again"));}
+    if(auth&&auth.currentUser){toast("🟢 Already signed in anonymously");updateFirebaseButtons();return}
+    try{
+      await signInAnonymously(auth);
+      toast("✅ Signed in anonymously");
+    }catch(e){
+      var msg=e&&e.code?e.code+" — ":"";
+      msg+=(e&&e.message?e.message:"try again");
+      console.error("Firebase sign-in failed",e);
+      toast("❌ "+msg);
+      var panel=document.getElementById("firebaseTestPanel");
+      var st=panel&&panel.querySelector("#fbStatus");
+      if(st)st.textContent="❌ "+msg+" | Make sure Anonymous is enabled in Firebase Authentication.";
+    }
   }
   async function logout(){try{if(auth)await signOut(auth);toast("Signed out of Firebase test account")}catch(e){}}
 
