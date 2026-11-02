@@ -5884,7 +5884,7 @@ di.addEventListener("wheel",function(e){
   var dy=Jl(e.deltaY*(e.deltaMode===1?33:1),-250,250),t=Au(e.clientX,e.clientY);
   glide=null;fl.x=fl.y=0;
   var h3=hitAt(e.clientX,e.clientY);
-  zoom((zActive?zt:sn)*Math.exp(dy*.0014),h3?{x:h3.x,y:h3.y,z:h3.z,px:e.clientX,py:e.clientY}:(t?{x:io(t.ix),z:io(t.iz)}:null));
+  zoom((zActive?zt:sn)*Math.exp(dy*.0014),h3?{x:h3.x,z:h3.z}:(t?{x:io(t.ix),z:io(t.iz)}:null));
 },{passive:false,capture:true});
 
 /* keyboard: WASD/arrows move, Q/E rotate, +/- zoom, Shift = fast */
