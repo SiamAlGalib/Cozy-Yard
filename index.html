@@ -7324,12 +7324,10 @@ function loop(now){
   fl.style.opacity=on?Math.min(1,W.flash*.75):0;
   /* rainbow */
   var rbOp=(on&&W.rbt>0&&ri<.3)?.7*clamp(Math.min(W.rbt/8,(55-W.rbt)/5),0,1):0;
-  rbG.visible=rbOp>.01&&!!cam;
+  /*rbFixed*/rbG.visible=rbOp>.01;
   if(rbG.visible){
-    cam.getWorldDirection(cd);var hl=Math.hypot(cd.x,cd.z);
-    if(hl>.25){hx=cd.x/hl;hz=cd.z/hl}
-    rbG.position.set(cam.position.x+hx*110,-6,cam.position.z+hz*110);
-    rbG.rotation.y=Math.atan2(-hx,-hz);
+    rbG.position.set(0,-6,-(G.size/2+45));
+    rbG.rotation.y=0;
     for(var j=0;j<rbM.length;j++)rbM[j].opacity=rbOp;
   }
   if(now-lastSnd>250){lastSnd=now;rainSound()}
