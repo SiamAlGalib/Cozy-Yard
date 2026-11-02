@@ -8300,7 +8300,34 @@ setTimeout(function(){
   if(typeof data.name!=="string")data.name="";
   function save(){try{localStorage.setItem(KEY,JSON.stringify(data))}catch(e){}}
   save();
-  window.__gardenLeaderboardAward=function(n){n=Math.max(0,Math.floor(Number(n)||0));data.points+=n;data.weekPoints+=n;save();submitScore();render()};
+  var CLOUD_VERSION=1;
+  function cloudReady(){return !!(window.ytgame&&ytgame.IN_PLAYABLES_ENV&&ytgame.game&&typeof ytgame.game.loadData==="function"&&typeof ytgame.game.saveData==="function")}
+  function cloudPayload(){return JSON.stringify({version:CLOUD_VERSION,cozyGardenLeaderboard:{points:data.points,week:data.week,weekPoints:data.weekPoints,name:data.name,country:data.country}})}
+  function saveCloud(){try{if(cloudReady())ytgame.game.saveData(cloudPayload())}catch(e){}}
+  async function loadCloud(){
+    if(!cloudReady())return;
+    try{
+      var raw=await ytgame.game.loadData();
+      if(!raw)return;
+      var c=JSON.parse(raw),lb=c&&c.cozyGardenLeaderboard;
+      if(!lb)return;
+      var currentWeek=weekKey();
+      if(lb.week===currentWeek){
+        data.points=Math.max(0,Number(lb.points)||0,data.points);
+        data.week=currentWeek;
+        data.weekPoints=Math.max(0,Number(lb.weekPoints)||0,data.week===currentWeek?data.weekPoints:0);
+      }else{
+        data.points=Math.max(0,Number(lb.points)||0,data.points);
+        data.week=currentWeek;
+        data.weekPoints=0;
+      }
+      if(typeof lb.name==="string"&&lb.name.trim())data.name=lb.name.trim().slice(0,18);
+      if(typeof lb.country==="string")data.country=lb.country;
+      save();
+      saveCloud();
+    }catch(e){}
+  }
+  window.__gardenLeaderboardAward=function(n){n=Math.max(0,Math.floor(Number(n)||0));data.points+=n;data.weekPoints+=n;save();saveCloud();submitScore();render()};
   function submitScore(){try{if(window.ytgame&&ytgame.engagement&&typeof ytgame.engagement.sendScore==="function")ytgame.engagement.sendScore({value:data.points})}catch(e){}}
   var hud=document.getElementById("hud");
   var open=document.createElement("button");open.id="leaderboardOpen";open.className="pill";open.type="button";open.textContent="🏆 Rankings";open.style.pointerEvents="auto";hud.appendChild(open);
@@ -8308,7 +8335,7 @@ setTimeout(function(){
   style.textContent=`#profileOverlay{position:fixed;inset:0;z-index:90;display:none;align-items:center;justify-content:center;padding:18px;background:#061321d9;backdrop-filter:blur(7px);font-family:system-ui,sans-serif}#profileOverlay.open{display:flex}#profilePanel{width:min(390px,100%);padding:23px;border:1px solid #ffffff35;border-radius:23px;background:linear-gradient(150deg,#102b43,#1b4b5a);color:#f7fbff;box-shadow:0 24px 70px #000a}#profilePanel h2{margin:0 0 7px;font-size:22px}#profilePanel p{margin:0 0 18px;color:#b7ccda;font-size:12px;line-height:1.5}#profilePanel label{display:block;margin:13px 0 6px;color:#c5d8e5;font-size:12px;font-weight:800}#profilePanel input,#profilePanel select{box-sizing:border-box;width:100%;padding:12px;border:1px solid #ffffff35;border-radius:11px;background:#0b263b;color:white;font:inherit;outline:none}#profileSave{width:100%;margin-top:18px;padding:12px;border:0;border-radius:12px;background:#e7b94e;color:#30230b;font-weight:900;font-size:14px;cursor:pointer}#profileError{min-height:15px;margin-top:8px;color:#ffb3a9;font-size:11px}#glbProfileEdit{margin:0 14px 13px;width:calc(100% - 28px);padding:10px;border:1px solid #ffffff2a;border-radius:11px;background:#ffffff12;color:#fff;font-weight:800;cursor:pointer}#leaderboardOpen{border:0;cursor:pointer;background:#173d58;color:#fff;font-weight:800}#glbOverlay{position:fixed;inset:0;z-index:75;display:none;align-items:center;justify-content:center;padding:14px;background:#061321b8;backdrop-filter:blur(5px);font-family:system-ui,sans-serif}#glbOverlay.open{display:flex}#glbPanel{width:min(430px,100%);max-height:92vh;overflow:auto;border:1px solid #ffffff30;border-radius:23px;background:linear-gradient(150deg,#102b43,#173b54);color:#f7fbff;box-shadow:0 24px 70px #0009}#glbHead{display:flex;align-items:center;gap:10px;padding:16px;background:linear-gradient(110deg,#087f70,#168ca0);border-radius:22px 22px 0 0}#glbHead strong{font-size:17px;flex:1}#glbClose{border:0;border-radius:50%;width:30px;height:30px;background:#ffffff30;color:white;font-size:20px}#glbScore{margin:14px;padding:14px;border-radius:16px;background:#ffffff12;border:1px solid #ffffff18;display:flex;align-items:center;gap:12px}#glbScore .trophy{font-size:30px}#glbScore small{display:block;color:#a9c4d6;font-size:11px}#glbScore b{font-size:23px;color:#fbd36b}#glbTabs{display:flex;gap:8px;padding:0 14px 12px}#glbTabs button,#glbPeriod button{border:1px solid #ffffff24;border-radius:11px;padding:9px 13px;background:#ffffff0d;color:#dcebf4;font-weight:800;cursor:pointer}#glbTabs button.active,#glbPeriod button.active{background:#e7b94e;color:#30230b;border-color:#e7b94e}#glbPeriod{display:flex;gap:7px;padding:0 14px 12px}#glbRows{padding:0 14px 8px;max-height:62vh;overflow:auto}.glbRow{display:flex;align-items:center;gap:10px;padding:11px 10px;margin-bottom:7px;border-radius:13px;background:#ffffff0d;border:1px solid #ffffff12}.glbRow.you{background:#1d9c7650;border-color:#50d6ad80}.glbRank{width:25px;text-align:center;font-weight:900;color:#f7d477}.glbFlag{width:30px;height:30px;flex:0 0 30px;display:grid;place-items:center;border-radius:50%;overflow:hidden;background:radial-gradient(circle at 30% 25%,#ffffff,#d8e6ef 72%);border:2px solid #ffffff75;box-shadow:0 2px 7px #0005;font-size:17px;line-height:1;text-align:center}.glbPlayer{flex:1;min-width:0;font-weight:800;font-size:13px}.glbPlayer small{display:block;color:#a9c4d6;font-size:10px;font-weight:500}.glbPts{font-size:13px;font-weight:900;color:#f8d77d;white-space:nowrap}#glbCountry{display:flex;gap:8px;align-items:center;padding:0 14px 12px}#glbCountry label{font-size:11px;color:#aac2d4}#glbCountry select{flex:1;min-width:0;border:1px solid #ffffff2c;border-radius:10px;padding:9px;background:#173b54;color:#fff}#glbNote{padding:5px 16px 15px;color:#9fb6c8;font-size:10px;line-height:1.5;text-align:center}#glbEmpty{padding:20px;text-align:center;color:#b8cad7;font-size:12px}`;
   document.head.appendChild(style);
   var overlay=document.createElement("div");overlay.id="glbOverlay";
-  overlay.innerHTML='<section id="glbPanel"><header id="glbHead"><span style="font-size:23px">🏆</span><strong>🏆 Top 100 Garden Leaderboard</strong><button id="glbClose" aria-label="Close">×</button></header><div id="glbScore"><span class="trophy">🌟</span><div style="flex:1"><small>YOUR LEADERBOARD POINTS</small><b id="glbMyPoints">0</b></div><div style="text-align:right"><small>THIS WEEK</small><b id="glbWeekPoints" style="font-size:17px">0</b></div></div><button id="glbProfileEdit" type="button">✏️ Edit username & country</button><nav id="glbTabs"><button data-board="global" class="active">🌐 Global</button><button data-board="country" id="glbCountryTab">🏳️</button></nav><div id="glbCountry"><label>YOUR FLAG</label><select id="glbCountrySelect"><option value="">Choose your country</option></select></div><div id="glbPeriod"><button data-period="week" class="active">This week</button><button data-period="all">All time</button></div><div id="glbRows"></div><div id="glbNote">Your leaderboard points are saved on this device. Only your real profile is shown.</div></section>';
+  overlay.innerHTML='<section id="glbPanel"><header id="glbHead"><span style="font-size:23px">🏆</span><strong>🏆 Garden Leaderboard</strong><button id="glbClose" aria-label="Close">×</button></header><div id="glbScore"><span class="trophy">🌟</span><div style="flex:1"><small>YOUR LEADERBOARD POINTS</small><b id="glbMyPoints">0</b></div><div style="text-align:right"><small>THIS WEEK</small><b id="glbWeekPoints" style="font-size:17px">0</b></div></div><button id="glbProfileEdit" type="button">✏️ Edit username & country</button><nav id="glbTabs"><button data-board="global" class="active">🌐 Global</button><button data-board="country" id="glbCountryTab">🏳️</button></nav><div id="glbCountry"><label>YOUR FLAG</label><select id="glbCountrySelect"><option value="">Choose your country</option></select></div><div id="glbPeriod"><button data-period="week" class="active">This week</button><button data-period="all">All time</button></div><div id="glbRows"></div><div id="glbNote">Your leaderboard points are saved on this device. Only your real profile is shown.</div></section>';
   document.body.appendChild(overlay);
   var profile=document.createElement("div");profile.id="profileOverlay";
   profile.innerHTML='<section id="profilePanel"><div style="font-size:32px">🌱</div><h2 id="profileTitle">Welcome, gardener!</h2><p>Choose a username and country to personalize your garden leaderboard. You can change these anytime.</p><form id="profileForm"><label for="profileName">USERNAME</label><input id="profileName" maxlength="18" minlength="2" autocomplete="nickname" placeholder="Enter your username" required><label for="profileCountry">COUNTRY</label><select id="profileCountry" required><option value="">Select your country</option></select><button id="profileSave" type="submit">Save profile</button><div id="profileError" aria-live="polite"></div></form></section>';
@@ -8347,21 +8374,21 @@ setTimeout(function(){
     var html="";
     rows.forEach(function(r,i){html+='<div class="glbRow'+(r.you?' you':'')+'"><span class="glbRank">'+(i+1<=3?["🥇","🥈","🥉"][i]:i+1)+'</span><span class="glbFlag">'+(r.country?flag(r.country):"🏳️")+'</span><span class="glbPlayer">'+r.name+(r.you?'<small>Your current device</small>':'')+'</span><span class="glbPts">'+(period==="week"?r.week:r.all).toLocaleString()+' pts</span></div>'});
     if(board==="country"&&!data.country)html='<div id="glbEmpty">Choose a country first to view its Top 100 flag leaderboard.</div>';
-    else if(!rows.length)html='<div id="glbEmpty">No real players are available yet. Your score will appear here after you create your profile.</div>';
+    else if(!rows.length)html='<div id="glbEmpty">Create your profile to submit your score to the YouTube leaderboard.</div>';
     overlay.querySelector("#glbRows").innerHTML=html;
-    overlay.querySelector("#glbNote").textContent="Top 100 · Only real player profiles are shown. No fake/sample names are used.";
+    overlay.querySelector("#glbNote").textContent="Your score is saved to your YouTube Playables account and submitted to YouTube. Global player rankings are shown by YouTube; this in-game panel shows only your saved profile.";
   }
   open.addEventListener("click",function(){overlay.classList.add("open");render()});
   overlay.querySelector("#glbProfileEdit").addEventListener("click",function(){openProfile(false)});
-  profile.querySelector("#profileForm").addEventListener("submit",function(e){e.preventDefault();var name=profile.querySelector("#profileName").value.trim().replace(/\s+/g," ");var country=profileCountry.value;if(name.length<2){profile.querySelector("#profileError").textContent="Please enter at least 2 characters.";return}if(!country){profile.querySelector("#profileError").textContent="Please select your country.";return}data.name=name.replace(/[<>\"\'&]/g,"").slice(0,18);data.country=country;save();select.value=country;render();closeProfile()});
+  profile.querySelector("#profileForm").addEventListener("submit",function(e){e.preventDefault();var name=profile.querySelector("#profileName").value.trim().replace(/\s+/g," ");var country=profileCountry.value;if(name.length<2){profile.querySelector("#profileError").textContent="Please enter at least 2 characters.";return}if(!country){profile.querySelector("#profileError").textContent="Please select your country.";return}data.name=name.replace(/[<>\"\'&]/g,"").slice(0,18);data.country=country;save();saveCloud();select.value=country;render();closeProfile()});
   overlay.querySelector("#glbClose").addEventListener("click",function(){overlay.classList.remove("open")});
   overlay.addEventListener("click",function(e){if(e.target===overlay)overlay.classList.remove("open")});
   overlay.querySelector("#glbTabs").addEventListener("click",function(e){var b=e.target.closest("button[data-board]");if(!b)return;board=b.dataset.board;render()});
   overlay.querySelector("#glbPeriod").addEventListener("click",function(e){var b=e.target.closest("button[data-period]");if(!b)return;period=b.dataset.period;render()});
-  select.addEventListener("change",function(){data.country=select.value;profileCountry.value=select.value;save();render()});
+  select.addEventListener("change",function(){data.country=select.value;profileCountry.value=select.value;save();saveCloud();render()});
   window.addEventListener("keydown",function(e){if(e.key==="Escape")overlay.classList.remove("open")});
   submitScore();
-  if(!data.name||!data.country)openProfile(true);
+  loadCloud().then(function(){render();submitScore();if(!data.name||!data.country)openProfile(true)});
 })();
 </script>
 
