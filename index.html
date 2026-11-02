@@ -8388,6 +8388,11 @@ setTimeout(function(){
   overlay.querySelector("#glbPeriod").addEventListener("click",function(e){var b=e.target.closest("button[data-period]");if(!b)return;period=b.dataset.period;render()});
   select.addEventListener("change",function(){data.country=select.value;profileCountry.value=select.value;save();saveCloud();render()});
   window.addEventListener("keydown",function(e){if(e.key==="Escape")overlay.classList.remove("open")});
+  window.__cozyLeaderboardSetPlayers=function(rows){
+    data.players=Array.isArray(rows)?rows.slice(0,100):[];
+    save();
+    render();
+  };
   submitScore();
   loadCloud().then(function(){render();submitScore();if(!data.name||!data.country)openProfile(true)});
 })();
@@ -8532,12 +8537,33 @@ import { getFirestore, doc, setDoc, getDoc, collection, query, orderBy, limit, g
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",boot);else boot();
 
   window.addEventListener("cozy-firebase-leaderboard",function(e){
-    var rows=e.detail||[];if(!rows.length)return;
-    /* Feed real Firebase rows into the existing leaderboard renderer. */
+    var rows=e.detail||[];
+    /* Feed live Firebase rows into the existing leaderboard renderer.
+       The leaderboard IIFE keeps its own in-memory data object, so updating
+       localStorage alone is not enough; explicitly copy the rows into data.players. */
     try{
-      var raw=JSON.parse(localStorage.getItem("cozy_garden_leaderboard_v1")||"{}");raw.players=rows;localStorage.setItem("cozy_garden_leaderboard_v1",JSON.stringify(raw));
-      var ov=document.getElementById("glbOverlay");if(ov&&ov.classList.contains("open")){var ev=new Event("firebaseRowsReady");window.dispatchEvent(ev)}
-    }catch(e){}
+      var raw=JSON.parse(localStorage.getItem("cozy_garden_leaderboard_v1")||"{}");
+      raw.players=rows;
+      localStorage.setItem("cozy_garden_leaderboard_v1",JSON.stringify(raw));
+      var ov=document.getElementById("glbOverlay");
+      if(ov){
+        /* data is scoped inside the leaderboard IIFE, but its render path can
+           be refreshed by dispatching a custom event that the IIFE handles. */
+        window.dispatchEvent(new CustomEvent("cozy-firebase-rows-ready",{detail:rows}));
+      }
+    }catch(err){console.warn("Firebase leaderboard UI",err)}
+  });
+  window.addEventListener("cozy-firebase-rows-ready",function(e){
+    try{
+      var rows=e.detail||[],ov=document.getElementById("glbOverlay");
+      /* Reloading the page is unnecessary: ask the leaderboard to re-read the
+         Firebase rows through the public bridge below. */
+      if(window.__cozyLeaderboardSetPlayers)window.__cozyLeaderboardSetPlayers(rows);
+      else if(ov&&ov.classList.contains("open")){
+        var btn=ov.querySelector('#glbPeriod button[data-period="week"]');
+        if(btn)btn.click();
+      }
+    }catch(err){console.warn(err)}
   });
   window.addEventListener("firebaseRowsReady",function(){var b=document.getElementById("glbOverlay");if(b){var tab=b.querySelector("#glbTabs .active");if(tab){tab.click()}}});
 })();
