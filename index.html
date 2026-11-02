@@ -6400,5 +6400,33 @@ window.addEventListener("keydown",function(e){
 });
 })();
 </script>
+
+<style>
+/* joystick + item bar fix (touch devices) */
+@media (pointer:coarse){
+  #fpBar{max-width:calc(100vw - 16px);flex-wrap:wrap;justify-content:center;gap:6px;border-radius:18px;bottom:calc(165px + env(safe-area-inset-bottom))}
+  #fpItem{min-width:90px;flex:1 1 90px}
+  #fpStick{z-index:3}
+}
+#fpStick:after{transform:translate(calc(-50% + var(--jx,0px)),calc(-50% + var(--jy,0px)))}
+</style>
+<script>
+(function(){
+  var st=document.getElementById("fpStick"),id=null;
+  if(!st)return;
+  function mv(e){
+    var b=st.getBoundingClientRect(),r=b.width/2-23;
+    var x=e.clientX-(b.left+b.width/2),y=e.clientY-(b.top+b.height/2),d=Math.hypot(x,y);
+    if(d>r){x=x/d*r;y=y/d*r}
+    st.style.setProperty("--jx",x+"px");st.style.setProperty("--jy",y+"px");
+  }
+  function reset(){st.style.setProperty("--jx","0px");st.style.setProperty("--jy","0px")}
+  st.addEventListener("pointerdown",function(e){id=e.pointerId;mv(e)});
+  st.addEventListener("pointermove",function(e){if(e.pointerId===id)mv(e)});
+  function end(e){if(e.pointerId===id){id=null;reset()}}
+  st.addEventListener("pointerup",end);
+  st.addEventListener("pointercancel",end);
+})();
+</script>
 </body>
 </html>
