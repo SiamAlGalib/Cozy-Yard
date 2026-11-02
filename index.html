@@ -4587,7 +4587,7 @@ function blocked(x,z){
   if(cgMkAt(ix,iz)>=0)return true;
   var c=so(ix,iz);
   if(c.floor&&pt[c.floor.id].blocks)return true;
-  var ct=colTop(ix,iz);if(ct>0)return py<ct-.01;
+  var ct=colTop(ix,iz);if(ct>0)return py<ct-.08;
   if(c.base&&!PASS[c.base.id]){var lh=baseH(c.base,x,z);if(lh&&py>=lh-(/^(step|stairs|landing)/.test(c.base.id)?.36:.01))return false;return true}
   return false;
 }
@@ -5547,7 +5547,7 @@ function pillarNow(){
  else return Vt("Not enough coins for "+n.name+" ("+n.cost+")");
  var o=y0(id,0);o.position.set(io(ix),L*H,io(iz));
  o.userData.cell={ix:ix,iz:iz};o.userData.vx=1;o.userData.level=L;
- fo.add(o);window.__VX[ix+","+iz+","+L]={id:id,v:0,obj:o};
+ fo.add(o);window.__VX[ix+","+iz+","+L]={id:id,v:0,obj:o};S.py=Math.max(S.py,(L+1)*H);
  if(window.__vxSave)window.__vxSave();
  playBlockPlace();ql();an=true;
 }
@@ -5897,19 +5897,38 @@ setInterval(tick,400);
 window.__worldSafety={tick:tick,undo:undo,history:function(){return loadH().length}};
 })();
 </script>
-<script>/* stairDir: button to turn the next stairs you place */
+<script>/* stairDir: rotate button, shown only while Stairs is selected */
 (function(){
-var L=["\u2198","\u2197","\u2196","\u2199"],h=document.getElementById("hud");
-if(!h)return;
+var L=["\u2198","\u2197","\u2196","\u2199"];
 var d=0;try{d=+localStorage.getItem("cozy_stair_dir")||0}catch(e){}
 window.__stairDir=d;
-var b=document.createElement("button");b.className="pill";
-b.style.cssText="pointer-events:auto;border:0;cursor:pointer;background:#8a5a2b;color:#fff";
-function t(){b.textContent="Stairs rise "+L[window.__stairDir]}
-t();
-b.addEventListener("click",function(e){e.stopPropagation();window.__stairDir=(window.__stairDir+1)%4;try{localStorage.setItem("cozy_stair_dir",window.__stairDir)}catch(x){}t()});
+
+var st=document.createElement("style");
+st.textContent="#stairBtn{position:fixed;left:10px;bottom:calc(175px + env(safe-area-inset-bottom));z-index:20;display:none;border:0;cursor:pointer;background:#8a5a2b;color:#fff;border-radius:999px;padding:8px 14px;font:700 14px system-ui,sans-serif;box-shadow:0 2px 6px rgba(0,0,0,.3)}"+
+"#stairBtn.show{display:block}body.hideBot #stairBtn{bottom:calc(40px + env(safe-area-inset-bottom))}body.fp #stairBtn{display:none!important}";
+document.head.appendChild(st);
+
+var b=document.createElement("button");b.id="stairBtn";
+function label(){b.textContent="\u{1F504} Stairs rise "+L[window.__stairDir]+" (R)"}
+function rotate(){window.__stairDir=(window.__stairDir+1)%4;try{localStorage.setItem("cozy_stair_dir",window.__stairDir)}catch(x){}label()}
+label();
+b.addEventListener("click",function(e){e.stopPropagation();rotate()});
 b.addEventListener("pointerdown",function(e){e.stopPropagation()});
-h.appendChild(b);
+document.body.appendChild(b);
+
+/* show only when the Stairs item is the selected one */
+function sync(){
+  var s=document.querySelector("#palette .item.sel");
+  b.classList.toggle("show",!!(s&&s.dataset.id==="stairs"));
+}
+setInterval(sync,250);sync();
+
+/* R key rotates while Stairs is selected (not in kingdom mode) */
+window.addEventListener("keydown",function(e){
+  if(e.code!=="KeyR"||e.repeat||window.__fpOn||e.ctrlKey||e.metaKey||e.altKey)return;
+  if(!b.classList.contains("show"))return;
+  rotate();
+});
 })();
 </script>
 </body>
