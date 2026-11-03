@@ -236,19 +236,43 @@
     const toggle = document.createElement("button");
     toggle.id = "gwPlotBarToggle";
     toggle.type = "button";
-    toggle.textContent = "›";
+    toggle.textContent = "‹";
     toggle.title = "Hide plot bar";
-    toggle.style.cssText = "position:fixed;top:calc(14px + env(safe-area-inset-top));right:0;z-index:1000006;width:27px;height:42px;border:1px solid rgba(110,231,163,.65);border-right:0;border-radius:12px 0 0 12px;background:linear-gradient(135deg,#103d35,#091c25);color:#eafff1;font:900 22px system-ui;cursor:pointer;box-shadow:0 5px 18px #0006;transition:background .2s ease,transform .2s ease";
+    toggle.setAttribute("aria-label", "Hide or show plot bar");
+
+    toggle.style.cssText = `
+      position:fixed;
+      top:calc(14px + env(safe-area-inset-top));
+      left:0;
+      right:auto;
+      z-index:1000006;
+      width:27px;
+      height:42px;
+      border:1px solid rgba(110,231,163,.7);
+      border-left:0;
+      border-radius:0 12px 12px 0;
+      background:linear-gradient(135deg,#103d35,#091c25);
+      color:#eafff1;
+      font:900 22px system-ui;
+      cursor:pointer;
+      box-shadow:0 5px 18px #0006;
+      display:grid;
+      place-items:center;
+    `;
+
     let plotBarHidden = false;
+
     toggle.onclick = () => {
       plotBarHidden = !plotBarHidden;
       bar.style.display = plotBarHidden ? "none" : "flex";
-      toggle.textContent = plotBarHidden ? "‹" : "›";
+      toggle.textContent = plotBarHidden ? "›" : "‹";
       toggle.title = plotBarHidden ? "Show plot bar" : "Hide plot bar";
-      toggle.style.right = "0";
-      toggle.style.left = "auto";
-      toggle.style.borderRadius = "12px 0 0 12px";
+      toggle.setAttribute(
+        "aria-label",
+        plotBarHidden ? "Show plot bar" : "Hide plot bar"
+      );
     };
+
     document.body.appendChild(toggle);
     document.body.appendChild(bar);
   }
