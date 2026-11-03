@@ -8797,11 +8797,11 @@ function hasItems(x,z){
   var V=window.__VX;if(V)for(var L=0;L<=30;L++)if(V[x+","+z+","+L])return true;
   return false;
 }
-function aimCell(){
+function aimCell(md){
   var S=window.__fpS;if(!S)return null;
   var r=T.pick(innerWidth/2,innerHeight/2,true);
   if(!r||!ownCell(r.x,r.z))return null;
-  if(Math.hypot(r.x+.5-half-S.px,r.z+.5-half-S.pz)>7)return null;
+  if(Math.hypot(r.x+.5-half-S.px,r.z+.5-half-S.pz)>(md||7))return null;
   return r;
 }
 
@@ -8817,8 +8817,9 @@ window.__tBlk=function(ix,iz,py){
   return T.lvl(iz*lt+ix)*H>py+.55;      /* too high to step onto: jump or build stairs */
 };
 window.__tAim=function(){
-  if(!on||!window.__fpOn)return undefined;
-  var r=aimCell();
+  if(!window.__fpOn)return undefined;
+  if(!on&&!T.count){if(Wt)Wt.position.y=.09;return undefined}
+  var r=aimCell(on?7:12);
   if(!r)return null;
   if(Wt)Wt.position.y=r.top+.05;
   return {ix:r.x,iz:r.z};
@@ -8834,7 +8835,7 @@ window.__tPlace=function(){
   lab();return true;
 };
 window.__tBreak=function(){
-  if(!on||!window.__fpOn)return false;
+  if(!window.__fpOn)return false;
   var r=aimCell();
   if(!r||hasItems(r.x,r.z))return false;   /* items: normal breaking handles them */
   var now=performance.now();if(now-lastAct<80)return true;lastAct=now;
@@ -8883,6 +8884,158 @@ window.addEventListener("wheel",function(e){
 },{capture:true,passive:false});
 })();
 
+</script>
+
+<script>
+/*waterFlow*/
+(function(){
+"use strict";
+var G=window.__game,B=window.__builder;
+if(!G||!B||!B.parent)return;
+var sc=B.parent,lt=Math.round(Math.sqrt(G.cells.length)),half=lt/2,H=.92;
+var s0=null;B.traverse(function(o){if(!s0&&o.isMesh&&o.geometry&&o.material)s0=o});
+if(!s0)return;
+var Mesh=s0.constructor,Geo=Object.getPrototypeOf(s0.geometry.constructor),
+    Attr=s0.geometry.attributes.position.constructor,Mat=s0.material.constructor;
+var KEY="cozy_waterflow",enabled=true;
+try{enabled=localStorage.getItem(KEY)!=="0"}catch(e){}
+var SOFT={flower:1,sunflower:1,mushroom:1,waterblock:1};
+var MAXC=3000,SPAN=128,YO=16,DX=[1,-1,0,0],DZ=[0,0,1,-1];
+var lv=new Map(),par=new Map(),srcSet=new Set(),shown=new Map(),buckets=[],TT=null;
+for(var q=0;q<=8;q++)buckets.push([]);
+function tl(i){return TT&&TT.lvl?(TT.lvl(i)|0):0}
+function kf(x,z,y){return (z*lt+x)*SPAN+(y+YO)}
+function solid(x,z,y,o0,o1){
+  if(x<o0||z<o0||x>=o1||z>=o1)return true;
+  var i=z*lt+x,t=tl(i);
+  if(y<t)return true;
+  var rel=y-t,c=G.cells[i];
+  if(rel===0&&c.base&&!SOFT[c.base.id])return true;
+  if(rel===1&&c.top)return true;
+  if(rel>=1&&c.stack){var st=c.stack[rel-1];if(st&&st.id!=="waterblock")return true}
+  var V=window.__VX;
+  if(V){var v=V[x+","+z+","+rel];if(v&&v.id!=="waterblock")return true}
+  return false;
+}
+function findSources(o0,o1){
+  var out=[],V=window.__VX;
+  for(var z=o0;z<o1;z++)for(var x=o0;x<o1;x++){
+    var i=z*lt+x,c=G.cells[i];
+    if(!c.base&&!(c.stack&&c.stack.length))continue;
+    var t=tl(i);
+    if(c.base&&c.base.id==="waterblock")out.push([x,z,t]);
+    if(c.stack)for(var k=0;k<c.stack.length;k++)if(c.stack[k].id==="waterblock")out.push([x,z,t+k+1]);
+  }
+  if(V)for(var key in V){
+    if(V[key].id!=="waterblock")continue;
+    var p=key.split(","),x2=+p[0],z2=+p[1];
+    if(x2<o0||z2<o0||x2>=o1||z2>=o1)continue;
+    out.push([x2,z2,tl(z2*lt+x2)+(+p[2])]);
+  }
+  return out;
+}
+/* Steady-state flood: source = 8, flows 7..1 (7 blocks), falls straight down as full water,
+   only spreads sideways when it has something solid below (same as Minecraft). */
+function sim(){
+  TT=window.__terrain;
+  var n=G.size,o0=(lt-n)/2,o1=o0+n,ss=findSources(o0,o1);
+  lv.clear();par.clear();srcSet.clear();
+  for(var b=0;b<=8;b++)buckets[b].length=0;
+  ss.forEach(function(s){
+    var y=s[2];if(y+YO<2||y+YO>=SPAN-1)return;
+    var k=kf(s[0],s[1],y);srcSet.add(k);lv.set(k,8);par.set(k,-1);buckets[8].push(k);
+  });
+  var count=0;
+  while(count<MAXC){
+    var L=8;while(L>=1&&!buckets[L].length)L--;
+    if(L<1)break;
+    var k=buckets[L].pop();
+    if(lv.get(k)!==L)continue;
+    var m=k%SPAN,y=m-YO,ci=(k-m)/SPAN,x=ci%lt,z=(ci-x)/lt;
+    if(!solid(x,z,y-1,o0,o1)){
+      if(y-1+YO<1)continue;
+      var nk=k-1;
+      if((lv.get(nk)||0)<8){lv.set(nk,8);par.set(nk,k);buckets[8].push(nk);count++}
+      continue;
+    }
+    if(L>1)for(var d=0;d<4;d++){
+      var nx=x+DX[d],nz=z+DZ[d];
+      if(solid(nx,nz,y,o0,o1))continue;
+      var nk2=kf(nx,nz,y);
+      if((lv.get(nk2)||0)<L-1){lv.set(nk2,L-1);par.set(nk2,k);buckets[L-1].push(nk2);count++}
+    }
+  }
+}
+/* ---- rendering ---- */
+var mat=new Mat({color:0x3a8cff,transparent:true,opacity:.6,depthWrite:false,side:2});
+var mesh=new Mesh(new Geo(),mat);mesh.frustumCulled=false;mesh.visible=false;mesh.renderOrder=5;sc.add(mesh);
+var P=[],N=[];
+function hO(l){return(l>=8?1:.12+.88*l/8)*H}
+function lvAt(k){if(srcSet.has(k))return 8;return shown.get(k)}
+function quad(a,b,c,d,n){
+  var v=[a,b,c,a,c,d];
+  for(var i=0;i<6;i++){P.push(v[i][0],v[i][1],v[i][2]);N.push(n[0],n[1],n[2])}
+}
+function build(){
+  P=[];N=[];
+  shown.forEach(function(l,k){
+    var m=k%SPAN,y=m-YO,ci=(k-m)/SPAN,x=ci%lt,z=(ci-x)/lt;
+    var cx=x+.5-half,cz=z+.5-half,y0=y*H,hh=hO(l);
+    if(lvAt(k+1)===undefined)quad([cx-.5,y0+hh,cz-.5],[cx+.5,y0+hh,cz-.5],[cx+.5,y0+hh,cz+.5],[cx-.5,y0+hh,cz+.5],[0,1,0]);
+    for(var d=0;d<4;d++){
+      var nx=x+DX[d],nz=z+DZ[d],ya=y0,nl;
+      if(nx>=0&&nz>=0&&nx<lt&&nz<lt)nl=lvAt(kf(nx,nz,y));
+      if(nl!==undefined){var nh=hO(nl);if(nh>=hh)continue;ya=y0+nh}
+      var yb=y0+hh;
+      if(DX[d]!==0){var fx=cx+DX[d]*.5;quad([fx,ya,cz-.5],[fx,ya,cz+.5],[fx,yb,cz+.5],[fx,yb,cz-.5],[DX[d],0,0])}
+      else{var fz=cz+DZ[d]*.5;quad([cx-.5,ya,fz],[cx+.5,ya,fz],[cx+.5,yb,fz],[cx-.5,yb,fz],[0,0,DZ[d]])}
+    }
+  });
+  var g=new Geo();
+  g.setAttribute("position",new Attr(new Float32Array(P),3));
+  g.setAttribute("normal",new Attr(new Float32Array(N),3));
+  var old=mesh.geometry;mesh.geometry=g;mesh.visible=P.length>0;
+  if(old&&old.dispose)old.dispose();
+  G.redraw();
+}
+/* water advances one block per tick away from its source, like a real flow */
+function reveal(){
+  var add=[],changed=false,del=[];
+  lv.forEach(function(l,k){
+    if(srcSet.has(k))return;
+    var cur=shown.get(k);
+    if(cur===undefined){var p=par.get(k);if(p===-1||srcSet.has(p)||shown.has(p))add.push(k)}
+    else if(cur!==l){shown.set(k,l);changed=true}
+  });
+  add.forEach(function(k){shown.set(k,lv.get(k));changed=true});
+  shown.forEach(function(l,k){if(!lv.has(k)||srcSet.has(k))del.push(k)});
+  del.forEach(function(k){shown.delete(k);changed=true});
+  if(changed)build();
+}
+setInterval(function(){
+  if(document.hidden)return;
+  if(!enabled){if(shown.size||lv.size){lv.clear();par.clear();srcSet.clear();shown.clear();build()}return}
+  sim();
+},450);
+setInterval(function(){if(!document.hidden&&enabled)reveal()},180);
+
+/* Menu switch */
+var mp=document.getElementById("menuPanel");
+if(mp){
+  var h=document.createElement("h4");h.textContent="Water";mp.appendChild(h);
+  var r=document.createElement("div");r.className="mrow";
+  var b=document.createElement("button");b.className="pill";
+  b.style.cssText="pointer-events:auto;border:0;cursor:pointer;background:#e6f0ff";
+  var sm=document.createElement("small");
+  sm.textContent="Water Blocks spread and flow downhill like Minecraft. Turn off if the game is slow";
+  function lab(){b.textContent="\uD83D\uDCA7 Water flow: "+(enabled?"ON":"OFF")}
+  lab();r.appendChild(b);r.appendChild(sm);mp.appendChild(r);
+  b.addEventListener("click",function(){
+    enabled=!enabled;try{localStorage.setItem(KEY,enabled?"1":"0")}catch(e){}lab();
+  });
+}
+window.__water={cells:function(){return shown.size}};
+})();
 </script>
 </body>
 </html>
