@@ -108,7 +108,7 @@
 <body>
 <script>try{localStorage.setItem("cozy_builder_guide_v3","1")}catch(e){}</script>
 <script>/*animEarly*/window.__turn=function(a,b){var d=((b-a+Math.PI)%(Math.PI*2)+Math.PI*2)%(Math.PI*2)-Math.PI;return Math.abs(d)<.01?b:a+d*.2};</script>
-<script>/*dprCap*/(function(){try{var d=window.devicePixelRatio||1;Object.defineProperty(window,"devicePixelRatio",{configurable:true,get:function(){return Math.min(d,1.25)}})}catch(e){}})();</script>
+<script>/*dprCap*/(function(){try{var d=window.devicePixelRatio||1;Object.defineProperty(window,"devicePixelRatio",{configurable:true,get:function(){return Math.min(d,(window.matchMedia&&matchMedia("(pointer:coarse)").matches)?1:1.25)}})}catch(e){}})();</script>
 <script>/* landGrow200: shift extra saved data when land grew 100 -> 200 */
 (function(){try{
 var m=localStorage.getItem("cozy_garden_save_v2"),d=m?JSON.parse(m):null;
@@ -4826,7 +4826,7 @@ Eu=function(){ if(fpOn){cam();return} _Eu(); };
 function tick(now){
   if(!fpOn)return;
   requestAnimationFrame(tick);
-  var dt=Math.min(.05,(now-last)/1000); last=now;
+  var dt=Math.min(.08,(now-last)/1000); last=now;
   var f=(keys.KeyW||keys.ArrowUp?1:0)-(keys.KeyS||keys.ArrowDown?1:0)-joy.y;
   var r=(keys.KeyD||keys.ArrowRight?1:0)-(keys.KeyA||keys.ArrowLeft?1:0)+joy.x;
   var len=Math.hypot(f,r); if(len>1){f/=len;r/=len}
@@ -5113,12 +5113,12 @@ function frame(dt,now){
     if(!S.free(nx,nz)){c.tx=c.x;c.tz=c.z;c.wait=.5;return}
     c.x=nx; c.z=nz; c.g.position.set(nx,Math.abs(Math.sin(now*.012))*.03,nz); c.g.rotation.y=(window.__turn||function(a,b){return b})(c.g.rotation.y,Math.atan2(dx,dz));
   });
-  if(now-lastScan>1000){lastScan=now;scanHalos()}
+  if(now-lastScan>6000){lastScan=now;scanHalos()}
   if(fc%3===0){
     var t=aim();
     if(t){Wt.visible=true;Wt.position.x=io(t.ix);Wt.position.z=io(t.iz);Wt.material.color.setHex(0xffe066)}else Wt.visible=false;
   }
-  if(fc%5===0)drawMap(now);
+  /*mapOff*/
   if(fc%20===0)barUpdate();
 }
 window.__fpx={enter:enter,leave:leave,frame:frame,place:place,getSel:function(){return sel}};
@@ -5695,7 +5695,7 @@ function scan(){
 var last=performance.now();
 function loop(now){
   var dt=Math.min(.05,(now-last)/1000);last=now;
-  if(now-lastScan>1500){lastScan=now;scan()}
+  if(now-lastScan>(window.__fpOn?8000:1500)){lastScan=now;scan()}
   if(fish.length){
     for(var i=0;i<fish.length;i++){
       var f=fish[i],g=f.m.g,dx=f.tx-g.position.x,dz=f.tz-g.position.z,d=Math.hypot(dx,dz);
@@ -9296,5 +9296,13 @@ setInterval(function(){if(window.__fpOn)sync();else if(open)set(false)},200);
 #itemChip{z-index:45!important;pointer-events:auto!important}
 body.fp #fpBar{z-index:46!important}
 </style>
+<style>/*stickFix*/#fpStick,#fpLook,#fpActs,#fpBar,#itemChip{touch-action:none;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}</style>
+<script>/*stickFix*/
+(function(){
+document.addEventListener("touchmove",function(e){if(window.__fpOn&&e.cancelable)e.preventDefault()},{passive:false});
+document.addEventListener("touchstart",function(e){if(window.__fpOn&&e.target.closest&&e.target.closest("#fpStick,#fpLook")&&e.cancelable)e.preventDefault()},{passive:false});
+document.addEventListener("contextmenu",function(e){if(window.__fpOn)e.preventDefault()});
+})();
+</script>
 </body>
 </html>
