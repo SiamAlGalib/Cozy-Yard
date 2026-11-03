@@ -9294,70 +9294,8 @@ t.addEventListener("pointerdown",function(e){e.stopPropagation()});
 document.body.appendChild(t);lab();
 })();
 </script>
-<style>/*padDrawer*/
-/* remove the old round joystick button */
-#padToggle{display:none!important}
-body.padOff #snPad{display:flex!important}
-/* pad slides in and out */
-#snPad{transition:transform .25s ease,opacity .25s ease}
-body.padClosed #snPad{transform:translateX(calc(100% + 30px));opacity:0;pointer-events:none}
-/* edge tab */
-#padTab{position:fixed;right:0;top:50%;bottom:auto;transform:translateY(-50%);z-index:22;
-  width:26px;height:58px;border:0;border-radius:14px 0 0 14px;cursor:pointer;
-  background:rgba(255,255,255,.94);color:#2b3a2b;font:800 18px system-ui,sans-serif;
-  box-shadow:-2px 2px 8px rgba(0,0,0,.3);touch-action:none;display:flex;align-items:center;justify-content:center;
-  transition:right .25s ease;padding:0}
-#padTab span{pointer-events:none;line-height:1}
-body.padClosed #padTab{right:0}
-body:not(.padClosed) #padTab{right:181px;border-radius:14px;background:rgba(255,255,255,.85)}
-body.hideBot #padTab{top:50%;bottom:auto;}
-body.fp #padTab{display:none!important}
-</style>
-<script>/*padDrawer*/
-(function(){
-var b=document.body,K="cozy_pad_open";
-b.classList.remove("padOff");
-var old=document.getElementById("padToggle");if(old)old.remove();
-var open=true;
-try{if(localStorage.getItem(K)==="0")open=false}catch(e){}
-var tab=document.createElement("button");tab.id="padTab";tab.type="button";tab.setAttribute("aria-label","Move pad");
-tab.innerHTML="<span></span>";
-var ic=tab.firstChild;
-function apply(){
-  b.classList.toggle("padClosed",!open);
-  ic.textContent=open?"\u203A":"\u2039";
-  try{localStorage.setItem(K,open?"1":"0")}catch(e){}
-}
-function set(v){open=v;apply()}
-/* tab: tap toggles, drag left opens, drag right closes */
-var sx=0,sy=0,moved=false,tid=null;
-tab.addEventListener("pointerdown",function(e){
-  e.stopPropagation();tid=e.pointerId;sx=e.clientX;sy=e.clientY;moved=false;
-  try{tab.setPointerCapture(e.pointerId)}catch(x){}
-});
-tab.addEventListener("pointermove",function(e){
-  if(e.pointerId!==tid)return;
-  var dx=e.clientX-sx;
-  if(Math.abs(dx)>14){moved=true;if(dx<-14&&!open)set(true);else if(dx>14&&open)set(false);sx=e.clientX}
-});
-tab.addEventListener("pointerup",function(e){
-  if(e.pointerId!==tid)return;tid=null;
-  if(!moved)set(!open);
-});
-tab.addEventListener("pointercancel",function(){tid=null});
-/* swipe the pad itself to the right to close it */
-var pad=document.getElementById("snPad"),px=0,py=0,pid=null;
-if(pad){
-  pad.addEventListener("pointerdown",function(e){pid=e.pointerId;px=e.clientX;py=e.clientY},true);
-  pad.addEventListener("pointerup",function(e){
-    if(e.pointerId!==pid)return;pid=null;
-    var dx=e.clientX-px,dy=e.clientY-py;
-    if(dx>55&&Math.abs(dx)>Math.abs(dy)*1.5)set(false);
-  },true);
-}
-document.body.appendChild(tab);apply();
-})();
-</script>
+
+
 <style>/*hideKingdomHud*/
 #fpClock,#fpMap{display:none!important}
 </style>
@@ -9778,86 +9716,106 @@ var fr=0,last=performance.now();
 })();
 </script>
 <script src="./global-world.js?v=2" defer></script>
-<style>/*arrowFix-v2*/
-/* Keep the actual joystick drawer tab at the screen edge */
-#padTab{
-  position:fixed!important;
-  left:auto!important;
-  right:0!important;
-  top:50%!important;
-  bottom:auto!important;
-  transform:translateY(-50%)!important;
+
+
+
+
+<style id="freshPlotArrow">
+#snPad{
+  transition:transform .25s ease,opacity .25s ease;
 }
+body.padClosed #snPad{
+  transform:translateX(calc(100% + 30px));
+  opacity:0;
+  pointer-events:none;
+}
+#plotPadArrow{
+  position:fixed;
+  z-index:9999;
+  width:34px;
+  height:44px;
+  border:1px solid #ffffff55;
+  border-radius:12px;
+  background:#102d2b;
+  color:white;
+  box-shadow:0 3px 12px #0005;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font:800 24px system-ui,sans-serif;
+  cursor:pointer;
+  padding:0;
+  touch-action:manipulation;
+}
+#plotPadArrow:active{transform:scale(.92)}
 </style>
-<script>/*arrowFix-v2*/
+
+<script id="freshPlotArrowScript">
 (function(){
-  function findTab(){
-    var buttons=document.querySelectorAll("body button");
-    for(var i=0;i<buttons.length;i++){
-      var e=buttons[i];
-      if(e.id==="padTab"||e.id==="itemChip")continue;
-      var t=(e.textContent||"").trim();
-      if(!/^[<>‹›«»❮❯▶◀]$/.test(t))continue;
-      var r=e.getBoundingClientRect();
-      if(r.width&&r.left<80&&r.top<120)return e;
-    }
-    return null;
+  var body=document.body;
+  var KEY="cozy_pad_open";
+  var open=true;
+
+  body.classList.remove("padOff");
+
+  try{
+    open=localStorage.getItem(KEY)!=="0";
+  }catch(e){}
+
+  document.querySelectorAll("#padTab,#plotPadArrow").forEach(function(e){
+    e.remove();
+  });
+
+  var arrow=document.createElement("button");
+  arrow.id="plotPadArrow";
+  arrow.type="button";
+  arrow.setAttribute("aria-label","Toggle movement controls");
+
+  function update(){
+    body.classList.toggle("padClosed",!open);
+    arrow.textContent=open?"‹":"›";
+    arrow.setAttribute("aria-expanded",String(open));
+    try{
+      localStorage.setItem(KEY,open?"1":"0");
+    }catch(e){}
   }
 
-  function findBar(){
+  arrow.addEventListener("click",function(){
+    open=!open;
+    update();
+  });
+
+  body.appendChild(arrow);
+
+  function findPlotBar(){
     var buttons=document.querySelectorAll("button");
     for(var i=0;i<buttons.length;i++){
       if(/Exit Plot/i.test(buttons[i].textContent)){
-        var p=buttons[i];
-        for(var k=0;k<4&&p.parentElement&&p.parentElement!==document.body;k++){
-          if(getComputedStyle(p).position==="fixed")break;
-          p=p.parentElement;
-        }
-        return p;
+        return buttons[i];
       }
     }
     return null;
   }
 
-  function place(){
-    var tab=findTab();
-    var bar=findBar();
-    if(!tab)return;
+  function position(){
+    var bar=findPlotBar();
 
     if(!bar){
-      tab.style.setProperty("display","none","important");
+      arrow.style.display="none";
       return;
     }
 
-    tab.style.removeProperty("display");
-
-    if(!tab.dataset.padLinked){
-      tab.dataset.padLinked="1";
-      tab.addEventListener("click",function(e){
-        e.preventDefault();
-        e.stopImmediatePropagation();
-        var realTab=document.getElementById("padTab");
-        if(realTab)realTab.click();
-      },true);
-    }
-
-    var b=bar.getBoundingClientRect();
-    var w=tab.getBoundingClientRect().width||28;
-    var h=tab.getBoundingClientRect().height||40;
-
-    tab.style.setProperty("position","fixed","important");
-    tab.style.setProperty("right","auto","important");
-    tab.style.setProperty("left",Math.max(4,b.left-w-8)+"px","important");
-    tab.style.setProperty("top",(b.top+(b.height-h)/2)+"px","important");
-    tab.style.setProperty("bottom","auto","important");
-    tab.style.setProperty("transform","none","important");
-    tab.style.setProperty("z-index","50","important");
-    tab.style.setProperty("pointer-events","auto","important");
+    var r=bar.getBoundingClientRect();
+    arrow.style.display="flex";
+    arrow.style.left=Math.max(4,r.left-42)+"px";
+    arrow.style.top=(r.top+(r.height-44)/2)+"px";
   }
 
-  place();
-  setInterval(place,400);
-  window.addEventListener("resize",place);
+  update();
+  position();
+  window.addEventListener("resize",position);
+  window.addEventListener("scroll",position,true);
+  setInterval(position,500);
 })();
 </script>
 
