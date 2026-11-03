@@ -83,7 +83,7 @@
     }
 
     if (localStorage.getItem(ACTIVE_PLOT_KEY)) {
-      alert("A land workspace is already open. Use Save & Return to Globe first.");
+      alert("A land workspace is already open. Exit the current plot first.");
       return;
     }
 
@@ -179,7 +179,7 @@
 
     const button = document.createElement("button");
     button.type = "button";
-    button.textContent = "Save & Return to Globe";
+    button.textContent = "Exit Plot";
 
     button.style.cssText =
       "border:0;border-radius:9px;padding:9px 11px;background:#35a86b;color:#fff;font-weight:900;cursor:pointer;white-space:nowrap";
@@ -188,6 +188,34 @@
 
     bar.append(label, button);
     document.body.appendChild(bar);
+  }
+
+  // Automatically save the active plot while the player is building.
+  function saveActivePlotSnapshot() {
+    try {
+      const active = JSON.parse(localStorage.getItem(ACTIVE_PLOT_KEY) || "null");
+      if (!active || !owned(active.country, active.plot)) return;
+      localStorage.setItem(
+        plotWorldKey(active.country, active.plot),
+        JSON.stringify(readWorldSnapshot())
+      );
+    } catch (error) {
+      console.error("Automatic plot save failed:", error);
+    }
+  }
+
+  function startPlotAutoSave() {
+    if (window.__cozyPlotAutoSaveStarted) return;
+    window.__cozyPlotAutoSaveStarted = true;
+
+    // Save periodically while the plot is open.
+    window.setInterval(saveActivePlotSnapshot, 2000);
+
+    // Save again when the page is hidden or closed.
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "hidden") saveActivePlotSnapshot();
+    });
+    window.addEventListener("pagehide", saveActivePlotSnapshot);
   }
 
   function esc(value) {
@@ -1262,6 +1290,7 @@
   function start() {
     ensureUI();
     showActivePlotBar();
+    startPlotAutoSave();
 
     // Permanent Global World shortcut.
     if (!document.getElementById("gwQuickAccess")) {
