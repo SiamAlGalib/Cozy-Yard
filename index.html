@@ -9461,7 +9461,7 @@ var KEY="cozy_nature_v1",cfg={on:1,vol:60};
 try{var sv=JSON.parse(localStorage.getItem(KEY)||"null");if(sv){cfg.on=sv.on?1:0;cfg.vol=+sv.vol>=0?+sv.vol:60}}catch(e){}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(cfg))}catch(e){}}
 var A=null,built=false,master,windG,leafG,waterG,cricketG,ytOk=true;
-try{if(window.ytgame&&ytgame.system){
+try{if(window.ytgame&&ytgame.IN_PLAYABLES_ENV&&ytgame.system){
   if(typeof ytgame.system.isAudioEnabled==="function")ytOk=!!ytgame.system.isAudioEnabled();
   if(typeof ytgame.system.onAudioEnabledChange==="function")ytgame.system.onAudioEnabledChange(function(v){ytOk=!!v});
 }}catch(e){}
@@ -9532,7 +9532,7 @@ function note(t,f0,f1,dur,vol,out){
 }
 function bus(){
   var out=A.createGain(),p=A.createStereoPanner?A.createStereoPanner():null;
-  out.gain.value=.5+Math.random()*.5;
+  out.gain.value=3+Math.random()*1.5;
   if(p){p.pan.value=Math.random()*1.6-.8;out.connect(p);p.connect(master)}else out.connect(master);
   return out;
 }
@@ -9544,7 +9544,7 @@ function bird(){
   else{for(i=0;i<6;i++)note(t+i*.09,base*(.8+Math.random()*.6),base*(.8+Math.random()*.6),.08,.05,out)}
 }
 function owl(){
-  var t=A.currentTime+.05,out=bus();out.gain.value=.9;
+  var t=A.currentTime+.05,out=bus();out.gain.value=4;
   note(t,420,380,.38,.09,out);note(t+.55,400,330,.55,.1,out);
 }
 function sched(){
@@ -9567,7 +9567,7 @@ function update(){
   var now=performance.now();
   if(now-lastW>5000){lastW=now;wCount=countWater()}
   var on=ready(),t=A.currentTime;
-  master.gain.setTargetAtTime(on?cfg.vol/100*.9:0,t,on?1.5:.3);
+  master.gain.setTargetAtTime(on?cfg.vol/100*2.4:0,t,on?1.5:.3);
   cricketG.gain.setTargetAtTime(night()?.07:.01,t,3);
   waterG.gain.setTargetAtTime(Math.min(1,wCount/10)*.07,t,2);
   windG.gain.value=raining()?.5:.34;
@@ -9577,7 +9577,7 @@ function update(){
 function arm(){
   if(!A)A=ctx();if(!A)return;
   if(!built){build();built=true}
-  if(A.state!=="running"&&A.resume)A.resume();
+  if(A.state!=="running"&&A.resume)A.resume();if(!arm.d){arm.d=1;setTimeout(function(){if(ready())bird()},900)}
 }
 ["pointerdown","touchstart","keydown","click"].forEach(function(ev){window.addEventListener(ev,arm,true)});
 setInterval(update,600);
