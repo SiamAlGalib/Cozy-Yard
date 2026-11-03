@@ -8886,8 +8886,9 @@ window.addEventListener("wheel",function(e){
 
 </script>
 
+
 <script>
-/*waterFlow*/
+/*waterFlow2*/
 (function(){
 "use strict";
 var G=window.__game,B=window.__builder;
@@ -8900,13 +8901,16 @@ var Mesh=s0.constructor,Geo=Object.getPrototypeOf(s0.geometry.constructor),
 var KEY="cozy_waterflow",enabled=true;
 try{enabled=localStorage.getItem(KEY)!=="0"}catch(e){}
 var SOFT={flower:1,sunflower:1,mushroom:1,waterblock:1};
-var MAXC=3000,SPAN=128,YO=16,DX=[1,-1,0,0],DZ=[0,0,1,-1];
-var lv=new Map(),par=new Map(),srcSet=new Set(),shown=new Map(),buckets=[],TT=null;
+var MAXC=2500,SPAN=128,YO=16,MISSMAX=4,DX=[1,-1,0,0],DZ=[0,0,1,-1];
+var lv=new Map(),par=new Map(),srcSet=new Set(),shown=new Map(),miss=new Map(),buckets=[],srcList=[];
+var TT=null,o0=0,o1=0,dirty=1,lastScan=0;
 for(var q=0;q<=8;q++)buckets.push([]);
+
 function tl(i){return TT&&TT.lvl?(TT.lvl(i)|0):0}
 function kf(x,z,y){return (z*lt+x)*SPAN+(y+YO)}
-function solid(x,z,y,o0,o1){
-  if(x<o0||z<o0||x>=o1||z>=o1)return true;
+function inArea(x,z){return x>=o0&&z>=o0&&x<o1&&z<o1}
+function solid(x,z,y){
+  if(!inArea(x,z))return true;
   var i=z*lt+x,t=tl(i);
   if(y<t)return true;
   var rel=y-t,c=G.cells[i];
@@ -8917,33 +8921,46 @@ function solid(x,z,y,o0,o1){
   if(V){var v=V[x+","+z+","+rel];if(v&&v.id!=="waterblock")return true}
   return false;
 }
-function findSources(o0,o1){
+
+/* ---- sources: full scan only when something may have changed ---- */
+function rescan(){
+  TT=window.__terrain;
+  var n=G.size;o0=(lt-n)/2;o1=o0+n;
   var out=[],V=window.__VX;
   for(var z=o0;z<o1;z++)for(var x=o0;x<o1;x++){
-    var i=z*lt+x,c=G.cells[i];
+    var c=G.cells[z*lt+x];
     if(!c.base&&!(c.stack&&c.stack.length))continue;
-    var t=tl(i);
-    if(c.base&&c.base.id==="waterblock")out.push([x,z,t]);
-    if(c.stack)for(var k=0;k<c.stack.length;k++)if(c.stack[k].id==="waterblock")out.push([x,z,t+k+1]);
+    if(c.base&&c.base.id==="waterblock")out.push(["b",x,z,0]);
+    if(c.stack)for(var k=0;k<c.stack.length;k++)if(c.stack[k].id==="waterblock")out.push(["s",x,z,k]);
   }
   if(V)for(var key in V){
     if(V[key].id!=="waterblock")continue;
-    var p=key.split(","),x2=+p[0],z2=+p[1];
-    if(x2<o0||z2<o0||x2>=o1||z2>=o1)continue;
-    out.push([x2,z2,tl(z2*lt+x2)+(+p[2])]);
+    var p=key.split(",");
+    out.push(["v",+p[0],+p[1],+p[2]]);
   }
-  return out;
+  srcList=out;
 }
-/* Steady-state flood: source = 8, flows 7..1 (7 blocks), falls straight down as full water,
-   only spreads sideways when it has something solid below (same as Minecraft). */
+function srcY(e){
+  var i=e[2]*lt+e[1];
+  if(!inArea(e[1],e[2]))return null;
+  var t=tl(i),c=G.cells[i];
+  if(e[0]==="b")return(c.base&&c.base.id==="waterblock")?t:null;
+  if(e[0]==="s"){var s=c.stack&&c.stack[e[3]];return(s&&s.id==="waterblock")?t+e[3]+1:null}
+  var V=window.__VX,v=V&&V[e[1]+","+e[2]+","+e[3]];
+  return(v&&v.id==="waterblock")?t+e[3]:null;
+}
+
+/* ---- flood: source=8, flows 7..1, falls straight down, spreads sideways only when resting on something ---- */
 function sim(){
   TT=window.__terrain;
-  var n=G.size,o0=(lt-n)/2,o1=o0+n,ss=findSources(o0,o1);
+  var n=G.size;o0=(lt-n)/2;o1=o0+n;
   lv.clear();par.clear();srcSet.clear();
   for(var b=0;b<=8;b++)buckets[b].length=0;
-  ss.forEach(function(s){
-    var y=s[2];if(y+YO<2||y+YO>=SPAN-1)return;
-    var k=kf(s[0],s[1],y);srcSet.add(k);lv.set(k,8);par.set(k,-1);buckets[8].push(k);
+  srcList.forEach(function(e){
+    var y=srcY(e);
+    if(y===null){dirty=1;return}
+    if(y+YO<2||y+YO>=SPAN-1)return;
+    var k=kf(e[1],e[2],y);srcSet.add(k);lv.set(k,8);par.set(k,-1);buckets[8].push(k);
   });
   var count=0;
   while(count<MAXC){
@@ -8952,7 +8969,7 @@ function sim(){
     var k=buckets[L].pop();
     if(lv.get(k)!==L)continue;
     var m=k%SPAN,y=m-YO,ci=(k-m)/SPAN,x=ci%lt,z=(ci-x)/lt;
-    if(!solid(x,z,y-1,o0,o1)){
+    if(!solid(x,z,y-1)){
       if(y-1+YO<1)continue;
       var nk=k-1;
       if((lv.get(nk)||0)<8){lv.set(nk,8);par.set(nk,k);buckets[8].push(nk);count++}
@@ -8960,19 +8977,24 @@ function sim(){
     }
     if(L>1)for(var d=0;d<4;d++){
       var nx=x+DX[d],nz=z+DZ[d];
-      if(solid(nx,nz,y,o0,o1))continue;
+      if(solid(nx,nz,y))continue;
       var nk2=kf(nx,nz,y);
       if((lv.get(nk2)||0)<L-1){lv.set(nk2,L-1);par.set(nk2,k);buckets[L-1].push(nk2);count++}
     }
   }
 }
-/* ---- rendering ---- */
-var mat=new Mat({color:0x3a8cff,transparent:true,opacity:.6,depthWrite:false,side:2});
+
+/* ---- rendering: front faces only, no faces against solid blocks ---- */
+var mat=new Mat({color:0x3a8cff,emissive:0x0b2d66,transparent:true,opacity:.62,depthWrite:false,
+  polygonOffset:true,polygonOffsetFactor:-1,polygonOffsetUnits:-1});
 var mesh=new Mesh(new Geo(),mat);mesh.frustumCulled=false;mesh.visible=false;mesh.renderOrder=5;sc.add(mesh);
 var P=[],N=[];
 function hO(l){return(l>=8?1:.12+.88*l/8)*H}
 function lvAt(k){if(srcSet.has(k))return 8;return shown.get(k)}
 function quad(a,b,c,d,n){
+  var ux=b[0]-a[0],uy=b[1]-a[1],uz=b[2]-a[2],vx=c[0]-a[0],vy=c[1]-a[1],vz=c[2]-a[2];
+  var cx=uy*vz-uz*vy,cy=uz*vx-ux*vz,cz=ux*vy-uy*vx;
+  if(cx*n[0]+cy*n[1]+cz*n[2]<0){var t=b;b=d;d=t}
   var v=[a,b,c,a,c,d];
   for(var i=0;i<6;i++){P.push(v[i][0],v[i][1],v[i][2]);N.push(n[0],n[1],n[2])}
 }
@@ -8980,15 +9002,16 @@ function build(){
   P=[];N=[];
   shown.forEach(function(l,k){
     var m=k%SPAN,y=m-YO,ci=(k-m)/SPAN,x=ci%lt,z=(ci-x)/lt;
-    var cx=x+.5-half,cz=z+.5-half,y0=y*H,hh=hO(l);
-    if(lvAt(k+1)===undefined)quad([cx-.5,y0+hh,cz-.5],[cx+.5,y0+hh,cz-.5],[cx+.5,y0+hh,cz+.5],[cx-.5,y0+hh,cz+.5],[0,1,0]);
+    var cx=x+.5-half,cz=z+.5-half,y0=y*H,hh=hO(l),yt=y0+hh;
+    if(lvAt(k+1)===undefined)quad([cx-.5,yt,cz-.5],[cx+.5,yt,cz-.5],[cx+.5,yt,cz+.5],[cx-.5,yt,cz+.5],[0,1,0]);
     for(var d=0;d<4;d++){
-      var nx=x+DX[d],nz=z+DZ[d],ya=y0,nl;
-      if(nx>=0&&nz>=0&&nx<lt&&nz<lt)nl=lvAt(kf(nx,nz,y));
-      if(nl!==undefined){var nh=hO(nl);if(nh>=hh)continue;ya=y0+nh}
-      var yb=y0+hh;
-      if(DX[d]!==0){var fx=cx+DX[d]*.5;quad([fx,ya,cz-.5],[fx,ya,cz+.5],[fx,yb,cz+.5],[fx,yb,cz-.5],[DX[d],0,0])}
-      else{var fz=cz+DZ[d]*.5;quad([cx-.5,ya,fz],[cx+.5,ya,fz],[cx+.5,yb,fz],[cx-.5,yb,fz],[0,0,DZ[d]])}
+      var nx=x+DX[d],nz=z+DZ[d];
+      if(nx<0||nz<0||nx>=lt||nz>=lt)continue;
+      var nl=lvAt(kf(nx,nz,y)),ya=y0;
+      if(nl!==undefined){var nh=hO(nl);if(nh>=hh-.001)continue;ya=y0+nh}
+      else if(inArea(nx,nz)&&solid(nx,nz,y))continue;
+      if(DX[d]!==0){var fx=cx+DX[d]*.5;quad([fx,ya,cz-.5],[fx,ya,cz+.5],[fx,yt,cz+.5],[fx,yt,cz-.5],[DX[d],0,0])}
+      else{var fz=cz+DZ[d]*.5;quad([cx-.5,ya,fz],[cx+.5,ya,fz],[cx+.5,yt,fz],[cx-.5,yt,fz],[0,0,DZ[d]])}
     }
   });
   var g=new Geo();
@@ -8998,39 +9021,74 @@ function build(){
   if(old&&old.dispose)old.dispose();
   G.redraw();
 }
-/* water advances one block per tick away from its source, like a real flow */
+
+/* water advances one block per tick; it only drains after being gone for a few ticks (no flicker) */
 function reveal(){
-  var add=[],changed=false,del=[];
-  lv.forEach(function(l,k){
-    if(srcSet.has(k))return;
-    var cur=shown.get(k);
-    if(cur===undefined){var p=par.get(k);if(p===-1||srcSet.has(p)||shown.has(p))add.push(k)}
-    else if(cur!==l){shown.set(k,l);changed=true}
+  var add=[],upd=[],del=[];
+  shown.forEach(function(l,k){
+    var nl=lv.get(k);
+    if(nl===undefined||srcSet.has(k)){
+      var m=(miss.get(k)||0)+1;
+      if(m>=MISSMAX)del.push(k);else miss.set(k,m);
+    }else{
+      miss.delete(k);
+      if(nl!==l)upd.push(k);
+    }
   });
-  add.forEach(function(k){shown.set(k,lv.get(k));changed=true});
-  shown.forEach(function(l,k){if(!lv.has(k)||srcSet.has(k))del.push(k)});
-  del.forEach(function(k){shown.delete(k);changed=true});
-  if(changed)build();
+  lv.forEach(function(l,k){
+    if(srcSet.has(k)||shown.has(k))return;
+    var p=par.get(k);
+    if(p===-1||srcSet.has(p)||shown.has(p))add.push(k);
+  });
+  upd.forEach(function(k){shown.set(k,lv.get(k))});
+  add.forEach(function(k){shown.set(k,lv.get(k))});
+  del.forEach(function(k){shown.delete(k);miss.delete(k)});
+  if(upd.length||add.length||del.length)build();
 }
+
+["pointerdown","pointerup","keyup","click"].forEach(function(ev){
+  window.addEventListener(ev,function(){dirty=1},true);
+});
 setInterval(function(){
   if(document.hidden)return;
-  if(!enabled){if(shown.size||lv.size){lv.clear();par.clear();srcSet.clear();shown.clear();build()}return}
-  sim();
-},450);
+  if(!enabled){
+    if(shown.size||lv.size||srcList.length){lv.clear();par.clear();srcSet.clear();shown.clear();miss.clear();srcList=[];build()}
+    return;
+  }
+  var now=performance.now();
+  if(dirty||now-lastScan>2500){dirty=0;lastScan=now;rescan()}
+  if(srcList.length||shown.size)sim();
+},400);
 setInterval(function(){if(!document.hidden&&enabled)reveal()},180);
+
+/* blue tint when your eyes are underwater in Kingdom mode */
+var tint=document.createElement("div");
+tint.style.cssText="position:fixed;inset:0;pointer-events:none;z-index:34;background:rgba(40,110,230,.38);display:none";
+document.body.appendChild(tint);
+setInterval(function(){
+  var S=window.__fpS;
+  if(!window.__fpOn||!S||!shown.size){tint.style.display="none";return}
+  var ey=S.py+.72+(S.camOff||0),ix=Math.floor(S.px+half),iz=Math.floor(S.pz+half),y=Math.floor(ey/H);
+  var inside=false;
+  if(ix>=0&&iz>=0&&ix<lt&&iz<lt&&y+YO>=0&&y+YO<SPAN){
+    var l=shown.get(kf(ix,iz,y));
+    inside=l!==undefined&&ey<y*H+hO(l);
+  }
+  tint.style.display=inside?"block":"none";
+},120);
 
 /* Menu switch */
 var mp=document.getElementById("menuPanel");
 if(mp){
   var h=document.createElement("h4");h.textContent="Water";mp.appendChild(h);
   var r=document.createElement("div");r.className="mrow";
-  var b=document.createElement("button");b.className="pill";
-  b.style.cssText="pointer-events:auto;border:0;cursor:pointer;background:#e6f0ff";
+  var bt=document.createElement("button");bt.className="pill";
+  bt.style.cssText="pointer-events:auto;border:0;cursor:pointer;background:#e6f0ff";
   var sm=document.createElement("small");
   sm.textContent="Water Blocks spread and flow downhill like Minecraft. Turn off if the game is slow";
-  function lab(){b.textContent="\uD83D\uDCA7 Water flow: "+(enabled?"ON":"OFF")}
-  lab();r.appendChild(b);r.appendChild(sm);mp.appendChild(r);
-  b.addEventListener("click",function(){
+  function lab(){bt.textContent="\uD83D\uDCA7 Water flow: "+(enabled?"ON":"OFF")}
+  lab();r.appendChild(bt);r.appendChild(sm);mp.appendChild(r);
+  bt.addEventListener("click",function(){
     enabled=!enabled;try{localStorage.setItem(KEY,enabled?"1":"0")}catch(e){}lab();
   });
 }
