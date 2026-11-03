@@ -6032,7 +6032,7 @@ ql=function(){
   if(n-qlLast>150){qlLast=n;_ql()}
   else if(!qlT){qlT=setTimeout(function(){qlT=0;qlLast=performance.now();_ql()},150-(n-qlLast))}
 };
-var look=document.getElementById("fpLook"),T=null,iv=null,held=false,DELAY=140,GAP=35,lastF=0;
+var look=document.getElementById("fpLook"),T=null,iv=null,held=false,DELAY=150,GAP=20,lastF=0;
 function down(){return window.__fpS&&window.__fpS.pitch<-1.0&&!(window.__tLandOn&&window.__tLandOn())}
 function doPlace(){if(!down()&&window.__fpx&&window.__fpx.place)window.__fpx.place()}
 function doBreak(){if(window.__fpBreak)window.__fpBreak()}
@@ -6057,7 +6057,7 @@ document.addEventListener("pointerlockchange",function(){stop();held=false});
 window.addEventListener("blur",function(){stop();held=false});
 window.addEventListener("keydown",function(e){
   if(!window.__fpOn||!e.repeat||e.code!=="KeyF")return;
-  var n=performance.now();if(n-lastF<30)return;lastF=n;doPlace()
+  var n=performance.now();if(n-lastF<15)return;lastF=n;doPlace()
 },true);
 /* touch buttons: hold Place / Break */
 var didTouch=false;
@@ -9690,5 +9690,70 @@ window.__tAim=function(){
 })();
 </script>
 <!--flickerFix--><script>/*flickerFix*/</script>
+
+<script>
+/*instantPlace*/
+(function(){
+"use strict";
+var look=document.getElementById("fpLook"),S=window.__fpS,G=window.__game,B=window.__builder;
+if(!look||!S||!G||!B||!B.parent)return;
+
+/* 1) place on mouse-down, break on right-down (no waiting for release) */
+var swallow={0:0,2:0};
+function locked(){return document.pointerLockElement===look}
+function lookingDown(){return S.pitch<-1.0&&!(window.__tLandOn&&window.__tLandOn())}
+window.addEventListener("pointerdown",function(e){
+  if(!window.__fpOn||e.target!==look||e.pointerType!=="mouse"||!locked())return;
+  if(e.button===0){
+    if(lookingDown())return;               /* pillar-up keeps its own logic */
+    if(window.__fpx&&window.__fpx.place){window.__fpx.place();swallow[0]=1}
+  }else if(e.button===2){
+    if(window.__fpBreak){window.__fpBreak();swallow[2]=1}
+  }
+},true);
+window.addEventListener("pointerup",function(e){
+  if(e.target!==look||!swallow[e.button])return;
+  swallow[e.button]=0;e.stopImmediatePropagation();e.stopPropagation();
+},true);
+
+/* 2) throttle the placement sound */
+var sf=window.__sfx;
+if(sf&&sf.place){var op=sf.place,t0=0;sf.place=function(id){var n=performance.now();if(n-t0<60)return true;t0=n;return op(id)}}
+
+/* 3) render distance: do not draw blocks far away (set window.__cullR=0 to turn off) */
+var fo=null;B.parent.children.forEach(function(o){if(!fo&&o.isGroup)fo=o});
+var culled=false;
+window.__cullR=90;
+setInterval(function(){
+  if(!fo)return;
+  var ch=fo.children,i,o;
+  if(!window.__fpOn||!window.__cullR){
+    if(culled){for(i=0;i<ch.length;i++)ch[i].visible=true;culled=false;G.redraw()}
+    return;
+  }
+  var r2=window.__cullR*window.__cullR,px=S.px,pz=S.pz,dx,dz,v;
+  for(i=0;i<ch.length;i++){
+    o=ch[i];dx=o.position.x-px;dz=o.position.z-pz;v=dx*dx+dz*dz<=r2;
+    if(o.visible!==v)o.visible=v;
+  }
+  culled=true;
+},400);
+
+/* 4) FPS counter (Kingdom only) */
+var el=document.createElement("div");
+el.style.cssText="position:fixed;left:8px;bottom:8px;z-index:60;background:rgba(0,0,0,.55);color:#9f9;font:700 12px monospace;padding:3px 8px;border-radius:8px;pointer-events:none;display:none";
+document.body.appendChild(el);
+var fr=0,last=performance.now();
+(function loop(now){
+  requestAnimationFrame(loop);
+  fr++;
+  if(now-last>=500){
+    el.style.display=window.__fpOn?"block":"none";
+    el.textContent=Math.round(fr*1000/(now-last))+" FPS";
+    fr=0;last=now;
+  }
+})(performance.now());
+})();
+</script>
 </body>
 </html>
