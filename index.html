@@ -112,6 +112,30 @@
 #introSky .cg{position:absolute;will-change:transform,opacity}
 #introSky .cg span{position:absolute;border-radius:50%;background:radial-gradient(circle,#fff 52%,rgba(255,255,255,0) 72%)}
 </style>
+<style>/*splashScreen*/
+#splash{position:fixed;inset:0;z-index:99997;display:flex;flex-direction:column;align-items:center;justify-content:space-between;
+  background:#ff7043;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;color:#fff;
+  padding:calc(30px + env(safe-area-inset-top)) 20px calc(34px + env(safe-area-inset-bottom));transition:opacity .7s ease}
+#splash.out{opacity:0;pointer-events:none}
+#splash .mid{flex:1;display:flex;align-items:center;justify-content:center;width:100%}
+#splash .card{width:min(180px,46vw);aspect-ratio:180/250;background:#ff5722;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:10px;text-align:center;animation:spIn .8s cubic-bezier(.2,.8,.2,1) both}
+#splash .ico{font-size:44px;line-height:1}
+#splash .gt{font-weight:1000;font-size:28px;line-height:.95;letter-spacing:1px;text-shadow:0 2px 0 rgba(0,0,0,.2);transform:rotate(-6deg);
+  font-family:Impact,"Arial Black",system-ui,sans-serif;font-weight:900}
+#splash .with{font-size:11px;font-weight:700;opacity:.7}
+#splash .stu{border:3px solid #fff;border-radius:999px;padding:6px 14px;font-weight:900;font-size:19px;letter-spacing:.5px;
+  font-family:"Arial Black",system-ui,sans-serif;animation:spIn .8s .2s cubic-bezier(.2,.8,.2,1) both}
+#splash .made{display:flex;align-items:center;gap:12px;animation:spFade 1s .5s both}
+#splash .made small{font-size:11px;font-weight:800;letter-spacing:5px;line-height:1.4;text-align:right;opacity:.85}
+#splash .made b{font-size:30px;font-weight:700;letter-spacing:-1px;color:#4a1a0c}
+@keyframes spIn{from{opacity:0;transform:translateY(18px) scale(.94)}to{opacity:1;transform:none}}
+@keyframes spFade{from{opacity:0}to{opacity:1}}
+</style>
+<div id="splash"><div class="mid"><div class="card">
+  <div class="ico">&#127793;</div><div class="gt">COZY<br>GARDEN</div><div class="with">with</div><div class="stu">YOUR STUDIO</div>
+</div></div>
+<div class="made"><small>MADE<br>WITH</small><b>three.js</b></div></div>
 <div id="introSky"><div class="sky"></div></div>
 
 <script>try{localStorage.setItem("cozy_builder_guide_v3","1")}catch(e){}</script>
@@ -9344,9 +9368,17 @@ function go(){
   setTimeout(function(){el.remove()},end+300);
 }
 /* wait until the first frame of the game has been drawn */
-function start(){requestAnimationFrame(function(){requestAnimationFrame(go)})}
+function start(){requestAnimationFrame(function(){requestAnimationFrame(function(){setTimeout(go,2100)})})}
 if(document.readyState==="complete")start();else window.addEventListener("load",start);
-setTimeout(function(){var e=document.getElementById("introSky");if(e)e.remove()},9000);
+setTimeout(function(){var e=document.getElementById("introSky");if(e)e.remove()},16000);
+})();
+</script>
+<script>/*splashScreen*/
+(function(){
+var sp=document.getElementById("splash");if(!sp)return;
+function run(){setTimeout(function(){sp.classList.add("out");setTimeout(function(){sp.remove()},800)},2100)}
+if(document.readyState==="complete")run();else window.addEventListener("load",run);
+setTimeout(function(){var e=document.getElementById("splash");if(e)e.remove()},14000);
 })();
 </script>
 </body>
