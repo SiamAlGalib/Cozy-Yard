@@ -19,6 +19,17 @@
 
   save.land ||= {};
   save.decor ||= {};
+
+  // Norway Plot 1 is the permanent free home plot.
+  save.land.Norway ||= [];
+  if (!save.land.Norway.includes(0)) {
+    save.land.Norway.push(0);
+  }
+  try {
+    localStorage.setItem(SAVE_KEY, JSON.stringify(save));
+  } catch (error) {
+    console.error("Could not save the free Norway home plot:", error);
+  }
   let currentCountry = "Bangladesh";
   let selectedPlot = null;
   let mode = "globe";
