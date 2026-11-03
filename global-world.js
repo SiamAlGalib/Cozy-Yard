@@ -1482,7 +1482,7 @@
     if (bar) bar.style.display = "flex";
     if (arrow) arrow.style.display = "";
     if (shortcut) shortcut.style.display = "";
-    }, 3000);
+    }, 4000);
   }
 
   if (document.readyState === "loading") {
