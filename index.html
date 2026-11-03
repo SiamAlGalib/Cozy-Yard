@@ -106,6 +106,14 @@
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+Cjxwb2x5Z29uIHBvaW50cz0iMzIsNCA1OSwxOCAzMiwzMyA1LDE4IiBmaWxsPSIjNjVjOTRiIi8+Cjxwb2x5Z29uIHBvaW50cz0iNSwxOCAzMiwzMyAzMiw2MSA1LDQ2IiBmaWxsPSIjYTk2ODM1Ii8+Cjxwb2x5Z29uIHBvaW50cz0iNTksMTggMzIsMzMgMzIsNjEgNTksNDYiIGZpbGw9IiM3NTQzMjMiLz4KPHBhdGggZD0iTTUgMTggTDMyIDMzIEw1OSAxOCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjM2U5ZTM2IiBzdHJva2Utd2lkdGg9IjIiLz4KPHBhdGggZD0iTTMyIDMzIFY2MSIgc3Ryb2tlPSIjNjAzNTFlIiBzdHJva2Utd2lkdGg9IjEuNSIvPgo8cGF0aCBkPSJNMTIgMTcgTDIwIDEzIEwyNyAxNyBMMTkgMjEgWiIgZmlsbD0iIzhiZTQ1YyIvPgo8cGF0aCBkPSJNMzIgOCBMNDAgMTIgTDMyIDE2IEwyNCAxMiBaIiBmaWxsPSIjYTBlYzYzIi8+CjxwYXRoIGQ9Ik0xMCAyOCBMMTcgMzIgVjM5IEwxMCAzNSBaIiBmaWxsPSIjYmQ4MDQ4Ii8+CjxwYXRoIGQ9Ik00MCAzOSBMNTEgMzMgVjQwIEw0MCA0NiBaIiBmaWxsPSIjOGI1NzMwIi8+CjxwYXRoIGQ9Ik0xOCA0MyBMMjUgNDcgVjUzIEwxOCA0OSBaIiBmaWxsPSIjOGI1NzMwIi8+Cjwvc3ZnPg==">
 </head>
 <body>
+<style>/*introSky*/
+#introSky{position:fixed;inset:0;z-index:99995;pointer-events:none;overflow:hidden}
+#introSky .sky{position:absolute;inset:0;background:linear-gradient(#bfe2ff,#f2faff 70%,#fff)}
+#introSky .cg{position:absolute;will-change:transform,opacity}
+#introSky .cg span{position:absolute;border-radius:50%;background:radial-gradient(circle,#fff 52%,rgba(255,255,255,0) 72%)}
+</style>
+<div id="introSky"><div class="sky"></div></div>
+
 <script>try{localStorage.setItem("cozy_builder_guide_v3","1")}catch(e){}</script>
 <script>/*animEarly*/window.__turn=function(a,b){var d=((b-a+Math.PI)%(Math.PI*2)+Math.PI*2)%(Math.PI*2)-Math.PI;return Math.abs(d)<.01?b:a+d*.2};</script>
 <script>/*dprCap*/(function(){try{var d=window.devicePixelRatio||1;Object.defineProperty(window,"devicePixelRatio",{configurable:true,get:function(){return Math.min(d,(window.matchMedia&&matchMedia("(pointer:coarse)").matches)?1:1.25)}})}catch(e){}})();</script>
@@ -9302,6 +9310,43 @@ body.fp #fpBar{z-index:46!important}
 document.addEventListener("touchmove",function(e){if(window.__fpOn&&e.cancelable)e.preventDefault()},{passive:false});
 document.addEventListener("touchstart",function(e){if(window.__fpOn&&e.target.closest&&e.target.closest("#fpStick,#fpLook")&&e.cancelable)e.preventDefault()},{passive:false});
 document.addEventListener("contextmenu",function(e){if(window.__fpOn)e.preventDefault()});
+})();
+</script>
+<script>/*introSky*/
+(function(){
+var el=document.getElementById("introSky");if(!el)return;
+if(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches){el.remove();return}
+function go(){
+  var W=innerWidth,H=innerHeight,cx=W/2,cy=H/2,R=Math.max(W,H),cols=5,rows=6,i,j,all=[];
+  function R1(a,b){return a+Math.random()*(b-a)}
+  for(i=0;i<rows;i++)for(j=0;j<cols;j++){
+    var x=(j+.5)/cols*W+R1(-.07,.07)*W,y=(i+.5)/rows*H+R1(-.07,.07)*H,sz=R/3.1*R1(.85,1.4);
+    var g=document.createElement("div");g.className="cg";
+    g.style.cssText="left:"+(x-sz/2)+"px;top:"+(y-sz*.3)+"px;width:"+sz+"px;height:"+sz*.6+"px";
+    [[0,.12,.5],[.22,0,.56],[.45,.08,.52],[.62,.16,.4],[.12,.22,.42]].forEach(function(q){
+      var p=document.createElement("span"),d=sz*q[2];
+      p.style.cssText="left:"+sz*q[0]+"px;top:"+sz*q[1]+"px;width:"+d+"px;height:"+d+"px";g.appendChild(p)});
+    el.appendChild(g);
+    var dx=x-cx,dy=y-cy,L=Math.hypot(dx,dz=dy)||1;
+    if(L<R*.12){var a=R1(0,6.28);dx=Math.cos(a);dy=Math.sin(a);L=1}
+    var k=R*R1(.7,1.1)/L,dist=Math.hypot(x-cx,y-cy)/(R*.7);
+    all.push({g:g,tx:dx*k,ty:dy*k-H*.08,del:500+dist*500+R1(0,250),dur:R1(2300,3000)});
+  }
+  var cv=document.getElementById("c"),end=0;
+  if(cv&&cv.animate)cv.animate([{transform:"scale(1.4)"},{transform:"scale(1)"}],{duration:3600,delay:350,easing:"cubic-bezier(.2,.7,.2,1)",fill:"backwards"});
+  el.firstChild.animate([{opacity:1},{opacity:0}],{duration:1500,delay:1000,easing:"ease-in",fill:"forwards"});
+  all.forEach(function(c){
+    c.g.animate([{transform:"translate(0,0) scale(1)",opacity:1},
+                 {transform:"translate("+c.tx+"px,"+c.ty+"px) scale(1.5)",opacity:0}],
+                {duration:c.dur,delay:c.del,easing:"cubic-bezier(.45,0,.25,1)",fill:"forwards"});
+    end=Math.max(end,c.del+c.dur);
+  });
+  setTimeout(function(){el.remove()},end+300);
+}
+/* wait until the first frame of the game has been drawn */
+function start(){requestAnimationFrame(function(){requestAnimationFrame(go)})}
+if(document.readyState==="complete")start();else window.addEventListener("load",start);
+setTimeout(function(){var e=document.getElementById("introSky");if(e)e.remove()},9000);
 })();
 </script>
 </body>
