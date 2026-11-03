@@ -8385,5 +8385,355 @@ setTimeout(function(){
 </script>
 
 
+
+<!-- terrainDig:start -->
+<script>
+/*terrainDig*/
+(function(){
+"use strict";
+var G=window.__game,B=window.__builder;
+if(!G||!B||!B.parent)return;
+var sc=B.parent,lt=Math.round(Math.sqrt(G.cells.length)),half=lt/2;
+var src=null;B.traverse(function(o){if(!src&&o.isMesh&&o.geometry&&o.material)src=o});
+if(!src)return;
+var Mesh=src.constructor,Geo=Object.getPrototypeOf(src.geometry.constructor),
+    Attr=src.geometry.attributes.position.constructor,Mat=src.material.constructor;
+var cv=document.getElementById("c");
+var ground=null,slab=null;
+sc.children.forEach(function(o){
+  if(!o.isMesh||!o.geometry||!o.geometry.parameters)return;
+  var p=o.geometry.parameters;
+  if(p.width===lt&&p.height===lt&&o.material&&o.material.map)ground=o;
+  else if(p.width===lt+.4&&p.depth===lt+.4)slab=o;
+});
+if(!ground)return;
+
+var KEY="cozy_garden_terrain_v1",H=.92,MAXD=4,MAXR=12;
+var TY=[null,
+ {name:"Grass",icon:"🟩",top:0x7ccf6a,top2:0x72c460,side:0x8a6a45,cost:6},
+ {name:"Dirt", icon:"🟫",top:0x9a7550,top2:0x906b48,side:0x7d5d3c,cost:4},
+ {name:"Sand", icon:"🟨",top:0xe6d6a0,top2:0xdccb92,side:0xd8c58a,cost:8},
+ {name:"Rock", icon:"⬜",top:0xa7adb3,top2:0x9ba1a8,side:0x8c9299,cost:12},
+ {name:"Clay", icon:"🟧",top:0xc9794b,top2:0xbf6f43,side:0xb26a42,cost:8}];
+var NAT={top:0x8b6b4a,top2:0x826343,side:0x6e5238};
+
+var D=new Int8Array(lt*lt),F=new Uint8Array(lt*lt),S={},feat=new Set(),dug=0;
+var inv=[0,0,0,0,0,0],brush=1,sel=1,tool=null,prevSel="wall",origWk=null;
+function lvl(i){var s=S[i];return s?s.length:-D[i]}
+function touch(i){if(D[i]||S[i]||F[i])feat.add(i);else feat.delete(i)}
+function inRange(x,z){return x>=0&&z>=0&&x<lt&&z<lt}
+function own(x,z){var n=G.size,off=(lt-n)/2;return x>=off&&z>=off&&x<off+n&&z<off+n}
+function toast(m){var t=document.getElementById("toast");if(!t)return;t.textContent=m;t.classList.add("show");clearTimeout(toast.t);toast.t=setTimeout(function(){t.classList.remove("show")},2200)}
+
+var saveT=0;
+function save(){clearTimeout(saveT);saveT=setTimeout(function(){
+  try{var cells=[];feat.forEach(function(i){cells.push([i,D[i],F[i],S[i]||[]])});
+    localStorage.setItem(KEY,JSON.stringify({v:1,c:cells,inv:inv}))}catch(e){}},300)}
+function load(){
+  try{var d=JSON.parse(localStorage.getItem(KEY)||"null");if(!d)return;
+    (d.c||[]).forEach(function(r){var i=r[0]|0;if(i<0||i>=lt*lt)return;
+      D[i]=Math.max(0,Math.min(MAXD,r[1]|0));F[i]=(r[2]|0)>0&&(r[2]|0)<TY.length?(r[2]|0):0;
+      var s=(r[3]||[]).filter(function(t){return t>0&&t<TY.length}).slice(0,MAXR);
+      if(s.length){S[i]=s;D[i]=0}
+      touch(i)});
+    if(d.inv)for(var k=1;k<TY.length;k++)inv[k]=Math.max(0,d.inv[k]|0)}catch(e){}
+  dug=0;for(var i=0;i<D.length;i++)if(D[i]>0)dug++;
+}
+
+var hc=null,hx=null,ht=null;
+function ensureHoles(){
+  if(ht)return;
+  hc=document.createElement("canvas");hc.width=hc.height=lt;hx=hc.getContext("2d");
+  hx.fillStyle="#fff";hx.fillRect(0,0,lt,lt);
+  var m=ground.material;ht=new m.map.constructor(hc);
+  ht.magFilter=m.map.magFilter;ht.minFilter=m.map.minFilter;ht.generateMipmaps=false;
+  hx.fillStyle="#000";
+  for(var i=0;i<D.length;i++)if(D[i]>0)hx.fillRect(i%lt,Math.floor(i/lt),1,1);
+  ht.needsUpdate=true;m.alphaMap=ht;m.alphaTest=.5;m.needsUpdate=true;
+}
+function holeCell(i){
+  if(!ht)ensureHoles();
+  hx.fillStyle=D[i]>0?"#000":"#fff";hx.fillRect(i%lt,Math.floor(i/lt),1,1);ht.needsUpdate=true;
+}
+
+var tmat=new Mat({vertexColors:true,roughness:.95,side:2});
+var tmesh=new Mesh(new Geo(),tmat);tmesh.frustumCulled=false;tmesh.visible=false;sc.add(tmesh);
+function lin(h){return[Math.pow(((h>>16)&255)/255,2.2),Math.pow(((h>>8)&255)/255,2.2),Math.pow((h&255)/255,2.2)]}
+var cache={};function col(h,k){var key=h+"_"+k,c=cache[key];if(!c){c=lin(h);c=[c[0]*k,c[1]*k,c[2]*k];cache[key]=c}return c}
+function buildGeo(P,N,C){
+  var g=new Geo();
+  g.setAttribute("position",new Attr(new Float32Array(P),3));
+  g.setAttribute("normal",new Attr(new Float32Array(N),3));
+  g.setAttribute("color",new Attr(new Float32Array(C),3));
+  return g;
+}
+function rebuild(){
+  var P=[],N=[],C=[];
+  function quad(a,b,c,d,n,cc){
+    var ux=b[0]-a[0],uy=b[1]-a[1],uz=b[2]-a[2],vx=c[0]-a[0],vy=c[1]-a[1],vz=c[2]-a[2];
+    var cx=uy*vz-uz*vy,cy=uz*vx-ux*vz,cz=ux*vy-uy*vx;
+    if(cx*n[0]+cy*n[1]+cz*n[2]<0){var t=b;b=d;d=t}
+    var v=[a,b,c,a,c,d];
+    for(var i=0;i<6;i++){P.push(v[i][0],v[i][1],v[i][2]);N.push(n[0],n[1],n[2]);C.push(cc[0],cc[1],cc[2])}
+  }
+  var cells=new Set(feat);
+  feat.forEach(function(i){var x=i%lt,z=(i-x)/lt;
+    if(x>0)cells.add(i-1);if(x<lt-1)cells.add(i+1);if(z>0)cells.add(i-lt);if(z<lt-1)cells.add(i+lt)});
+  var DIRS=[[1,0],[-1,0],[0,1],[0,-1]];
+  cells.forEach(function(i){
+    var x=i%lt,z=(i-x)/lt,la=lvl(i),cx=x+.5-half,cz=z+.5-half,s=S[i],chk=((x+z)&1)?1:0;
+    if(la>0){var T=TY[s[la-1]];quad([cx-.5,la*H,cz-.5],[cx+.5,la*H,cz-.5],[cx+.5,la*H,cz+.5],[cx-.5,la*H,cz+.5],[0,1,0],col(chk?T.top:T.top2,1))}
+    else if(la<0){var q=F[i]?TY[F[i]]:NAT;quad([cx-.5,la*H,cz-.5],[cx+.5,la*H,cz-.5],[cx+.5,la*H,cz+.5],[cx-.5,la*H,cz+.5],[0,1,0],col(chk?q.top:q.top2,1))}
+    else if(F[i]){var q2=TY[F[i]];quad([cx-.5,.004,cz-.5],[cx+.5,.004,cz-.5],[cx+.5,.004,cz+.5],[cx-.5,.004,cz+.5],[0,1,0],col(chk?q2.top:q2.top2,1))}
+    for(var d=0;d<4;d++){
+      var dx=DIRS[d][0],dz=DIRS[d][1],nx=x+dx,nz=z+dz,ln=inRange(nx,nz)?lvl(nz*lt+nx):0;
+      if(ln>=la)continue;
+      for(var k=ln;k<la;k++){
+        var y0=k*H,y1=y0+H,c2=k>=0?TY[s[k]].side:NAT.side,cc=col(c2,(k&1)?.93:1),fx=cx+dx*.5,fz=cz+dz*.5;
+        if(dx!==0)quad([fx,y0,cz-.5],[fx,y0,cz+.5],[fx,y1,cz+.5],[fx,y1,cz-.5],[dx,0,0],cc);
+        else quad([cx-.5,y0,fz],[cx+.5,y0,fz],[cx+.5,y1,fz],[cx-.5,y1,fz],[0,0,dz],cc);
+      }
+    }
+  });
+  if(slab)slab.visible=dug<=0;
+  if(dug>0){
+    var yb=-(MAXD*H+.3),sk=col(NAT.side,.9),h2=half;
+    quad([h2,0,-h2],[h2,0,h2],[h2,yb,h2],[h2,yb,-h2],[1,0,0],sk);
+    quad([-h2,0,-h2],[-h2,0,h2],[-h2,yb,h2],[-h2,yb,-h2],[-1,0,0],sk);
+    quad([-h2,0,h2],[h2,0,h2],[h2,yb,h2],[-h2,yb,h2],[0,0,1],sk);
+    quad([-h2,0,-h2],[h2,0,-h2],[h2,yb,-h2],[-h2,yb,-h2],[0,0,-1],sk);
+    quad([-h2,yb,-h2],[h2,yb,-h2],[h2,yb,h2],[-h2,yb,h2],[0,-1,0],col(NAT.side,.7));
+  }
+  var old=tmesh.geometry;
+  if(!P.length){tmesh.visible=false}
+  else{tmesh.geometry=buildGeo(P,N,C);tmesh.visible=true}
+  if(old&&old.dispose)old.dispose();
+  syncItems();G.redraw();
+}
+var dirty=false;
+function mark(){if(dirty)return;dirty=true;requestAnimationFrame(function(){dirty=false;rebuild()})}
+
+function shift(o,off){
+  if(!o)return;var u=o.userData;
+  if(u._ty!==undefined&&Math.abs(o.position.y-u._ty)<1e-6){
+    var d=off-u._to;if(d!==0){o.position.y+=d;u._to=off;u._ty=o.position.y;G.redraw()}
+  }else{
+    if(off!==0){o.position.y+=off;G.redraw()}
+    u._to=off;u._ty=o.position.y;
+  }
+}
+function syncItems(){
+  var V=window.__VX;
+  feat.forEach(function(i){
+    var l=lvl(i);if(l===0&&!F[i])return;var off=l*H,c=G.cells[i],x=i%lt,z=(i-x)/lt;
+    if(c){
+      if(c.floor)shift(c.floor.obj,off);if(c.base)shift(c.base.obj,off);if(c.top)shift(c.top.obj,off);
+      if(c.stack)for(var k=0;k<c.stack.length;k++)shift(c.stack[k].obj,off);
+    }
+    if(V)for(var L=0;L<=30;L++){var v=V[x+","+z+","+L];if(v&&v.obj)shift(v.obj,off)}
+  });
+}
+setInterval(function(){if(feat.size&&!document.hidden)syncItems()},400);
+
+var cam=null,probe=new Mesh(buildGeo([0,-9,0,.01,-9,0,0,-9,.01],[0,1,0,0,1,0,0,1,0],[0,0,0,0,0,0,0,0,0]),
+  new Mat({transparent:true,opacity:0,depthWrite:false}));
+probe.frustumCulled=false;probe.onBeforeRender=function(r,s,c){cam=c};sc.add(probe);
+function ray(cx,cy){
+  if(!cam)return null;
+  var r=cv.getBoundingClientRect(),nx=(cx-r.left)/r.width*2-1,ny=-((cy-r.top)/r.height)*2+1;
+  var m=cam.matrixWorld.elements,p=cam.projectionMatrixInverse.elements;
+  var x=p[0]*nx+p[4]*ny+p[8]+p[12],y=p[1]*nx+p[5]*ny+p[9]+p[13],z=p[2]*nx+p[6]*ny+p[10]+p[14],w=p[3]*nx+p[7]*ny+p[11]+p[15];
+  x/=w;y/=w;z/=w;
+  var dx=m[0]*x+m[4]*y+m[8]*z,dy=m[1]*x+m[5]*y+m[9]*z,dz=m[2]*x+m[6]*y+m[10]*z,l=Math.sqrt(dx*dx+dy*dy+dz*dz);
+  return{ox:m[12],oy:m[13],oz:m[14],dx:dx/l,dy:dy/l,dz:dz/l};
+}
+function toClient(x,y,z){
+  if(!cam)return null;
+  var v=cam.matrixWorldInverse.elements,p=cam.projectionMatrix.elements;
+  var vx=v[0]*x+v[4]*y+v[8]*z+v[12],vy=v[1]*x+v[5]*y+v[9]*z+v[13],vz=v[2]*x+v[6]*y+v[10]*z+v[14];
+  var qx=p[0]*vx+p[4]*vy+p[8]*vz+p[12],qy=p[1]*vx+p[5]*vy+p[9]*vz+p[13],qw=p[3]*vx+p[7]*vy+p[11]*vz+p[15];
+  if(qw<=0)return null;
+  var r=cv.getBoundingClientRect();
+  return{x:(qx/qw+1)/2*r.width+r.left,y:(1-qy/qw)/2*r.height+r.top};
+}
+function pick(cx,cy){
+  var r=ray(cx,cy);if(!r)return null;
+  var maxTop=MAXR*H,minY=-(MAXD*H)-.2,t=0;
+  if(r.oy>maxTop){if(r.dy>=-1e-6)return null;t=(r.oy-maxTop)/-r.dy}
+  for(var tmax=t+700;t<tmax;t+=.04){
+    var x=r.ox+r.dx*t,y=r.oy+r.dy*t,z=r.oz+r.dz*t;
+    if(y<minY)break;
+    var ix=Math.floor(x+half),iz=Math.floor(z+half);
+    if(ix<0||iz<0||ix>=lt||iz>=lt){if(y<0)break;continue}
+    var l=lvl(iz*lt+ix);
+    if(y<=l*H)return{x:ix,z:iz,lv:l,py:y};
+  }
+  return null;
+}
+
+function cellEmpty(x,z){
+  var c=G.cells[z*lt+x];
+  if(c.floor||c.base||c.top||(c.stack&&c.stack.length))return false;
+  var V=window.__VX;if(V)for(var L=0;L<=30;L++)if(V[x+","+z+","+L])return false;
+  try{if(G.cgMkAt(x,z)>=0)return false}catch(e){}
+  return true;
+}
+function dig(x,z){
+  if(!inRange(x,z)||!own(x,z))return"This land is not yours yet";
+  if(!cellEmpty(x,z))return"Remove what is on this tile first";
+  var i=z*lt+x,s=S[i];
+  if(s&&s.length){var t=s.pop();if(!s.length)delete S[i];inv[t]++}
+  else{
+    if(D[i]>=MAXD)return"Can't dig deeper than "+MAXD+" blocks";
+    if(D[i]===0)dug++;D[i]++;F[i]=0;inv[2]++;holeCell(i);
+  }
+  touch(i);return"";
+}
+function place(x,z,type){
+  if(!inRange(x,z)||!own(x,z))return"This land is not yours yet";
+  if(!cellEmpty(x,z))return"Remove what is on this tile first";
+  var i=z*lt+x,T=TY[type],filling=D[i]>0;
+  if(!filling&&(S[i]?S[i].length:0)>=MAXR)return"Land can't go higher than "+MAXR+" blocks";
+  if(inv[type]>0)inv[type]--;
+  else if(G.coins>=T.cost)G.coins=G.coins-T.cost;
+  else return"Not enough coins for "+T.name+" ("+T.cost+")";
+  if(filling){D[i]--;F[i]=type;if(D[i]===0){dug--;holeCell(i)}}
+  else{(S[i]||(S[i]=[])).push(type)}
+  touch(i);return"";
+}
+function apply(x0,z0){
+  var r=(brush-1)>>1,changed=0,err="";
+  for(var z=z0-r;z<=z0+r;z++)for(var x=x0-r;x<=x0+r;x++){
+    var e=tool==="dig"?dig(x,z):place(x,z,sel);
+    if(e)err=e;else changed++;
+  }
+  if(changed){mark();save();ui()}
+  if(err&&!changed)toast(err);
+  else if(err)toast(err+" (some tiles skipped)");
+  return changed;
+}
+
+var st=document.createElement("style");
+st.textContent="#tdBar{position:fixed;left:50%;bottom:calc(196px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:24;display:none;flex-direction:column;gap:6px;align-items:center;max-width:96vw}"+
+"#tdBar.show{display:flex}body.fp #tdBar{display:none!important}"+
+"#tdBar .tr{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;background:rgba(18,28,46,.92);border-radius:16px;padding:6px;box-shadow:0 4px 14px rgba(0,0,0,.35)}"+
+"#tdBar button{border:0;border-radius:11px;min-height:38px;padding:6px 11px;font:700 13px system-ui,sans-serif;background:#2a3a58;color:#e8eefc;cursor:pointer}"+
+"#tdBar button.on{background:#f5b82e;color:#2b1d00}#tdBar button.x{background:#7a2a2a;color:#fff}"+
+"#tdBar button small{display:block;font-size:10px;font-weight:600;opacity:.85}"+
+"#tdBar .ti{font:600 12px system-ui,sans-serif;color:#fff;background:rgba(18,28,46,.85);border-radius:999px;padding:4px 12px}";
+document.head.appendChild(st);
+var bar=document.createElement("div");bar.id="tdBar";
+bar.innerHTML='<div class="tr"><button data-a="dig">⛏️ Dig</button><button data-a="place">🧱 Land block</button>'+
+ '<button data-b="1">1×1</button><button data-b="3">3×3</button><button data-b="5">5×5</button><button class="x" data-a="done">✕ Done</button></div>'+
+ '<div class="tr" id="tdTypes"></div><div class="ti" id="tdInfo"></div>';
+document.body.appendChild(bar);
+var typesEl=bar.querySelector("#tdTypes"),infoEl=bar.querySelector("#tdInfo");
+function ui(){
+  bar.querySelectorAll("[data-a=dig],[data-a=place]").forEach(function(b){b.classList.toggle("on",b.dataset.a===tool)});
+  bar.querySelectorAll("[data-b]").forEach(function(b){b.classList.toggle("on",+b.dataset.b===brush)});
+  typesEl.style.display=tool==="place"?"flex":"none";
+  var h="";for(var k=1;k<TY.length;k++){var T=TY[k];
+    h+='<button data-t="'+k+'" class="'+(k===sel?"on":"")+'">'+T.icon+" "+T.name+"<small>"+(inv[k]>0?"bag "+inv[k]:"🪙 "+T.cost)+"</small></button>"}
+  typesEl.innerHTML=h;
+  infoEl.textContent=tool==="dig"?"Tap the ground to dig (max "+MAXD+" deep). Dirt goes to your bag.":
+    tool==="place"?"Tap to place a land block. It fills holes first, then builds up (max "+MAXR+").":"";
+}
+bar.addEventListener("pointerdown",function(e){e.stopPropagation()});
+bar.addEventListener("click",function(e){
+  var b=e.target.closest("button");if(!b)return;
+  if(b.dataset.a==="done")return stop(true);
+  if(b.dataset.a){tool=b.dataset.a;ui()}
+  else if(b.dataset.b){brush=+b.dataset.b;ui()}
+  else if(b.dataset.t){sel=+b.dataset.t;tool="place";ui()}
+});
+function start(t){
+  if(window.__fpOn)return toast("Leave Enter Kingdom first (digging works in the normal view)");
+  if(!tool){
+    var s=document.querySelector("#palette .item.sel");prevSel=s?s.dataset.id:"wall";
+    origWk=window.wkGo;window.wkGo=function(){};
+    G.select("walk");
+  }
+  tool=t;bar.classList.add("show");ui();
+}
+function stop(restore){
+  if(!tool)return;
+  tool=null;bar.classList.remove("show");hover.visible=false;
+  window.wkGo=origWk;
+  if(restore)G.select(prevSel);
+  G.redraw();
+}
+document.addEventListener("click",function(e){if(tool&&e.target.closest&&e.target.closest("#bottom"))stop(false)},true);
+setInterval(function(){if(tool&&(window.__fpOn||document.body.classList.contains("fp")))stop(false)},300);
+window.addEventListener("keydown",function(e){if(e.code==="Escape"&&tool)stop(true)});
+
+(function(){
+  var panel=document.getElementById("menuPanel"),anchor=document.getElementById("mbBtn"),b=document.createElement("button");
+  b.className="pill";b.id="tdBtn";b.textContent="⛏️ Dig & land";
+  b.addEventListener("click",function(){tool?stop(true):start("dig")});
+  var row=anchor&&anchor.parentNode&&anchor.parentNode.classList.contains("mrow")?anchor.parentNode:null;
+  if(panel&&row){
+    var r=document.createElement("div");r.className="mrow";r.appendChild(b);
+    var s=document.createElement("small");s.textContent="Dig holes, fill them, build hills with land blocks";r.appendChild(s);
+    row.parentNode.insertBefore(r,row.nextSibling);
+  }else{b.style.cssText="pointer-events:auto;border:0;cursor:pointer;background:#ece6dc";document.getElementById("hud").insertBefore(b,document.getElementById("goal"))}
+})();
+
+var hover=new Mesh(new Geo(),new Mat({color:0x000000,emissive:0xffe066,transparent:true,opacity:.5,depthTest:false,side:2}));
+hover.frustumCulled=false;hover.renderOrder=12;hover.visible=false;sc.add(hover);
+function showHover(h){
+  if(!h){if(hover.visible){hover.visible=false;G.redraw()}return}
+  var r=(brush-1)>>1,P=[],N=[],C=[];
+  for(var z=h.z-r;z<=h.z+r;z++)for(var x=h.x-r;x<=h.x+r;x++){
+    if(!inRange(x,z))continue;
+    var y=lvl(z*lt+x)*H+.03,x0=x-half,z0=z-half;
+    P.push(x0,y,z0,x0+1,y,z0,x0+1,y,z0+1,x0,y,z0,x0+1,y,z0+1,x0,y,z0+1);
+    for(var q=0;q<6;q++){N.push(0,1,0);C.push(1,1,1)}
+  }
+  var old=hover.geometry;hover.geometry=buildGeo(P,N,C);hover.visible=P.length>0;if(old.dispose)old.dispose();G.redraw();
+}
+var downs={},nDown=0;
+cv.addEventListener("pointerdown",function(e){downs[e.pointerId]={x:e.clientX,y:e.clientY,t:performance.now()};nDown=Object.keys(downs).length},true);
+cv.addEventListener("pointercancel",function(e){delete downs[e.pointerId];nDown=Object.keys(downs).length},true);
+cv.addEventListener("pointermove",function(e){
+  if(!tool||e.pointerType!=="mouse"||nDown>0)return;
+  var h=pick(e.clientX,e.clientY);showHover(h&&own(h.x,h.z)?h:null);
+},true);
+cv.addEventListener("pointerup",function(e){
+  if(e.__terr)return;
+  var d=downs[e.pointerId],multi=nDown>1;delete downs[e.pointerId];nDown=Object.keys(downs).length;
+  if(!d||multi||e.button>0)return;
+  var tap=Math.abs(e.clientX-d.x)<9&&Math.abs(e.clientY-d.y)<9&&performance.now()-d.t<600;
+  if(!tap)return;
+  var h=pick(e.clientX,e.clientY);
+  if(tool){
+    if(!h)return toast(cam?"Tap the ground":"Move the camera a little, then tap again");
+    apply(h.x,h.z);if(e.pointerType==="mouse")showHover(h);return;
+  }
+  if(!feat.size||!h||(h.lv===0&&Math.abs(h.py)<.06))return;
+  var p=toClient(h.x+.5-half,0,h.z+.5-half);if(!p)return;
+  e.stopImmediatePropagation();
+  var ne=new PointerEvent("pointerup",{pointerId:e.pointerId,pointerType:e.pointerType,isPrimary:e.isPrimary,
+    clientX:p.x,clientY:p.y,button:e.button,buttons:e.buttons,bubbles:true,cancelable:true,view:window});
+  ne.__terr=1;cv.dispatchEvent(ne);
+},true);
+
+var rs=document.getElementById("reset");
+if(rs)rs.addEventListener("click",function(){
+  if(rs.textContent!=="Sure?")return;
+  D.fill(0);F.fill(0);S={};feat.clear();dug=0;inv=[0,0,0,0,0,0];
+  if(ht){hx.fillStyle="#fff";hx.fillRect(0,0,lt,lt);ht.needsUpdate=true}
+  try{localStorage.removeItem(KEY)}catch(e){}
+  mark();ui();
+},true);
+window.addEventListener("beforeunload",function(){clearTimeout(saveT);try{var cells=[];feat.forEach(function(i){cells.push([i,D[i],F[i],S[i]||[]])});localStorage.setItem(KEY,JSON.stringify({v:1,c:cells,inv:inv}))}catch(e){}});
+
+load();ui();
+if(dug>0)ensureHoles();
+if(feat.size)mark();
+window.__terrain={dig:function(x,z){var e=dig(x,z);mark();save();return e},place:function(x,z,t){var e=place(x,z,t||1);mark();save();return e},
+  start:start,stop:stop,pick:pick,get inv(){return inv},get count(){return feat.size}};
+})();
+</script>
+<!-- terrainDig:end -->
 </body>
 </html>
