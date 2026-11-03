@@ -9771,5 +9771,82 @@ var fr=0,last=performance.now();
 })();
 </script>
 
+
+<!-- Keep the plot navigation arrow beside the active plot panel. -->
+<script id="plot-arrow-position-fix">
+(function () {
+  "use strict";
+
+  var arrowId = "padArrow";
+  var anchorIds = ["gwPlotReturnBar", "gwPlotBarToggle"];
+  var resizeObserver = null;
+  var scheduled = false;
+
+  function findAnchor() {
+    for (var i = 0; i < anchorIds.length; i++) {
+      var el = document.getElementById(anchorIds[i]);
+      if (el && el.getClientRects().length) return el;
+    }
+    return null;
+  }
+
+  function placeArrow() {
+    scheduled = false;
+    var arrow = document.getElementById(arrowId);
+    var anchor = findAnchor();
+    if (!arrow || !anchor) return;
+
+    var panel = anchor.getBoundingClientRect();
+    var arrowRect = arrow.getBoundingClientRect();
+    var arrowWidth = arrowRect.width || 36;
+    var arrowHeight = arrowRect.height || 40;
+    var gap = 8;
+
+    // Put the existing arrow immediately to the left of the plot panel.
+    arrow.style.setProperty("position", "fixed", "important");
+    arrow.style.setProperty("left", "auto", "important");
+    arrow.style.setProperty("right", Math.max(8, window.innerWidth - panel.left + gap) + "px", "important");
+    arrow.style.setProperty("top", Math.max(6, panel.top + (panel.height - arrowHeight) / 2) + "px", "important");
+    arrow.style.setProperty("bottom", "auto", "important");
+    arrow.style.setProperty("transform", "none", "important");
+    arrow.style.setProperty("z-index", "100000", "important");
+  }
+
+  function schedulePlace() {
+    if (scheduled) return;
+    scheduled = true;
+    requestAnimationFrame(placeArrow);
+  }
+
+  function connectResizeObserver() {
+    var anchor = findAnchor();
+    if (!anchor || !window.ResizeObserver) return;
+    if (resizeObserver) resizeObserver.disconnect();
+    resizeObserver = new ResizeObserver(schedulePlace);
+    resizeObserver.observe(anchor);
+  }
+
+  var observer = new MutationObserver(function () {
+    connectResizeObserver();
+    schedulePlace();
+  });
+  observer.observe(document.documentElement, {
+    childList: true,
+    subtree: true,
+    attributes: true,
+    attributeFilter: ["class", "style"]
+  });
+
+  window.addEventListener("resize", schedulePlace, { passive: true });
+  window.addEventListener("scroll", schedulePlace, true);
+  document.addEventListener("DOMContentLoaded", function () {
+    connectResizeObserver();
+    schedulePlace();
+  });
+  connectResizeObserver();
+  schedulePlace();
+})();
+</script>
+
 </body>
 </html>
