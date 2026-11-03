@@ -212,9 +212,9 @@
       bar.style.display = plotBarHidden ? "none" : "flex";
       toggle.textContent = plotBarHidden ? "‹" : "›";
       toggle.title = plotBarHidden ? "Show plot bar" : "Hide plot bar";
-      toggle.style.right = plotBarHidden ? "0" : "auto";
-      toggle.style.left = plotBarHidden ? "0" : "auto";
-      toggle.style.borderRadius = plotBarHidden ? "0 12px 12px 0" : "12px 0 0 12px";
+      toggle.style.right = "0";
+      toggle.style.left = "auto";
+      toggle.style.borderRadius = "12px 0 0 12px";
     };
     document.body.appendChild(toggle);
     document.body.appendChild(bar);
