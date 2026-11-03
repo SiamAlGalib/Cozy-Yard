@@ -9095,5 +9095,16 @@ if(mp){
 window.__water={cells:function(){return shown.size}};
 })();
 </script>
+<style>/*uiFix-noWeatherChip-vtMove*/
+/* hide the weather chip (rain still runs on its timer, Menu > Weather still works) */
+#wxChip{display:none!important}
+/* move Hide items / Hide top to the left, below the top bar so they never overlap it */
+.vt{left:8px!important;right:auto!important;top:calc(58px + env(safe-area-inset-top))!important;transform:none!important}
+#vtTop{left:8px!important;right:auto!important}
+#vtBot{left:98px!important;right:auto!important}
+body.hideTop .vt{top:calc(8px + env(safe-area-inset-top))!important}
+/* the top bar no longer needs to reserve room for those buttons */
+#hud{padding-right:10px!important}
+</style>
 </body>
 </html>
