@@ -991,6 +991,16 @@
         ))
         .attr("class", "gw-borders");
 
+      let redrawFrame = 0;
+
+      function scheduleRedraw() {
+        if (redrawFrame) return;
+        redrawFrame = requestAnimationFrame(() => {
+          redrawFrame = 0;
+          redrawMap();
+        });
+      }
+
       function redrawMap() {
         projection
           .rotate([rotation, globeTilt])
@@ -1015,7 +1025,7 @@
 
       function updateZoom() {
         zoomLevel = Math.max(1, Math.min(4, zoomLevel));
-        redrawMap();
+        scheduleRedraw();
 
         const label = document.getElementById("gwZoomLabel");
 
@@ -1075,9 +1085,9 @@
             Math.min(85, startTilt - dy * 0.35)
           );
 
-          redrawMap();
+          scheduleRedraw();
         })
-        .on("pointerup pointercancel", () => {
+        .on("pointerup pointercancel lostpointercapture", () => {
           pointer = null;
         });
 
