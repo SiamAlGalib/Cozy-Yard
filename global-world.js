@@ -182,20 +182,53 @@
     const bar = document.createElement("div");
     bar.id = "gwPlotReturnBar";
 
-    bar.style.cssText =
-      "position:fixed;top:calc(12px + env(safe-area-inset-top));right:12px;z-index:1000005;display:flex;align-items:center;gap:10px;max-width:calc(100vw - 24px);padding:9px 12px;border:1px solid #75d7a2;border-radius:14px;background:rgba(7,25,31,.94);color:#eafff1;font:700 12px system-ui;box-shadow:0 8px 28px #0007";
+    bar.style.cssText = `
+      position:fixed;
+      top:calc(14px + env(safe-area-inset-top));
+      right:12px;
+      z-index:1000005;
+      display:flex;
+      align-items:center;
+      gap:12px;
+      max-width:calc(100vw - 54px);
+      padding:7px 8px 7px 13px;
+      border:1px solid rgba(110,231,163,.65);
+      border-radius:17px;
+      background:linear-gradient(135deg,rgba(8,35,34,.97),rgba(8,23,32,.96));
+      color:#eafff1;
+      font:700 12px system-ui,sans-serif;
+      box-shadow:0 8px 30px rgba(0,0,0,.38),inset 0 1px rgba(255,255,255,.08);
+      backdrop-filter:blur(14px);
+      -webkit-backdrop-filter:blur(14px);
+      transition:transform .25s ease,opacity .25s ease;
+    `;
 
     const label = document.createElement("span");
     label.textContent =
-      "🌿 " + active.country + " · Plot " + (Number(active.plot) + 1);
+      "🌿  " + active.country + "  ·  Plot " + (Number(active.plot) + 1);
+    label.style.cssText = "min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;letter-spacing:.15px";
 
     const button = document.createElement("button");
     button.type = "button";
     button.textContent = "Exit Plot";
 
     button.style.cssText =
-      "border:0;border-radius:9px;padding:9px 11px;background:#35a86b;color:#fff;font-weight:900;cursor:pointer;white-space:nowrap";
+      `border:1px solid rgba(255,255,255,.15);
+      border-radius:11px;
+      padding:10px 14px;
+      background:linear-gradient(135deg,#39c47b,#21965d);
+      color:#fff;
+      font:900 12px system-ui,sans-serif;
+      cursor:pointer;
+      white-space:nowrap;
+      box-shadow:0 3px 10px #0003;
+      transition:transform .18s ease,filter .18s ease;
+    `;
 
+    button.onmouseenter = () => button.style.filter = "brightness(1.12)";
+    button.onmouseleave = () => button.style.filter = "";
+    button.onpointerdown = () => button.style.transform = "scale(.96)";
+    button.onpointerup = () => button.style.transform = "";
     button.onclick = saveAndReturnToGlobe;
 
     bar.append(label, button);
@@ -205,7 +238,7 @@
     toggle.type = "button";
     toggle.textContent = "›";
     toggle.title = "Hide plot bar";
-    toggle.style.cssText = "position:fixed;top:calc(12px + env(safe-area-inset-top));right:0;z-index:1000006;width:25px;height:42px;border:1px solid #75d7a2;border-right:0;border-radius:12px 0 0 12px;background:rgba(7,25,31,.94);color:#eafff1;font:900 22px system-ui;cursor:pointer;box-shadow:0 5px 18px #0006";
+    toggle.style.cssText = "position:fixed;top:calc(14px + env(safe-area-inset-top));right:0;z-index:1000006;width:27px;height:42px;border:1px solid rgba(110,231,163,.65);border-right:0;border-radius:12px 0 0 12px;background:linear-gradient(135deg,#103d35,#091c25);color:#eafff1;font:900 22px system-ui;cursor:pointer;box-shadow:0 5px 18px #0006;transition:background .2s ease,transform .2s ease";
     let plotBarHidden = false;
     toggle.onclick = () => {
       plotBarHidden = !plotBarHidden;
