@@ -9170,5 +9170,69 @@ t.addEventListener("pointerdown",function(e){e.stopPropagation()});
 document.body.appendChild(t);lab();
 })();
 </script>
+<style>/*padDrawer*/
+/* remove the old round joystick button */
+#padToggle{display:none!important}
+body.padOff #snPad{display:flex!important}
+/* pad slides in and out */
+#snPad{transition:transform .25s ease,opacity .25s ease}
+body.padClosed #snPad{transform:translateX(calc(100% + 30px));opacity:0;pointer-events:none}
+/* edge tab */
+#padTab{position:fixed;right:0;bottom:calc(206px + env(safe-area-inset-bottom));z-index:22;
+  width:26px;height:58px;border:0;border-radius:14px 0 0 14px;cursor:pointer;
+  background:rgba(255,255,255,.94);color:#2b3a2b;font:800 18px system-ui,sans-serif;
+  box-shadow:-2px 2px 8px rgba(0,0,0,.3);touch-action:none;display:flex;align-items:center;justify-content:center;
+  transition:right .25s ease;padding:0}
+#padTab span{pointer-events:none;line-height:1}
+body.padClosed #padTab{right:0}
+body:not(.padClosed) #padTab{right:181px;border-radius:14px;background:rgba(255,255,255,.85)}
+body.hideBot #padTab{bottom:calc(74px + env(safe-area-inset-bottom))}
+body.fp #padTab{display:none!important}
+</style>
+<script>/*padDrawer*/
+(function(){
+var b=document.body,K="cozy_pad_open";
+b.classList.remove("padOff");
+var old=document.getElementById("padToggle");if(old)old.remove();
+var open=true;
+try{if(localStorage.getItem(K)==="0")open=false}catch(e){}
+var tab=document.createElement("button");tab.id="padTab";tab.type="button";tab.setAttribute("aria-label","Move pad");
+tab.innerHTML="<span></span>";
+var ic=tab.firstChild;
+function apply(){
+  b.classList.toggle("padClosed",!open);
+  ic.textContent=open?"\u203A":"\u2039";
+  try{localStorage.setItem(K,open?"1":"0")}catch(e){}
+}
+function set(v){open=v;apply()}
+/* tab: tap toggles, drag left opens, drag right closes */
+var sx=0,sy=0,moved=false,tid=null;
+tab.addEventListener("pointerdown",function(e){
+  e.stopPropagation();tid=e.pointerId;sx=e.clientX;sy=e.clientY;moved=false;
+  try{tab.setPointerCapture(e.pointerId)}catch(x){}
+});
+tab.addEventListener("pointermove",function(e){
+  if(e.pointerId!==tid)return;
+  var dx=e.clientX-sx;
+  if(Math.abs(dx)>14){moved=true;if(dx<-14&&!open)set(true);else if(dx>14&&open)set(false);sx=e.clientX}
+});
+tab.addEventListener("pointerup",function(e){
+  if(e.pointerId!==tid)return;tid=null;
+  if(!moved)set(!open);
+});
+tab.addEventListener("pointercancel",function(){tid=null});
+/* swipe the pad itself to the right to close it */
+var pad=document.getElementById("snPad"),px=0,py=0,pid=null;
+if(pad){
+  pad.addEventListener("pointerdown",function(e){pid=e.pointerId;px=e.clientX;py=e.clientY},true);
+  pad.addEventListener("pointerup",function(e){
+    if(e.pointerId!==pid)return;pid=null;
+    var dx=e.clientX-px,dy=e.clientY-py;
+    if(dx>55&&Math.abs(dx)>Math.abs(dy)*1.5)set(false);
+  },true);
+}
+document.body.appendChild(tab);apply();
+})();
+</script>
 </body>
 </html>
