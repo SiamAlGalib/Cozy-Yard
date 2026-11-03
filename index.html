@@ -4817,7 +4817,7 @@ function findStart(){
 function cam(){
   if(In.fov!==72||In.near!==.2){In.fov=72;In.near=.2;In.far=1000;In.updateProjectionMatrix()}
   In.rotation.order="YXZ";
-  In.position.set(px,EYE+py+camOff+Math.sin(bob)*.025,pz);
+  /*smoothCam*/var __t=EYE+py+camOff+Math.sin(bob)*.025,__n=performance.now(),__g=__n-(window.__sl||__n);window.__sl=__n;if(window.__sy===undefined||__g>400||Math.abs(__t-window.__sy)>2.5)window.__sy=__t;else window.__sy+=(__t-window.__sy)*Math.min(1,Math.min(.1,__g/1000)*16);In.position.set(px,window.__sy,pz);
   In.rotation.set(pitch,yaw,0);
   In.updateMatrixWorld();
 }
