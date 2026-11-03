@@ -153,6 +153,7 @@
       writeWorldSnapshot(original);
 
       localStorage.removeItem(ACTIVE_PLOT_KEY);
+      document.getElementById("gwPlotBarToggle")?.remove();
       localStorage.removeItem(ORIGINAL_WORLD_KEY);
 
       location.reload();
@@ -198,6 +199,24 @@
     button.onclick = saveAndReturnToGlobe;
 
     bar.append(label, button);
+
+    const toggle = document.createElement("button");
+    toggle.id = "gwPlotBarToggle";
+    toggle.type = "button";
+    toggle.textContent = "›";
+    toggle.title = "Hide plot bar";
+    toggle.style.cssText = "position:fixed;top:calc(12px + env(safe-area-inset-top));right:0;z-index:1000006;width:25px;height:42px;border:1px solid #75d7a2;border-right:0;border-radius:12px 0 0 12px;background:rgba(7,25,31,.94);color:#eafff1;font:900 22px system-ui;cursor:pointer;box-shadow:0 5px 18px #0006";
+    let plotBarHidden = false;
+    toggle.onclick = () => {
+      plotBarHidden = !plotBarHidden;
+      bar.style.display = plotBarHidden ? "none" : "flex";
+      toggle.textContent = plotBarHidden ? "‹" : "›";
+      toggle.title = plotBarHidden ? "Show plot bar" : "Hide plot bar";
+      toggle.style.right = plotBarHidden ? "0" : "auto";
+      toggle.style.left = plotBarHidden ? "0" : "auto";
+      toggle.style.borderRadius = plotBarHidden ? "0 12px 12px 0" : "12px 0 0 12px";
+    };
+    document.body.appendChild(toggle);
     document.body.appendChild(bar);
   }
 
