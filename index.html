@@ -9789,16 +9789,8 @@ body.padClosed #padTab{right:0!important}
 (function(){
   /* find the small ">" tab stuck at the top-left, and the "Exit Plot" bar */
   function findTab(){
-    var bs=document.querySelectorAll("body button, body div, body span");
-    for(var i=0;i<bs.length;i++){
-      var e=bs[i];
-      if(e.id==="padTab"||e.id==="itemChip")continue;
-      var t=(e.textContent||"").trim();
-      if(!/^[>›»❯▶]$/.test(t))continue;
-      var r=e.getBoundingClientRect();
-      if(r.width&&r.left<30&&r.top<90)return e;
-    }
-    return null;
+    // Use the real joystick-pad toggle button, not a decorative arrow.
+    return document.getElementById("padTab");
   }
   function findBar(){
     var bs=document.querySelectorAll("button");
