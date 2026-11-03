@@ -255,8 +255,10 @@
     const root = document.getElementById("gwContent");
     if (mode === "globe") renderGlobe(root);
     else if (mode === "country") renderCountry(root);
-    else
-  function loadWorldData() {
+    else renderMerge(root);
+    }
+
+    function loadWorldData() {
     if (worldDataPromise) return worldDataPromise;
 
     function loadScript(src, ready) {
@@ -514,10 +516,6 @@
       const status = document.getElementById("gwMapStatus");
       if (status) status.textContent =
         "Map data could not load. Check your internet connection and refresh.";
-    });
-  }
-();
-      };
     });
   }
 
