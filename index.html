@@ -68,11 +68,6 @@
 
   body.hideTop #hud, body.hideTop #hint { display:none; }
   body.hideBot #bottom { display:none; }
-  body.hideBot #gwQuickAccess {
-    display:none !important;
-    visibility:hidden !important;
-    pointer-events:none !important;
-  }
   body.hideBot #toast { bottom:calc(30px + env(safe-area-inset-bottom)); }
   #shop { position:fixed; inset:0; z-index:30; background:rgba(20,30,20,.45); display:none; align-items:flex-end; justify-content:center; }
   #shop.open { display:flex; }
@@ -124,8 +119,7 @@
 html.cozy-intro-pending #padArrow,
 html.cozy-intro-pending #gwPlotBarToggle,
 html.cozy-intro-pending #gwPlotReturnBar,
-html.cozy-intro-pending #gwQuickAccess {
-  visibility: hidden !important;
+visibility: hidden !important;
   opacity: 0 !important;
   pointer-events: none !important;
 }
@@ -133,6 +127,21 @@ html.cozy-intro-pending #gwQuickAccess {
 <script>
 document.documentElement.classList.add("cozy-intro-pending");
 </script>
+
+
+<style id="cozy-stability-polish">
+/* Accessibility and input polish; preserves game mechanics and saved worlds. */
+:focus-visible { outline: 3px solid #f6c453 !important; outline-offset: 3px !important; }
+button, [role="button"] { -webkit-tap-highlight-color: transparent; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+</style>
 
 </head>
 <body>
@@ -8326,11 +8335,11 @@ function claim(i){
   var sb=20*Math.min(S.streak,10);amt+=sb;msg="+"+amt+" coins (streak bonus +"+sb+")";
   if(S.streak%7===0){var ch=300*Math.min(4,S.streak/7);amt+=ch;msg="🎁 "+S.streak+"-day chest! +"+amt+" coins"}
  }
- G.coins=G.coins+amt;if(window.__gardenLeaderboardAward)window.__gardenLeaderboardAward([100,200,400][q.tier]||100);save();toast("🔥 "+msg+" · +"+([100,200,400][q.tier]||100)+" leaderboard points");refresh(true)}
+ G.coins=G.coins+amt;save();toast("🔥 "+msg);refresh(true)}
 function claimBonus(){
  if(!allClaimed()||S.bonus)return;
  var amt=Math.round(BONUS*(1+G.landLevel*.15));
- S.bonus=1;G.coins=G.coins+amt;if(window.__gardenLeaderboardAward)window.__gardenLeaderboardAward(300);save();toast("🎉 All quests done! +"+amt+" bonus coins · +300 leaderboard points");refresh(true)}
+ S.bonus=1;G.coins=G.coins+amt;save();toast("🎉 All quests done! +"+amt+" bonus coins");refresh(true)}
 
 /* ---------- UI ---------- */
 var st=document.createElement("style");
@@ -8421,106 +8430,7 @@ setTimeout(function(){
 </script>
 <!--/dailyQuests2-->
 
-<!-- Global + country leaderboard -->
-<script>
-(function(){
-  "use strict";
-  var KEY="cozy_garden_leaderboard_v1";
-  var countryCodes="AD AE AF AG AI AL AM AO AQ AR AS AT AU AW AX AZ BA BB BD BE BF BG BH BI BJ BL BM BN BO BQ BR BS BT BV BW BY BZ CA CC CD CF CG CH CI CK CL CM CN CO CR CU CV CW CX CY CZ DE DJ DK DM DO DZ EC EE EG EH ER ES ET FI FJ FK FM FO FR GA GB GD GE GF GG GH GI GL GM GN GP GQ GR GS GT GU GW GY HK HM HN HR HT HU ID IE IL IM IN IO IQ IR IS IT JE JM JO JP KE KG KH KI KM KN KP KR KW KY KZ LA LB LC LI LK LR LS LT LU LV LY MA MC MD ME MF MG MH MK ML MM MN MO MP MQ MR MS MT MU MV MW MX MY MZ NA NC NE NF NG NI NL NO NP NR NU NZ OM PA PE PF PG PH PK PL PM PN PR PS PT PW PY QA RE RO RS RU RW SA SB SC SD SE SG SH SI SJ SK SL SM SN SO SR SS ST SV SX SY SZ TC TD TF TG TH TJ TK TL TM TN TO TR TT TV TW TZ UA UG UM US UY UZ VA VC VE VG VI VN VU WF WS YE YT ZA ZM ZW".split(" ");
-  var regionNames=new Intl.DisplayNames(["en"],{type:"region"});
-  var countries=countryCodes.map(function(code){return [code,regionNames.of(code)]}).filter(function(c){return c[1]&&c[1]!==c[0]});
-  function flag(code){return code?String.fromCodePoint.apply(null,code.toUpperCase().split("").map(function(c){return 127397+c.charCodeAt(0)})):"🏳️"}
-  function weekKey(){var d=new Date(),u=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()));u.setUTCDate(u.getUTCDate()+4-(u.getUTCDay()||7));var y=u.getUTCFullYear(),start=new Date(Date.UTC(y,0,1));return y+"-W"+String(Math.ceil((((u-start)/86400000)+1)/7)).padStart(2,"0")}
-  function load(){try{return JSON.parse(localStorage.getItem(KEY)||"{}")||{}}catch(e){return {}}}
-  var data=load();
-  if(typeof data.points!=="number")data.points=0;
-  if(data.week!==weekKey()){data.week=weekKey();data.weekPoints=0}
-  if(typeof data.weekPoints!=="number")data.weekPoints=0;
-  if(!data.country)data.country="";
-  if(typeof data.name!=="string")data.name="";
-  function save(){try{localStorage.setItem(KEY,JSON.stringify(data))}catch(e){}}
-  save();
-  var CLOUD_VERSION=1,cloudLoadPromise=null,cloudLoaded=false,cloudCanSave=false,cloudSaveQueue=Promise.resolve();
-  function cloudReady(){return !!(window.ytgame&&ytgame.IN_PLAYABLES_ENV&&ytgame.game&&typeof ytgame.game.loadData==="function"&&typeof ytgame.game.saveData==="function")}
-  function cloudPayload(){return JSON.stringify({version:CLOUD_VERSION,cozyGardenLeaderboard:{points:data.points,week:data.week,weekPoints:data.weekPoints,name:data.name,country:data.country}})}
-  function saveCloud(){
-    if(!cloudReady())return Promise.resolve(false);
-    cloudSaveQueue=cloudSaveQueue.then(async function(){
-      if(!cloudLoaded&&cloudLoadPromise)await cloudLoadPromise;
-      if(!cloudLoaded||!cloudCanSave)return false;
-      await ytgame.game.saveData(cloudPayload());
-      return true;
-    }).catch(function(e){console.warn("YouTube cloud save failed:",e);return false});
-    return cloudSaveQueue;
-  }
-  async function loadCloud(){
-    if(!cloudReady()){cloudLoaded=true;return;}
-    try{
-      var raw=await ytgame.game.loadData();
-      cloudCanSave=true;
-      if(raw){
-        var c=JSON.parse(raw),lb=c&&c.cozyGardenLeaderboard;
-        if(lb){
-          var currentWeek=weekKey();
-          data.points=Math.max(0,Number(lb.points)||0,data.points);
-          data.week=currentWeek;
-          data.weekPoints=lb.week===currentWeek?Math.max(0,Number(lb.weekPoints)||0,data.weekPoints):0;
-          if(typeof lb.name==="string"&&lb.name.trim())data.name=lb.name.trim().slice(0,18);
-          if(typeof lb.country==="string")data.country=lb.country;
-          save();
-        }
-      }
-    }catch(e){console.warn("YouTube cloud load failed:",e)}
-    finally{cloudLoaded=true}
-  }
-  cloudLoadPromise=loadCloud();
-  window.__gardenLeaderboardAward=function(n){
-    n=Math.max(0,Math.floor(Number(n)||0));
-    data.points+=n;data.weekPoints+=n;save();
-    saveCloud();submitScore();render();
-  };
-  function submitScore(){try{if(window.ytgame&&ytgame.engagement&&typeof ytgame.engagement.sendScore==="function")ytgame.engagement.sendScore({value:data.points})}catch(e){}}
-  var hud=document.getElementById("hud");
-  var open=document.createElement("button");open.id="leaderboardOpen";open.className="pill";open.type="button";open.textContent="🏆 Rankings";open.style.pointerEvents="auto";hud.appendChild(open);
-  var style=document.createElement("style");
-  style.textContent=`#profileOverlay{position:fixed;inset:0;z-index:90;display:none;align-items:center;justify-content:center;padding:18px;background:#061321d9;backdrop-filter:blur(7px);font-family:system-ui,sans-serif}#profileOverlay.open{display:flex}#profilePanel{width:min(390px,100%);padding:23px;border:1px solid #ffffff35;border-radius:23px;background:linear-gradient(150deg,#102b43,#1b4b5a);color:#f7fbff;box-shadow:0 24px 70px #000a}#profilePanel h2{margin:0 0 7px;font-size:22px}#profilePanel p{margin:0 0 18px;color:#b7ccda;font-size:12px;line-height:1.5}#profilePanel label{display:block;margin:13px 0 6px;color:#c5d8e5;font-size:12px;font-weight:800}#profilePanel input,#profilePanel select{box-sizing:border-box;width:100%;padding:12px;border:1px solid #ffffff35;border-radius:11px;background:#0b263b;color:white;font:inherit;outline:none}#profileSave{width:100%;margin-top:18px;padding:12px;border:0;border-radius:12px;background:#e7b94e;color:#30230b;font-weight:900;font-size:14px;cursor:pointer}#profileError{min-height:15px;margin-top:8px;color:#ffb3a9;font-size:11px}#glbProfileEdit{margin:0 14px 13px;width:calc(100% - 28px);padding:10px;border:1px solid #ffffff2a;border-radius:11px;background:#ffffff12;color:#fff;font-weight:800;cursor:pointer}#leaderboardOpen{border:0;cursor:pointer;background:#173d58;color:#fff;font-weight:800}#glbOverlay{position:fixed;inset:0;z-index:75;display:none;align-items:center;justify-content:center;padding:14px;background:#061321b8;backdrop-filter:blur(5px);font-family:system-ui,sans-serif}#glbOverlay.open{display:flex}#glbPanel{width:min(430px,100%);max-height:92vh;overflow:auto;border:1px solid #ffffff30;border-radius:23px;background:linear-gradient(150deg,#102b43,#173b54);color:#f7fbff;box-shadow:0 24px 70px #0009}#glbHead{display:flex;align-items:center;gap:10px;padding:16px;background:linear-gradient(110deg,#087f70,#168ca0);border-radius:22px 22px 0 0}#glbHead strong{font-size:17px;flex:1}#glbClose{border:0;border-radius:50%;width:30px;height:30px;background:#ffffff30;color:white;font-size:20px}#glbScore{margin:14px;padding:14px;border-radius:16px;background:#ffffff12;border:1px solid #ffffff18;display:flex;align-items:center;gap:12px}#glbScore .trophy{font-size:30px}#glbScore small{display:block;color:#a9c4d6;font-size:11px}#glbScore b{font-size:23px;color:#fbd36b}#glbPeriod button{border:1px solid #ffffff24;border-radius:11px;padding:9px 13px;background:#ffffff0d;color:#dcebf4;font-weight:800;cursor:pointer}#glbPeriod button.active{background:#e7b94e;color:#30230b;border-color:#e7b94e}#glbPeriod{display:flex;gap:7px;padding:0 14px 12px}#glbRows{padding:0 14px 8px;max-height:62vh;overflow:auto}.glbRow{display:flex;align-items:center;gap:10px;padding:11px 10px;margin-bottom:7px;border-radius:13px;background:#ffffff0d;border:1px solid #ffffff12}.glbRow.you{background:#1d9c7650;border-color:#50d6ad80}.glbRank{width:25px;text-align:center;font-weight:900;color:#f7d477}.glbFlag{width:30px;height:30px;flex:0 0 30px;display:grid;place-items:center;border-radius:50%;overflow:hidden;background:radial-gradient(circle at 30% 25%,#ffffff,#d8e6ef 72%);border:2px solid #ffffff75;box-shadow:0 2px 7px #0005;font-size:17px;line-height:1;text-align:center}.glbPlayer{flex:1;min-width:0;font-weight:800;font-size:13px}.glbPlayer small{display:block;color:#a9c4d6;font-size:10px;font-weight:500}.glbPts{font-size:13px;font-weight:900;color:#f8d77d;white-space:nowrap}#glbNote{padding:5px 16px 15px;color:#9fb6c8;font-size:10px;line-height:1.5;text-align:center}#glbEmpty{padding:20px;text-align:center;color:#b8cad7;font-size:12px}`;
-  document.head.appendChild(style);
-  var overlay=document.createElement("div");overlay.id="glbOverlay";
-  overlay.innerHTML='<section id="glbPanel"><header id="glbHead"><span style="font-size:23px">🏆</span><strong>🏆 Garden Leaderboard</strong><button id="glbClose" aria-label="Close">×</button></header><div id="glbScore"><span class="trophy">🌟</span><div style="flex:1"><small>YOUR LEADERBOARD POINTS</small><b id="glbMyPoints">0</b></div><div style="text-align:right"><small>THIS WEEK</small><b id="glbWeekPoints" style="font-size:17px">0</b></div></div><button id="glbProfileEdit" type="button">✏️ Edit username & country</button><div id="glbPeriod"><button data-period="week" class="active">This week</button><button data-period="all">All time</button></div><div id="glbRows"></div><div id="glbNote">Your personal best is saved to your YouTube Playables account. YouTube manages platform score rankings; this panel shows your own saved score.</div></section>';
-  document.body.appendChild(overlay);
-  var profile=document.createElement("div");profile.id="profileOverlay";
-  profile.innerHTML='<section id="profilePanel"><div style="font-size:32px">🌱</div><h2 id="profileTitle">Welcome, gardener!</h2><p>Choose a username and country to personalize your garden leaderboard. You can change these anytime.</p><form id="profileForm"><label for="profileName">USERNAME</label><input id="profileName" maxlength="18" minlength="2" autocomplete="nickname" placeholder="Enter your username" required><label for="profileCountry">COUNTRY</label><select id="profileCountry" required><option value="">Select your country</option></select><button id="profileSave" type="submit">Save profile</button><div id="profileError" aria-live="polite"></div></form></section>';
-  document.body.appendChild(profile);
-  var period="week";
-  var profileCountry=profile.querySelector("#profileCountry");
-  countries.forEach(function(c){var o=document.createElement("option");o.value=c[0];o.textContent=flag(c[0])+"  "+c[1];profileCountry.appendChild(o)});
-  function openProfile(isFirst){profile.querySelector("#profileTitle").textContent=isFirst?"Welcome, gardener!":"Edit your profile";profile.querySelector("#profileName").value=data.name||"";profileCountry.value=data.country||"";profile.querySelector("#profileError").textContent="";profile.classList.add("open");setTimeout(function(){profile.querySelector("#profileName").focus()},50)}
-  function closeProfile(){profile.classList.remove("open")}
-  function sampleRows(){
-    return data.name?[{name:data.name,country:data.country,all:data.points,week:data.weekPoints,you:true,id:"self"}]:[];
-  }
-  function render(){
-    overlay.querySelector("#glbMyPoints").textContent=data.points.toLocaleString();
-    overlay.querySelector("#glbWeekPoints").textContent=data.weekPoints.toLocaleString();
-    overlay.querySelectorAll("#glbPeriod button").forEach(function(b){b.classList.toggle("active",b.dataset.period===period)});
-    var rows=sampleRows();
-    var html="";
-    rows.forEach(function(r,i){html+='<div class="glbRow'+(r.you?' you':'')+'"><span class="glbRank">'+(i+1<=3?["🥇","🥈","🥉"][i]:i+1)+'</span><span class="glbFlag">'+(r.country?flag(r.country):"🏳️")+'</span><span class="glbPlayer">'+r.name+(r.you?'<small>Your garden</small>':(r.online?'<small>🟢 Online now</small>':'<small>⚪ Offline · saved town</small>'))+'</span><span class="glbPts">'+(period==="week"?r.week:r.all).toLocaleString()+' pts</span></div>'});
-    if(!rows.length)html='<div id="glbEmpty">Create your profile to submit your score to the YouTube leaderboard.</div>';
-    overlay.querySelector("#glbRows").innerHTML=html;
-    overlay.querySelector("#glbNote").textContent="Your score is saved to your YouTube Playables account and submitted to YouTube. Global player rankings are shown by YouTube; this in-game panel shows only your saved profile.";
-  }
-  open.addEventListener("click",function(){overlay.classList.add("open");render()});
-  overlay.querySelector("#glbProfileEdit").addEventListener("click",function(){openProfile(false)});
-  profile.querySelector("#profileForm").addEventListener("submit",function(e){e.preventDefault();var name=profile.querySelector("#profileName").value.trim().replace(/\s+/g," ");var country=profileCountry.value;if(name.length<2){profile.querySelector("#profileError").textContent="Please enter at least 2 characters.";return}if(!country){profile.querySelector("#profileError").textContent="Please select your country.";return}data.name=name.replace(/[<>\"\'&]/g,"").slice(0,18);data.country=country;save();saveCloud();render();closeProfile()});
-  overlay.querySelector("#glbClose").addEventListener("click",function(){overlay.classList.remove("open")});
-  overlay.addEventListener("click",function(e){if(e.target===overlay)overlay.classList.remove("open")});
-  overlay.querySelector("#glbPeriod").addEventListener("click",function(e){var b=e.target.closest("button[data-period]");if(!b)return;period=b.dataset.period;render()});
-  window.addEventListener("keydown",function(e){if(e.key==="Escape")overlay.classList.remove("open")});
-  submitScore();
-  Promise.resolve(cloudLoadPromise).then(function(){render();submitScore();if(!data.name||!data.country)openProfile(true)});
-})();
-</script>
+<!-- Global leaderboard/profile system removed. -->
 
 
 
@@ -9255,7 +9165,6 @@ body #hud .pill{flex:0 0 auto!important;padding:7px 12px!important;font-size:13p
 body #hud #coins{flex:0 0 auto!important;font-size:14px!important}
 body #hud #coins small{font-size:10px!important}
 body #hud #enterKingdom{background:linear-gradient(135deg,#6b3fa0,#8b5cf6)!important}
-body #hud #leaderboardOpen{background:linear-gradient(135deg,#173d58,#1f6f8b)!important}
 body #hud #menuBtn{background:#2b3a2b!important}
 /* everything else sits just under the bar, whatever height it ends up */
 body:not(.hideTop) .vt{top:calc(var(--hudH) + 2px)!important;left:8px!important;right:auto!important}
