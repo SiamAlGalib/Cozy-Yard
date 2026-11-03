@@ -9778,28 +9778,39 @@ var fr=0,last=performance.now();
 })();
 </script>
 <script src="./global-world.js?v=2" defer></script>
-<style>/*arrowFix*/
-/* move-pad arrow: sits at the pad's left edge, centered on the pad */
-#padTab{top:auto!important;bottom:calc(205px + env(safe-area-inset-bottom))!important;transform:none!important}
-body.hideBot #padTab{bottom:calc(73px + env(safe-area-inset-bottom))!important}
-body:not(.padClosed) #padTab{right:181px!important}
-body.padClosed #padTab{right:0!important}
+<style>/*arrowFix-v2*/
+/* Keep the actual joystick drawer tab at the screen edge */
+#padTab{
+  position:fixed!important;
+  left:auto!important;
+  right:0!important;
+  top:50%!important;
+  bottom:auto!important;
+  transform:translateY(-50%)!important;
+}
 </style>
-<script>/*arrowFix*/
+<script>/*arrowFix-v2*/
 (function(){
-  /* find the small ">" tab stuck at the top-left, and the "Exit Plot" bar */
   function findTab(){
-    // Use the real joystick-pad toggle button, not a decorative arrow.
-    return document.getElementById("padTab");
+    var buttons=document.querySelectorAll("body button");
+    for(var i=0;i<buttons.length;i++){
+      var e=buttons[i];
+      if(e.id==="padTab"||e.id==="itemChip")continue;
+      var t=(e.textContent||"").trim();
+      if(!/^[<>‹›«»❮❯▶◀]$/.test(t))continue;
+      var r=e.getBoundingClientRect();
+      if(r.width&&r.left<80&&r.top<120)return e;
+    }
+    return null;
   }
+
   function findBar(){
-    var bs=document.querySelectorAll("button");
-    for(var i=0;i<bs.length;i++){
-      if(/Exit Plot/i.test(bs[i].textContent)){
-        var p=bs[i];
+    var buttons=document.querySelectorAll("button");
+    for(var i=0;i<buttons.length;i++){
+      if(/Exit Plot/i.test(buttons[i].textContent)){
+        var p=buttons[i];
         for(var k=0;k<4&&p.parentElement&&p.parentElement!==document.body;k++){
-          var cs=getComputedStyle(p);
-          if(cs.position==="fixed")break;
+          if(getComputedStyle(p).position==="fixed")break;
           p=p.parentElement;
         }
         return p;
@@ -9807,20 +9818,44 @@ body.padClosed #padTab{right:0!important}
     }
     return null;
   }
-  var tab=null;
+
   function place(){
-    if(!tab||!document.body.contains(tab)){tab=findTab();if(tab)tab.dataset.arrowFixed="1"}
+    var tab=findTab();
     var bar=findBar();
-    if(!tab||!bar)return;
-    var b=bar.getBoundingClientRect(),w=tab.getBoundingClientRect().width||24;
-    var s=tab.style;
-    s.setProperty("position","fixed","important");
-    s.setProperty("right","auto","important");
-    s.setProperty("bottom","auto","important");
-    s.setProperty("left",Math.max(4,b.left-w-8)+"px","important");
-    s.setProperty("top",(b.top+(b.height-(tab.getBoundingClientRect().height||40))/2)+"px","important");
-    s.setProperty("transform","none","important");
+    if(!tab)return;
+
+    if(!bar){
+      tab.style.setProperty("display","none","important");
+      return;
+    }
+
+    tab.style.removeProperty("display");
+
+    if(!tab.dataset.padLinked){
+      tab.dataset.padLinked="1";
+      tab.addEventListener("click",function(e){
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        var realTab=document.getElementById("padTab");
+        if(realTab)realTab.click();
+      },true);
+    }
+
+    var b=bar.getBoundingClientRect();
+    var w=tab.getBoundingClientRect().width||28;
+    var h=tab.getBoundingClientRect().height||40;
+
+    tab.style.setProperty("position","fixed","important");
+    tab.style.setProperty("right","auto","important");
+    tab.style.setProperty("left",Math.max(4,b.left-w-8)+"px","important");
+    tab.style.setProperty("top",(b.top+(b.height-h)/2)+"px","important");
+    tab.style.setProperty("bottom","auto","important");
+    tab.style.setProperty("transform","none","important");
+    tab.style.setProperty("z-index","50","important");
+    tab.style.setProperty("pointer-events","auto","important");
   }
+
+  place();
   setInterval(place,400);
   window.addEventListener("resize",place);
 })();
