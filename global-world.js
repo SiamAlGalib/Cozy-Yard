@@ -1454,6 +1454,7 @@
     }
   }
 
+  let introRevealScheduled = false;
   function waitForIntroToFinish() {
     const ids = ["splash", "introSky"];
     const introVisible = ids.some(id => {
@@ -1470,6 +1471,10 @@
       return;
     }
 
+    if (introRevealScheduled) return;
+    introRevealScheduled = true;
+
+    setTimeout(() => {
     const bar = document.getElementById("gwPlotReturnBar");
     const arrow = document.getElementById("gwPlotBarToggle");
     const shortcut = document.getElementById("gwQuickAccess");
@@ -1477,6 +1482,7 @@
     if (bar) bar.style.display = "flex";
     if (arrow) arrow.style.display = "";
     if (shortcut) shortcut.style.display = "";
+    }, 3000);
   }
 
   if (document.readyState === "loading") {
