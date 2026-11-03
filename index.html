@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes, viewport-fit=cover">
 <title>Cozy Garden Builder</title>
 <style>
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -6695,7 +6695,10 @@ function exportFile(){
   toast("World saved to a file");
 }
 function importFile(file){
+  if(!file){toast("Choose a backup file first");return}
   var r=new FileReader();
+  r.onerror=function(){toast("Could not read that backup file")};
+  r.onabort=function(){toast("Backup import was cancelled")};
   r.onload=function(){
     var j=parse(r.result);
     if(!j||j.game!=="cozy-yard"||!j.data||!j.data.s)return toast("That is not a Cozy-Yard backup");
