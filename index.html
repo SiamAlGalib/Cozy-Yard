@@ -4682,7 +4682,7 @@ function baseH(b,x,z){return b.id==="stairs"?stairH(b,x,z):b.id==="landing"?(b.v
 function blocked(x,z){
   var ix=Math.floor(x+lt/2), iz=Math.floor(z+lt/2);
   if(!Ql(ix,iz))return true;
-  if(cgMkAt(ix,iz)>=0)return true;
+  if(cgMkAt(ix,iz)>=0)return true;if(window.__tBlk&&window.__tBlk(ix,iz,py))return true;
   var c=so(ix,iz);
   if(c.floor&&pt[c.floor.id].blocks)return true;
   var ct=colTop(ix,iz);if(ct>0)return py<ct-.08;
@@ -4690,7 +4690,7 @@ function blocked(x,z){
   return false;
 }
 function gh(x,z){var c=so(Math.floor(x+lt/2),Math.floor(z+lt/2));if(c){var ct0=colTop(Math.floor(x+lt/2),Math.floor(z+lt/2));if(ct0>0)return ct0}if(!c||(c.stack&&c.stack.length)||!c.base)return 0;return baseH(c.base,x,z)||0}
-function gnd(x,z){return Math.max(gh(x-RADIUS,z-RADIUS),gh(x+RADIUS,z-RADIUS),gh(x-RADIUS,z+RADIUS),gh(x+RADIUS,z+RADIUS))}
+function gnd(x,z){var h=-1e9,cs=[[-RADIUS,-RADIUS],[RADIUS,-RADIUS],[-RADIUS,RADIUS],[RADIUS,RADIUS]];for(var i=0;i<4;i++){var cx=x+cs[i][0],cz=z+cs[i][1],v=(window.__tH?window.__tH(cx,cz):0)+gh(cx,cz);if(v>h)h=v}return h}
 function stepSound(){if(window.__sfx&&window.__sfx.play("step"))return;
   try{
     var C=window.AudioContext||window.webkitAudioContext; if(!C)return;
@@ -4735,7 +4735,7 @@ function colTop(ix,iz){
 function blocked(x,z){
  var ix=Math.floor(x+lt/2),iz=Math.floor(z+lt/2);
  if(!Ql(ix,iz))return true;
- if(cgMkAt(ix,iz)>=0)return true;
+ if(cgMkAt(ix,iz)>=0)return true;if(window.__tBlk&&window.__tBlk(ix,iz,py))return true;
  var c=so(ix,iz);
  if(c.floor&&pt[c.floor.id].blocks)return true;
  var ls=__lv(ix,iz);
@@ -4799,7 +4799,7 @@ function __lv(ix,iz){
 function blocked(x,z){
  var ix=Math.floor(x+lt/2),iz=Math.floor(z+lt/2),k;
  if(!Ql(ix,iz))return true;
- if(cgMkAt(ix,iz)>=0)return true;
+ if(cgMkAt(ix,iz)>=0)return true;if(window.__tBlk&&window.__tBlk(ix,iz,py))return true;
  var c=so(ix,iz);
  if(c.floor&&pt[c.floor.id].blocks)return true;
  var ls=__lv(ix,iz);
@@ -4923,13 +4923,13 @@ function cycle(d){
 }
 
 /* ---- aim / place / break ---- */
-function aim(){
+function aim(){var __a=window.__tAim&&window.__tAim();if(__a!==undefined)return __a;
   var t=Au(window.innerWidth/2,window.innerHeight/2); if(!t)return null;
   if(!Ql(t.ix,t.iz))return null;
   if(Math.hypot(io(t.ix)-S.px,io(t.iz)-S.pz)>12)return null;
   return t;
 }
-function place(){
+function place(){if(window.__tPlace&&window.__tPlace())return;
   var t=aim(); if(!t)return Vt("Aim at a tile in front of you");
   ensureSel();
   var n=pt[sel], ix=t.ix, iz=t.iz;
@@ -5263,8 +5263,7 @@ rs.addEventListener("click",function(){if(rs.textContent==="Sure?")clearAll()},t
 
 /* ===== fpBreakFix: remove anything in the kingdom ===== */
 (function(){
-function doBreak(){
-  if(!window.__fpOn)return;
+function doBreak(){if(!window.__fpOn)return;if(window.__tBreak&&window.__tBreak())return;
   Eu();
   du.set(0,0);
   Gl.setFromCamera(du,In);
@@ -5727,7 +5726,7 @@ requestAnimationFrame(loop);
 /* ===== pillarUp: look down + click = place block under you and rise ===== */
 (function(){
 var S=window.__fpS,look=document.getElementById("fpLook"),H=.92,MAXL=30,lastT=0,dn=null;
-function lookingDown(){return window.__fpOn&&S.pitch<-1.0}
+function lookingDown(){return window.__fpOn&&S.pitch<-1.0&&!(window.__tLandOn&&window.__tLandOn())}
 function pillarNow(){
  var now=performance.now();if(now-lastT<60)return;lastT=now;
  var ix=Math.floor(S.px+lt/2),iz=Math.floor(S.pz+lt/2);
@@ -5932,7 +5931,7 @@ ql=function(){
   else if(!qlT){qlT=setTimeout(function(){qlT=0;qlLast=performance.now();_ql()},150-(n-qlLast))}
 };
 var look=document.getElementById("fpLook"),T=null,iv=null,held=false,DELAY=140,GAP=35,lastF=0;
-function down(){return window.__fpS&&window.__fpS.pitch<-1.0}
+function down(){return window.__fpS&&window.__fpS.pitch<-1.0&&!(window.__tLandOn&&window.__tLandOn())}
 function doPlace(){if(!down()&&window.__fpx&&window.__fpx.place)window.__fpx.place()}
 function doBreak(){if(window.__fpBreak)window.__fpBreak()}
 function stop(){clearTimeout(T);clearInterval(iv);T=iv=null}
@@ -8773,10 +8772,117 @@ window.addEventListener("beforeunload",function(){clearTimeout(saveT);try{var ce
 load();ui();
 if(dug>0)ensureHoles();
 if(feat.size)mark();
-window.__terrain={breakAt:breakAt,dig:function(x,z){var e=dig(x,z);mark();save();return e},place:function(x,z,t){var e=place(x,z,t||1);mark();save();return e},
+window.__terrain={lvl:lvl,breakAt:breakAt,dig:function(x,z){var e=dig(x,z);mark();save();return e},place:function(x,z,t){var e=place(x,z,t||1);mark();save();return e},
   start:start,stop:stop,pick:pick,get inv(){return inv},get count(){return feat.size}};
 })();
 </script>
 <!-- terrainDig:end -->
+<script>
+/*landKingdom*/
+(function(){
+"use strict";
+var G=window.__game,B=window.__builder,T=window.__terrain;
+if(!G||!B||!T||!T.lvl){console.warn("landKingdom: terrain not ready");return}
+var lt=Math.round(Math.sqrt(G.cells.length)),H=.92,half=lt/2;
+var on=false,type=2,lastAct=0;
+var NAMES=["","Grass","Dirt","Sand","Rock","Clay"],ICONS=["","🟩","🟫","🟨","⬜","🟧"],SND=["","grass","path","sand","rocks","path"];
+var Wt=null;
+B.parent.children.forEach(function(o){var p=o.geometry&&o.geometry.parameters;if(!Wt&&p&&p.width===.96&&p.height===.96)Wt=o});
+
+function toast(m){var t=document.getElementById("toast");if(!t)return;t.textContent=m;t.classList.add("show");clearTimeout(toast.t);toast.t=setTimeout(function(){t.classList.remove("show")},1800)}
+function ownCell(x,z){var n=G.size,off=(lt-n)/2;return x>=off&&z>=off&&x<off+n&&z<off+n}
+function hasItems(x,z){
+  var c=G.cells[z*lt+x];
+  if(c.floor||c.base||c.top||(c.stack&&c.stack.length))return true;
+  var V=window.__VX;if(V)for(var L=0;L<=30;L++)if(V[x+","+z+","+L])return true;
+  return false;
+}
+function aimCell(){
+  var S=window.__fpS;if(!S)return null;
+  var r=T.pick(innerWidth/2,innerHeight/2,true);
+  if(!r||!ownCell(r.x,r.z))return null;
+  if(Math.hypot(r.x+.5-half-S.px,r.z+.5-half-S.pz)>7)return null;
+  return r;
+}
+
+/* ---- hooks used by the patched game code ---- */
+window.__tLandOn=function(){return on&&!!window.__fpOn};
+window.__tH=function(x,z){
+  var ix=Math.floor(x+half),iz=Math.floor(z+half);
+  if(ix<0||iz<0||ix>=lt||iz>=lt)return 0;
+  return T.lvl(iz*lt+ix)*H;
+};
+window.__tBlk=function(ix,iz,py){
+  if(ix<0||iz<0||ix>=lt||iz>=lt)return false;
+  return T.lvl(iz*lt+ix)*H>py+.55;      /* too high to step onto: jump or build stairs */
+};
+window.__tAim=function(){
+  if(!on||!window.__fpOn)return undefined;
+  var r=aimCell();
+  if(!r)return null;
+  if(Wt)Wt.position.y=r.top+.05;
+  return {ix:r.x,iz:r.z};
+};
+window.__tPlace=function(){
+  if(!on||!window.__fpOn)return false;
+  var now=performance.now();if(now-lastAct<80)return true;lastAct=now;
+  var r=aimCell();
+  if(!r){toast("Aim at the ground within reach");return true}
+  var e=T.place(r.x,r.z,type);
+  if(e){toast(e);return true}
+  if(window.__sfx)window.__sfx.place(SND[type]);
+  lab();return true;
+};
+window.__tBreak=function(){
+  if(!on||!window.__fpOn)return false;
+  var r=aimCell();
+  if(!r||hasItems(r.x,r.z))return false;   /* items: normal breaking handles them */
+  var now=performance.now();if(now-lastAct<80)return true;lastAct=now;
+  var e=T.dig(r.x,r.z);
+  if(e){toast(e);return true}
+  if(window.__sfx)window.__sfx.place("path");
+  lab();return true;
+};
+
+/* ---- buttons ---- */
+var bar=document.getElementById("fpBar");
+function mk(id,css){
+  var b=document.createElement("button");b.id=id;
+  b.style.cssText="width:auto;border-radius:999px;padding:0 14px;font-weight:700;font-size:13px;height:34px;border:0;cursor:pointer;"+css;
+  b.addEventListener("pointerdown",function(e){e.stopPropagation()});
+  return b;
+}
+var bOn=mk("fpLandBtn","background:#a05a20;color:#fff"),bTy=mk("fpLandType","background:#f4e3c6;color:#6b3f12;display:none");
+bar.appendChild(bOn);bar.appendChild(bTy);
+function lab(){
+  bOn.textContent="🌍 Land: "+(on?"ON":"OFF");
+  bOn.style.background=on?"#2e9d57":"#a05a20";
+  var n=(T.inv&&T.inv[type])|0;
+  bTy.textContent=ICONS[type]+" "+NAMES[type]+(n?" ×"+n:"");
+  bTy.style.display=on?"":"none";
+}
+function setOn(v){
+  on=!!v;if(!on&&Wt)Wt.position.y=.09;lab();
+  toast(on?"Land mode ON: click = place "+NAMES[type]+", right-click / X = dig. Q/E or wheel = change type":"Land mode OFF");
+}
+function cyc(d){type=((type-1+d+5)%5)+1;lab();toast("Land block: "+NAMES[type])}
+bOn.addEventListener("click",function(){setOn(!on)});
+bTy.addEventListener("click",function(){cyc(1)});
+setInterval(function(){if(window.__fpOn)lab()},500);
+lab();
+
+window.addEventListener("keydown",function(e){
+  if(!window.__fpOn||e.ctrlKey||e.metaKey||e.altKey)return;
+  if(e.code==="KeyT"){e.stopImmediatePropagation();if(!e.repeat)setOn(!on);return}
+  if(on&&(e.code==="KeyQ"||e.code==="KeyE")){e.stopImmediatePropagation();e.preventDefault();if(!e.repeat)cyc(e.code==="KeyE"?1:-1)}
+},true);
+var look=document.getElementById("fpLook");
+window.addEventListener("wheel",function(e){
+  if(!on||!window.__fpOn||e.target!==look)return;
+  e.preventDefault();e.stopImmediatePropagation();cyc(e.deltaY>0?1:-1);
+},{capture:true,passive:false});
+})();
+
+</script>
 </body>
 </html>
