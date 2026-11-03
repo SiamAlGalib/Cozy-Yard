@@ -9138,5 +9138,37 @@ setInterval(set,1000);set();
 <style>/*hideHint*/
 #hint{display:none!important}
 </style>
+<style>/*phoneUi1*/
+/* Hide top also hides Daily build */
+body.hideTop #questDock{display:none!important}
+/* move pad on/off */
+body.padOff #snPad{display:none!important}
+#padToggle{position:fixed;right:10px;bottom:calc(304px + env(safe-area-inset-bottom));z-index:21;
+  width:44px;height:44px;border:0;border-radius:50%;cursor:pointer;font-size:20px;line-height:1;
+  background:rgba(255,255,255,.92);color:#2b3a2b;box-shadow:0 2px 8px rgba(0,0,0,.3);touch-action:manipulation}
+#padToggle:active{transform:scale(.92)}
+#padToggle.off{background:rgba(43,58,43,.85);color:#fff;opacity:.9}
+body.padOff #padToggle{bottom:calc(172px + env(safe-area-inset-bottom))}
+body.hideBot #padToggle{bottom:calc(172px + env(safe-area-inset-bottom))}
+body.hideBot.padOff #padToggle{bottom:calc(40px + env(safe-area-inset-bottom))}
+body.pcollapsed #padToggle{bottom:calc(172px + env(safe-area-inset-bottom))}
+body.fp #padToggle{display:none!important}
+</style>
+<script>/*phoneUi1*/
+(function(){
+var K="cozy_pad_off",b=document.body;
+try{if(localStorage.getItem(K)==="1")b.classList.add("padOff")}catch(e){}
+var t=document.createElement("button");t.id="padToggle";t.type="button";t.title="Show / hide move pad";
+function lab(){var off=b.classList.contains("padOff");t.textContent="\u{1F579}";t.classList.toggle("off",off)}
+t.addEventListener("click",function(e){
+  e.stopPropagation();
+  b.classList.toggle("padOff");
+  try{localStorage.setItem(K,b.classList.contains("padOff")?"1":"0")}catch(x){}
+  lab();
+});
+t.addEventListener("pointerdown",function(e){e.stopPropagation()});
+document.body.appendChild(t);lab();
+})();
+</script>
 </body>
 </html>
