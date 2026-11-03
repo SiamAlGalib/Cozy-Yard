@@ -9106,5 +9106,34 @@ body.hideTop .vt{top:calc(8px + env(safe-area-inset-top))!important}
 /* the top bar no longer needs to reserve room for those buttons */
 #hud{padding-right:10px!important}
 </style>
+<style>/*hudWrapFix*/
+:root{--hudH:60px}
+/* top bar: wrap instead of scrolling sideways, so every button is visible */
+body #hud{flex-wrap:wrap!important;overflow:visible!important;gap:6px!important;
+  padding:calc(8px + env(safe-area-inset-top)) 8px 4px!important;align-items:center}
+body #hud .pill{flex:0 0 auto!important;padding:7px 12px!important;font-size:13px!important;
+  box-shadow:0 2px 6px rgba(0,0,0,.18)}
+body #hud #coins{flex:0 0 auto!important;font-size:14px!important}
+body #hud #coins small{font-size:10px!important}
+body #hud #enterKingdom{background:linear-gradient(135deg,#6b3fa0,#8b5cf6)!important}
+body #hud #leaderboardOpen{background:linear-gradient(135deg,#173d58,#1f6f8b)!important}
+body #hud #menuBtn{background:#2b3a2b!important}
+/* everything else sits just under the bar, whatever height it ends up */
+body:not(.hideTop) .vt{top:calc(var(--hudH) + 2px)!important;left:8px!important;right:auto!important}
+body:not(.hideTop) #vtTop{left:8px!important}
+body:not(.hideTop) #vtBot{left:104px!important}
+body .vt{padding:5px 10px!important;font-size:11px!important}
+body #hint{top:calc(var(--hudH) + 40px)!important}
+body #questDock{top:calc(var(--hudH) + 40px)!important}
+</style>
+<script>/*hudWrapFix*/
+(function(){
+var h=document.getElementById("hud");if(!h)return;
+function set(){document.documentElement.style.setProperty("--hudH",Math.ceil(h.getBoundingClientRect().bottom)+"px")}
+if(window.ResizeObserver)new ResizeObserver(set).observe(h);
+window.addEventListener("resize",set);
+setInterval(set,1000);set();
+})();
+</script>
 </body>
 </html>
