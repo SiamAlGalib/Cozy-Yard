@@ -56,10 +56,15 @@
   .vt { position:fixed; left:6px; z-index:25; border:0; border-radius:999px; padding:7px 11px; font:700 12px system-ui,sans-serif;
     background:rgba(255,255,255,.85); color:#2b3a2b; box-shadow:0 1px 5px rgba(0,0,0,.25); cursor:pointer; opacity:.9; }
   #vtTop { top:50%; transform:translateY(-130%); }
+  #vtBot {
+    min-width:92px;
+    white-space:nowrap;
+    font-weight:800;
+  }
+
   body.hideTop #hud, body.hideTop #hint { display:none; }
   body.hideBot #bottom { display:none; }
-  body.hideBot #gwQuickAccess,
-  body.hideBot #gwPlotReturnBar {
+  body.hideBot #gwQuickAccess {
     display:none !important;
     visibility:hidden !important;
     pointer-events:none !important;
@@ -4579,8 +4584,8 @@ function lb(){
   document.getElementById("vtTop").textContent=(b.classList.contains("hideTop")?"\u{1F441} Show":"\u{1F441} Hide")+" top";
   var hidden=b.classList.contains("hideBot");
   var btn=document.getElementById("vtBot");
-  btn.textContent=hidden?"\u{1F441}":"\u{1F441}";
-  btn.title=hidden?"Show items and Global World":"Hide items and Global World";
+  btn.textContent=hidden?"Show Bottom":"Hide Bottom";
+  btn.title=hidden?"Show bottom building toolbar":"Hide bottom building toolbar";
   btn.setAttribute("aria-label",btn.title);
 }
 try{var u=JSON.parse(localStorage.getItem(K)||"null");u&&(u[0]&&b.classList.add("hideTop"),u[1]&&b.classList.add("hideBot"))}catch(e){}
