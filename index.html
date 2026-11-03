@@ -8386,6 +8386,7 @@ setTimeout(function(){
 
 
 
+
 <!-- terrainDig:start -->
 <script>
 /*terrainDig*/
@@ -8556,17 +8557,31 @@ function toClient(x,y,z){
   var r=cv.getBoundingClientRect();
   return{x:(qx/qw+1)/2*r.width+r.left,y:(1-qy/qw)/2*r.height+r.top};
 }
-function pick(cx,cy){
+function itemsH(i,x,z){
+  var c=G.cells[i],h=0;
+  if(c){
+    if(c.base)h=H;
+    if(c.stack&&c.stack.length)h=(c.stack.length+1)*H;
+    else if(c.floor&&!c.base)h=.06;
+    if(c.top)h=Math.max(h,H*1.2);
+  }
+  var V=window.__VX;
+  if(V)for(var L=30;L>=0;L--)if(V[x+","+z+","+L]){h=Math.max(h,(L+1)*H);break}
+  return h;
+}
+function pick(cx,cy,items){
   var r=ray(cx,cy);if(!r)return null;
-  var maxTop=MAXR*H,minY=-(MAXD*H)-.2,t=0;
+  var ic={};
+  var maxTop=MAXR*H+(items?40:0),minY=-(MAXD*H)-.2,t=0;
   if(r.oy>maxTop){if(r.dy>=-1e-6)return null;t=(r.oy-maxTop)/-r.dy}
   for(var tmax=t+700;t<tmax;t+=.04){
     var x=r.ox+r.dx*t,y=r.oy+r.dy*t,z=r.oz+r.dz*t;
     if(y<minY)break;
     var ix=Math.floor(x+half),iz=Math.floor(z+half);
     if(ix<0||iz<0||ix>=lt||iz>=lt){if(y<0)break;continue}
-    var l=lvl(iz*lt+ix);
-    if(y<=l*H)return{x:ix,z:iz,lv:l,py:y};
+    var ii=iz*lt+ix,l=lvl(ii),top=l*H;
+    if(items){var ih=ic[ii];if(ih===undefined)ih=ic[ii]=itemsH(ii,ix,iz);top+=ih}
+    if(y<=top)return{x:ix,z:iz,lv:l,py:y,top:top};
   }
   return null;
 }
@@ -8601,12 +8616,34 @@ function place(x,z,type){
   else{(S[i]||(S[i]=[])).push(type)}
   touch(i);return"";
 }
+/* break whatever is on top of a tile: blocks, items, then the land itself */
+function breakAt(x,z){
+  if(!inRange(x,z)||!own(x,z))return"This land is not yours yet";
+  try{if(G.cgMkAt(x,z)>=0)return"Use Remove or Move for markets"}catch(e){}
+  var i=z*lt+x,c=G.cells[i],V=window.__VX,vL=-1,gL=-1;
+  if(V)for(var L=30;L>=0;L--)if(V[x+","+z+","+L]){vL=L;break}
+  if(c.base)gL=0;if(c.stack&&c.stack.length)gL=c.stack.length;if(c.top)gL=Math.max(gL,0)+.5;
+  if(vL>=0&&vL>gL){
+    var k=x+","+z+","+vL,b=V[k];
+    if(b.obj&&b.obj.parent)b.obj.parent.remove(b.obj);
+    delete V[k];
+    try{var bag=G.bag;if(bag)bag[b.id]=(bag[b.id]|0)+1}catch(e){}
+    if(window.__vxSave)window.__vxSave();
+    return"";
+  }
+  if(c.floor||c.base||c.top||(c.stack&&c.stack.length)){G.tryPlace(x,z);return""}
+  return dig(x,z);
+}
+function walkTo(x,z){try{if(origWk)origWk(x,z)}catch(e){}}
 function apply(x0,z0){
   var r=(brush-1)>>1,changed=0,err="";
+  if(tool==="dig")G.select("erase");
   for(var z=z0-r;z<=z0+r;z++)for(var x=x0-r;x<=x0+r;x++){
-    var e=tool==="dig"?dig(x,z):place(x,z,sel);
+    var e=tool==="dig"?breakAt(x,z):place(x,z,sel);
     if(e)err=e;else changed++;
   }
+  if(tool==="dig"){G.select("walk");clearCat()}
+  if(changed)walkTo(x0,z0);
   if(changed){mark();save();ui()}
   if(err&&!changed)toast(err);
   else if(err)toast(err+" (some tiles skipped)");
@@ -8615,7 +8652,8 @@ function apply(x0,z0){
 
 var st=document.createElement("style");
 st.textContent="#tdBar{position:fixed;left:50%;bottom:calc(196px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:24;display:none;flex-direction:column;gap:6px;align-items:center;max-width:96vw}"+
-"#tdBar.show{display:flex}body.fp #tdBar{display:none!important}"+
+"#tdBar.show{display:flex}body.fp #tdBar{display:none!important}body.tdOn #tdBar{bottom:calc(72px + env(safe-area-inset-bottom))}"+
+"#tdTab{background:#f4e3c6;color:#6b3f12}#tdTab.sel{background:#a05a20;color:#fff}"+
 "#tdBar .tr{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;background:rgba(18,28,46,.92);border-radius:16px;padding:6px;box-shadow:0 4px 14px rgba(0,0,0,.35)}"+
 "#tdBar button{border:0;border-radius:11px;min-height:38px;padding:6px 11px;font:700 13px system-ui,sans-serif;background:#2a3a58;color:#e8eefc;cursor:pointer}"+
 "#tdBar button.on{background:#f5b82e;color:#2b1d00}#tdBar button.x{background:#7a2a2a;color:#fff}"+
@@ -8623,7 +8661,7 @@ st.textContent="#tdBar{position:fixed;left:50%;bottom:calc(196px + env(safe-area
 "#tdBar .ti{font:600 12px system-ui,sans-serif;color:#fff;background:rgba(18,28,46,.85);border-radius:999px;padding:4px 12px}";
 document.head.appendChild(st);
 var bar=document.createElement("div");bar.id="tdBar";
-bar.innerHTML='<div class="tr"><button data-a="dig">⛏️ Dig</button><button data-a="place">🧱 Land block</button>'+
+bar.innerHTML='<div class="tr"><button data-a="dig">⛏️ Break</button><button data-a="place">🧱 Land block</button>'+
  '<button data-b="1">1×1</button><button data-b="3">3×3</button><button data-b="5">5×5</button><button class="x" data-a="done">✕ Done</button></div>'+
  '<div class="tr" id="tdTypes"></div><div class="ti" id="tdInfo"></div>';
 document.body.appendChild(bar);
@@ -8635,7 +8673,7 @@ function ui(){
   var h="";for(var k=1;k<TY.length;k++){var T=TY[k];
     h+='<button data-t="'+k+'" class="'+(k===sel?"on":"")+'">'+T.icon+" "+T.name+"<small>"+(inv[k]>0?"bag "+inv[k]:"🪙 "+T.cost)+"</small></button>"}
   typesEl.innerHTML=h;
-  infoEl.textContent=tool==="dig"?"Tap the ground to dig (max "+MAXD+" deep). Dirt goes to your bag.":
+  infoEl.textContent=tool==="dig"?"Tap to break anything: blocks, items, then the land (max "+MAXD+" deep). Your builder walks there.":
     tool==="place"?"Tap to place a land block. It fills holes first, then builds up (max "+MAXR+").":"";
 }
 bar.addEventListener("pointerdown",function(e){e.stopPropagation()});
@@ -8646,12 +8684,17 @@ bar.addEventListener("click",function(e){
   else if(b.dataset.b){brush=+b.dataset.b;ui()}
   else if(b.dataset.t){sel=+b.dataset.t;tool="place";ui()}
 });
+var tdTab=null,addedCollapse=false;
+function clearCat(){document.querySelectorAll("#tabs .tab[data-cat]").forEach(function(t){t.classList.remove("sel")})}
 function start(t){
   if(window.__fpOn)return toast("Leave Enter Kingdom first (digging works in the normal view)");
   if(!tool){
     var s=document.querySelector("#palette .item.sel");prevSel=s?s.dataset.id:"wall";
     origWk=window.wkGo;window.wkGo=function(){};
-    G.select("walk");
+    G.select("walk");clearCat();
+    addedCollapse=!document.body.classList.contains("pcollapsed");
+    document.body.classList.add("pcollapsed","tdOn");
+    if(tdTab)tdTab.classList.add("sel");
   }
   tool=t;bar.classList.add("show");ui();
 }
@@ -8659,23 +8702,23 @@ function stop(restore){
   if(!tool)return;
   tool=null;bar.classList.remove("show");hover.visible=false;
   window.wkGo=origWk;
+  document.body.classList.remove("tdOn");
+  if(addedCollapse)document.body.classList.remove("pcollapsed");
+  if(tdTab)tdTab.classList.remove("sel");
   if(restore)G.select(prevSel);
   G.redraw();
 }
-document.addEventListener("click",function(e){if(tool&&e.target.closest&&e.target.closest("#bottom"))stop(false)},true);
+document.addEventListener("click",function(e){if(tool&&e.target.closest&&e.target.closest("#bottom")&&!e.target.closest("#tdTab"))stop(false)},true);
 setInterval(function(){if(tool&&(window.__fpOn||document.body.classList.contains("fp")))stop(false)},300);
 window.addEventListener("keydown",function(e){if(e.code==="Escape"&&tool)stop(true)});
 
 (function(){
-  var panel=document.getElementById("menuPanel"),anchor=document.getElementById("mbBtn"),b=document.createElement("button");
-  b.className="pill";b.id="tdBtn";b.textContent="⛏️ Dig & land";
-  b.addEventListener("click",function(){tool?stop(true):start("dig")});
-  var row=anchor&&anchor.parentNode&&anchor.parentNode.classList.contains("mrow")?anchor.parentNode:null;
-  if(panel&&row){
-    var r=document.createElement("div");r.className="mrow";r.appendChild(b);
-    var s=document.createElement("small");s.textContent="Dig holes, fill them, build hills with land blocks";r.appendChild(s);
-    row.parentNode.insertBefore(r,row.nextSibling);
-  }else{b.style.cssText="pointer-events:auto;border:0;cursor:pointer;background:#ece6dc";document.getElementById("hud").insertBefore(b,document.getElementById("goal"))}
+  var tabs=document.getElementById("tabs");if(!tabs)return;
+  tdTab=document.createElement("button");tdTab.className="tab";tdTab.id="tdTab";tdTab.textContent="⛏️ Dig";
+  tdTab.addEventListener("click",function(){tool?stop(true):start("dig")});
+  var walk=null;Array.prototype.forEach.call(tabs.children,function(el){if(!walk&&/Walk/.test(el.textContent))walk=el});
+  if(walk){walk.style.display="none";tabs.insertBefore(tdTab,walk)}
+  else tabs.insertBefore(tdTab,tabs.querySelector(".tab.erase")||null);
 })();
 
 var hover=new Mesh(new Geo(),new Mat({color:0x000000,emissive:0xffe066,transparent:true,opacity:.5,depthTest:false,side:2}));
@@ -8685,7 +8728,7 @@ function showHover(h){
   var r=(brush-1)>>1,P=[],N=[],C=[];
   for(var z=h.z-r;z<=h.z+r;z++)for(var x=h.x-r;x<=h.x+r;x++){
     if(!inRange(x,z))continue;
-    var y=lvl(z*lt+x)*H+.03,x0=x-half,z0=z-half;
+    var y=lvl(z*lt+x)*H+itemsH(z*lt+x,x,z)+.03,x0=x-half,z0=z-half;
     P.push(x0,y,z0,x0+1,y,z0,x0+1,y,z0+1,x0,y,z0,x0+1,y,z0+1,x0,y,z0+1);
     for(var q=0;q<6;q++){N.push(0,1,0);C.push(1,1,1)}
   }
@@ -8696,7 +8739,7 @@ cv.addEventListener("pointerdown",function(e){downs[e.pointerId]={x:e.clientX,y:
 cv.addEventListener("pointercancel",function(e){delete downs[e.pointerId];nDown=Object.keys(downs).length},true);
 cv.addEventListener("pointermove",function(e){
   if(!tool||e.pointerType!=="mouse"||nDown>0)return;
-  var h=pick(e.clientX,e.clientY);showHover(h&&own(h.x,h.z)?h:null);
+  var h=pick(e.clientX,e.clientY,true);showHover(h&&own(h.x,h.z)?h:null);
 },true);
 cv.addEventListener("pointerup",function(e){
   if(e.__terr)return;
@@ -8704,7 +8747,7 @@ cv.addEventListener("pointerup",function(e){
   if(!d||multi||e.button>0)return;
   var tap=Math.abs(e.clientX-d.x)<9&&Math.abs(e.clientY-d.y)<9&&performance.now()-d.t<600;
   if(!tap)return;
-  var h=pick(e.clientX,e.clientY);
+  var h=pick(e.clientX,e.clientY,!!tool);
   if(tool){
     if(!h)return toast(cam?"Tap the ground":"Move the camera a little, then tap again");
     apply(h.x,h.z);if(e.pointerType==="mouse")showHover(h);return;
@@ -8730,7 +8773,7 @@ window.addEventListener("beforeunload",function(){clearTimeout(saveT);try{var ce
 load();ui();
 if(dug>0)ensureHoles();
 if(feat.size)mark();
-window.__terrain={dig:function(x,z){var e=dig(x,z);mark();save();return e},place:function(x,z,t){var e=place(x,z,t||1);mark();save();return e},
+window.__terrain={breakAt:breakAt,dig:function(x,z){var e=dig(x,z);mark();save();return e},place:function(x,z,t){var e=place(x,z,t||1);mark();save();return e},
   start:start,stop:stop,pick:pick,get inv(){return inv},get count(){return feat.size}};
 })();
 </script>
