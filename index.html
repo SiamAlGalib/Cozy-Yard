@@ -9456,126 +9456,152 @@ setTimeout(function(){var e=document.getElementById("splash");if(e)e.remove()},1
 /*natureAmbience*/
 (function(){
 "use strict";
-var G=window.__game;
-var KEY="cozy_nature_v2",cfg={on:1,birds:1,vol:45};
-try{var sv=JSON.parse(localStorage.getItem(KEY)||"null");if(sv){cfg.on=sv.on?1:0;cfg.birds=sv.birds?1:0;cfg.vol=+sv.vol>=0?+sv.vol:45}}catch(e){}
+var KEY="cozy_nature_v3",cfg={on:1,vol:60};
+try{var sv=JSON.parse(localStorage.getItem(KEY)||"null");if(sv){cfg.on=sv.on?1:0;cfg.vol=+sv.vol>=0?+sv.vol:60}}catch(e){}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(cfg))}catch(e){}}
-var A=null,built=false,master,windG,leafG,waterG,birdBus,ytOk=true;
+var A=null,ytOk=true,nbuf=null,deck=[],started=false,timer=0;
 try{if(window.ytgame&&ytgame.IN_PLAYABLES_ENV&&ytgame.system){
   if(typeof ytgame.system.isAudioEnabled==="function")ytOk=!!ytgame.system.isAudioEnabled();
   if(typeof ytgame.system.onAudioEnabledChange==="function")ytgame.system.onAudioEnabledChange(function(v){ytOk=!!v});
 }}catch(e){}
+var R=function(a,b){return a+Math.random()*(b-a)};
 function ctx(){
   var C=window.AudioContext||window.webkitAudioContext;if(!C)return null;
   if(!window.__blockAudio){try{window.__blockAudio=new C}catch(e){return null}}
   return window.__blockAudio;
 }
-function mkNoise(a){
-  var n=a.sampleRate*5,b=a.createBuffer(1,n,a.sampleRate),d=b.getChannelData(0),l=0,i,mx=0;
-  for(i=0;i<n;i++){l=(l+.02*(Math.random()*2-1))/1.02;d[i]=l;if(Math.abs(l)>mx)mx=Math.abs(l)}
-  for(i=0;i<n;i++)d[i]=d[i]/mx*.9;
-  var X=4000;for(i=0;i<X;i++){var k=i/X;d[n-X+i]=d[n-X+i]*(1-k)+d[i]*k}
-  return b;
+function ready(){return A&&A.state==="running"&&cfg.on&&ytOk&&!document.hidden}
+function noiseBuf(){
+  if(!nbuf){var n=A.sampleRate*2,b=A.createBuffer(1,n,A.sampleRate),d=b.getChannelData(0);for(var i=0;i<n;i++)d[i]=Math.random()*2-1;nbuf=b}
+  return nbuf;
 }
-function night(){var h=new Date().getHours();return h>=19||h<5}
-function raining(){try{return window.__weather&&window.__weather.state.phase==="rain"}catch(e){return false}}
-function ready(){return built&&A&&A.state==="running"&&cfg.on&&ytOk&&!document.hidden}
-function lfo(param,f,depth){var o=A.createOscillator(),g=A.createGain();o.frequency.value=f;g.gain.value=depth;o.connect(g);g.connect(param);o.start()}
+/* tone: w=wave a=start Hz b=end Hz d=seconds v=volume vr/vd=vibrato rate/depth lp=lowpass tr=tremolo rate at=attack share */
+function T(t,o,p){
+  var os=A.createOscillator(),g=A.createGain(),last=os;
+  os.type=p.w||"sine";
+  os.frequency.setValueAtTime(p.a,t);
+  if(p.b&&p.b!==p.a)os.frequency.exponentialRampToValueAtTime(p.b,t+p.d);
+  if(p.vr){var l=A.createOscillator(),lg=A.createGain();l.frequency.value=p.vr;lg.gain.value=p.vd||p.a*.03;l.connect(lg);lg.connect(os.frequency);l.start(t);l.stop(t+p.d+.05)}
+  if(p.lp){var f=A.createBiquadFilter();f.type="lowpass";f.frequency.value=p.lp;last.connect(f);last=f}
+  if(p.tr){var m=A.createGain();m.gain.value=.5;var tl=A.createOscillator(),tg=A.createGain();tl.frequency.value=p.tr;tg.gain.value=.5;tl.connect(tg);tg.connect(m.gain);tl.start(t);tl.stop(t+p.d+.05);last.connect(m);last=m}
+  g.gain.setValueAtTime(.0001,t);g.gain.linearRampToValueAtTime(p.v,t+p.d*(p.at||.2));g.gain.exponentialRampToValueAtTime(.0001,t+p.d);
+  last.connect(g);g.connect(o);os.start(t);os.stop(t+p.d+.05);
+}
+/* noise: f=filter type a/b=freq start/end q d v at */
+function N(t,o,p){
+  var s=A.createBufferSource(),f=A.createBiquadFilter(),g=A.createGain();
+  s.buffer=noiseBuf();s.loop=true;f.type=p.f||"bandpass";f.Q.value=p.q||1;
+  f.frequency.setValueAtTime(p.a,t);if(p.b)f.frequency.exponentialRampToValueAtTime(p.b,t+p.d);
+  g.gain.setValueAtTime(.0001,t);g.gain.linearRampToValueAtTime(p.v,t+p.d*(p.at||.2));g.gain.exponentialRampToValueAtTime(.0001,t+p.d);
+  s.connect(f);f.connect(g);g.connect(o);s.start(t,Math.random());s.stop(t+p.d+.05);
+}
+function rep(n,gap,fn){for(var i=0;i<n;i++)fn(i,gap*i)}
 
-function build(){
-  var a=A,nb=mkNoise(a);
-  master=a.createGain();master.gain.value=0;master.connect(a.destination);
-  function loop(){var s=a.createBufferSource();s.buffer=nb;s.loop=true;s.start(0,Math.random()*4);return s}
-  /* soft breeze */
-  var lp=a.createBiquadFilter();lp.type="lowpass";lp.frequency.value=260;lp.Q.value=.3;
-  windG=a.createGain();windG.gain.value=.2;
-  var w=loop();w.connect(lp);lp.connect(windG);windG.connect(master);
-  lfo(lp.frequency,.04,90);lfo(windG.gain,.03,.07);
-  /* very faint leaves */
-  var hp=a.createBiquadFilter();hp.type="highpass";hp.frequency.value=2500;
-  var lp2=a.createBiquadFilter();lp2.type="lowpass";lp2.frequency.value=5200;
-  leafG=a.createGain();leafG.gain.value=.012;
-  var l=loop();l.connect(hp);hp.connect(lp2);lp2.connect(leafG);leafG.connect(master);
-  lfo(leafG.gain,.07,.008);
-  /* gentle trickle, only with water */
-  var bp=a.createBiquadFilter();bp.type="bandpass";bp.frequency.value=700;bp.Q.value=.5;
-  var lp3=a.createBiquadFilter();lp3.type="lowpass";lp3.frequency.value=1600;
-  waterG=a.createGain();waterG.gain.value=0;
-  var s3=loop();s3.connect(bp);bp.connect(lp3);lp3.connect(waterG);waterG.connect(master);
-  lfo(bp.frequency,.3,120);
-  /* birds go through a soft filter so they never sound sharp */
-  var bl=a.createBiquadFilter();bl.type="lowpass";bl.frequency.value=3600;bl.Q.value=.2;
-  birdBus=a.createGain();birdBus.gain.value=1;birdBus.connect(bl);bl.connect(master);
+var S=[
+/*1*/["Songbird",function(t,o){var f=R(2200,3200);rep(3,.16,function(i,d){T(t+d,o,{a:f,b:f*1.25,d:.1,v:.1})})}],
+/*2*/["Trill",function(t,o){var f=R(2500,3400);rep(14,.045,function(i,d){T(t+d,o,{a:i%2?f:f*1.15,b:i%2?f*1.15:f,d:.04,v:.07})})}],
+/*3*/["Fee-bee bird",function(t,o){T(t,o,{a:3200,b:3300,d:.35,v:.1});T(t+.45,o,{a:2700,b:2600,d:.45,v:.1})}],
+/*4*/["Dove",function(t,o){T(t,o,{a:420,b:520,d:.4,v:.2,vr:5,vd:8,lp:900});T(t+.55,o,{a:400,b:380,d:.3,v:.18,lp:900});T(t+.95,o,{a:400,b:370,d:.4,v:.18,lp:900})}],
+/*5*/["Owl",function(t,o){T(t,o,{a:380,b:330,d:.5,v:.22,lp:800});T(t+.7,o,{a:360,b:300,d:.8,v:.24,lp:800})}],
+/*6*/["Woodpecker",function(t,o){rep(12,.07,function(i,d){N(t+d,o,{a:1800,q:2,d:.03,v:.3,at:.1});T(t+d,o,{a:200,b:120,d:.04,v:.15})})}],
+/*7*/["Cuckoo",function(t,o){T(t,o,{a:1000,b:850,d:.3,v:.18});T(t+.45,o,{a:800,b:650,d:.45,v:.18})}],
+/*8*/["Parrot",function(t,o){T(t,o,{w:"sawtooth",a:1100,b:1900,d:.25,lp:3500,v:.12});T(t+.3,o,{w:"sawtooth",a:1700,b:900,d:.25,lp:3500,v:.12})}],
+/*9*/["Crow",function(t,o){rep(2,.45,function(i,d){T(t+d,o,{w:"sawtooth",a:600,b:420,d:.28,lp:1800,v:.14,vr:60,vd:40})})}],
+/*10*/["Rooster",function(t,o){var p={w:"sawtooth",lp:2500,v:.12};T(t,o,{w:p.w,lp:p.lp,v:p.v,a:500,b:900,d:.25});T(t+.28,o,{w:p.w,lp:p.lp,v:p.v,a:900,b:700,d:.2});T(t+.5,o,{w:p.w,lp:p.lp,v:p.v,a:800,b:1000,d:.35,vr:30,vd:60});T(t+.9,o,{w:p.w,lp:p.lp,v:p.v,a:900,b:400,d:.5})}],
+/*11*/["Kingfisher",function(t,o){rep(20,.035,function(i,d){T(t+d,o,{a:4200,b:3800,d:.03,v:.06})})}],
+/*12*/["Nightingale",function(t,o){rep(8,.11,function(i,d){var f=R(1800,3600);T(t+d,o,{a:f,b:f*R(.7,1.4),d:.09,v:.08})})}],
+/*13*/["Jungle whistle",function(t,o){T(t,o,{a:1200,b:2600,d:.7,v:.12});T(t+.8,o,{a:2600,b:1800,d:.5,v:.12})}],
+/*14*/["Toucan",function(t,o){rep(4,.18,function(i,d){T(t+d,o,{w:"square",a:700,b:600,d:.1,lp:1500,v:.1,vr:40,vd:30})})}],
+/*15*/["Hawk",function(t,o){T(t,o,{w:"sawtooth",a:2800,b:1800,d:.9,lp:4000,v:.1,vr:10,vd:120,at:.1})}],
+/*16*/["Crickets",function(t,o){rep(3,.5,function(i,d){rep(4,.04,function(j,e){T(t+d+e,o,{a:4400,d:.025,v:.05})})})}],
+/*17*/["Cicada",function(t,o){T(t,o,{w:"sawtooth",a:3600,lp:5000,tr:90,d:2.2,v:.05,at:.3})}],
+/*18*/["Frog",function(t,o){rep(2,.35,function(i,d){T(t+d,o,{w:"sawtooth",a:180,b:260,d:.08,lp:900,v:.2});T(t+d+.1,o,{w:"sawtooth",a:260,b:150,d:.12,lp:900,v:.2})})}],
+/*19*/["Tree frog",function(t,o){rep(5,.14,function(i,d){T(t+d,o,{a:2300,b:2600,d:.07,v:.08})})}],
+/*20*/["Bullfrog",function(t,o){T(t,o,{w:"sawtooth",a:90,b:80,d:.5,lp:400,v:.28,tr:25});T(t+.7,o,{w:"sawtooth",a:90,b:80,d:.5,lp:400,v:.28,tr:25})}],
+/*21*/["Grasshopper",function(t,o){rep(16,.03,function(i,d){N(t+d,o,{a:5000,q:3,d:.015,v:.1,at:.1})})}],
+/*22*/["Bee",function(t,o){T(t,o,{w:"sawtooth",a:220,b:260,d:2,lp:900,v:.05,tr:180,at:.5})}],
+/*23*/["Water drops",function(t,o){rep(4,.35,function(i,d){var f=R(900,1500);T(t+d,o,{a:f,b:f*2,d:.1,v:.1})})}],
+/*24*/["Toad trill",function(t,o){T(t,o,{a:700,d:1.4,v:.07,tr:30,lp:1200,at:.3})}],
+/*25*/["Cricket chorus",function(t,o){rep(24,.07,function(i,d){T(t+d+R(0,.05),o,{a:R(4200,5000),d:.03,v:.03})})}],
+/*26*/["Monkey",function(t,o){rep(5,.2,function(i,d){T(t+d,o,{w:"triangle",a:450+(i%2)*80,b:700+(i%2)*80,d:.15,lp:1500,v:.15})})}],
+/*27*/["Howler monkey",function(t,o){T(t,o,{w:"sawtooth",a:120,b:90,d:2.2,lp:500,v:.3,tr:15,vr:7,vd:6,at:.3});N(t,o,{f:"lowpass",a:400,q:.5,d:2,v:.15,at:.3})}],
+/*28*/["Gibbon",function(t,o){rep(6,.3,function(i,d){T(t+d,o,{a:600+i*120,b:700+i*140,d:.28,v:.12,vr:8,vd:20})})}],
+/*29*/["Wolf howl",function(t,o){T(t,o,{w:"triangle",a:350,b:700,d:1.2,v:.15,vr:5,vd:12,at:.5,lp:2500});T(t+1.2,o,{w:"triangle",a:700,b:520,d:1.8,v:.15,vr:5,vd:12,at:.1,lp:2500})}],
+/*30*/["Lion roar",function(t,o){T(t,o,{w:"sawtooth",a:140,b:70,d:2.2,lp:700,v:.3,tr:22,at:.15})}],
+/*31*/["Tiger growl",function(t,o){T(t,o,{w:"sawtooth",a:70,b:55,d:1.4,lp:400,v:.3,tr:30});N(t,o,{a:300,q:1,d:1.2,v:.12})}],
+/*32*/["Elephant",function(t,o){T(t,o,{w:"sawtooth",a:350,b:900,d:.6,lp:2500,v:.15,vr:20,vd:30});T(t+.6,o,{w:"sawtooth",a:900,b:600,d:.9,lp:2500,v:.15,vr:25,vd:30})}],
+/*33*/["Hyena laugh",function(t,o){rep(8,.13,function(i,d){T(t+d,o,{w:"sawtooth",a:700-i*30,b:500-i*20,d:.1,lp:1500,v:.1})})}],
+/*34*/["Deer bark",function(t,o){T(t,o,{w:"sawtooth",a:400,b:300,d:.18,lp:1200,v:.18});N(t,o,{a:800,q:1,d:.12,v:.1})}],
+/*35*/["Fox yip",function(t,o){rep(3,.18,function(i,d){T(t+d,o,{w:"triangle",a:900,b:1500,d:.1,v:.12})})}],
+/*36*/["Jaguar purr",function(t,o){T(t,o,{w:"sawtooth",a:90,d:2.4,lp:350,tr:26,v:.25,at:.3})}],
+/*37*/["Bear growl",function(t,o){T(t,o,{w:"sawtooth",a:100,b:60,d:1.3,lp:450,v:.28,tr:18,vr:4,vd:4})}],
+/*38*/["Hippo",function(t,o){rep(3,.38,function(i,d){T(t+d,o,{w:"sawtooth",a:110,b:80,d:.3,lp:500,v:.25})})}],
+/*39*/["Squirrel",function(t,o){rep(10,.06,function(i,d){T(t+d,o,{w:"square",a:1800,b:1300,d:.04,lp:3000,v:.06})})}],
+/*40*/["Bats",function(t,o){rep(4,.2,function(i,d){T(t+d,o,{a:5200,b:3800,d:.06,v:.04})})}],
+/*41*/["Snake hiss",function(t,o){N(t,o,{a:5500,q:.5,d:1.4,v:.18,at:.3})}],
+/*42*/["Rustling leaves",function(t,o){rep(6,.2,function(i,d){N(t+d,o,{a:R(3500,5500),q:.5,d:.18,v:.1})})}],
+/*43*/["Branch crack",function(t,o){N(t,o,{a:1500,q:1,d:.04,v:.35,at:.05});T(t,o,{a:300,b:100,d:.08,v:.15});N(t+.3,o,{a:1200,q:1,d:.03,v:.2,at:.05})}],
+/*44*/["Wind gust",function(t,o){N(t,o,{f:"lowpass",a:300,b:700,q:.5,d:3,v:.3,at:.5})}],
+/*45*/["Stream splash",function(t,o){N(t,o,{a:1200,b:2500,q:.7,d:.8,v:.15});rep(3,.2,function(i,d){N(t+d,o,{a:R(1500,3000),q:2,d:.1,v:.1})})}],
+/*46*/["Fish splash",function(t,o){N(t,o,{f:"lowpass",a:2500,b:500,d:.4,v:.3,at:.05});T(t,o,{a:500,b:150,d:.15,v:.12})}],
+/*47*/["Wolf pups",function(t,o){rep(5,.1,function(i,d){T(t+d,o,{w:"triangle",a:1100+i*100,b:1600+i*100,d:.08,v:.1})})}],
+/*48*/["Lemur",function(t,o){rep(3,.5,function(i,d){T(t+d,o,{w:"triangle",a:600,b:1100,d:.35,v:.14,vr:12,vd:25})})}],
+/*49*/["Hornbill",function(t,o){rep(3,.25,function(i,d){T(t+d,o,{w:"square",a:380,b:300,d:.18,lp:900,v:.14})})}],
+/*50*/["Peacock",function(t,o){rep(2,.9,function(i,d){T(t+d,o,{w:"sawtooth",a:700,b:1400,d:.35,lp:3000,v:.12,vr:6,vd:60});T(t+d+.45,o,{w:"sawtooth",a:1400,b:1000,d:.3,lp:3000,v:.12})})}]
+];
+
+function next(){
+  if(!deck.length){for(var i=0;i<S.length;i++)deck.push(i);for(var j=deck.length-1;j>0;j--){var k=Math.floor(Math.random()*(j+1)),x=deck[j];deck[j]=deck[k];deck[k]=x}}
+  return deck.pop();
 }
-function note(t,f0,f1,dur,vol,out){
-  var o=A.createOscillator(),g=A.createGain();o.type="sine";
-  o.frequency.setValueAtTime(f0,t);o.frequency.linearRampToValueAtTime(f1,t+dur);
-  g.gain.setValueAtTime(.0001,t);g.gain.linearRampToValueAtTime(vol,t+dur*.4);g.gain.linearRampToValueAtTime(.0001,t+dur);
-  o.connect(g);g.connect(out);o.start(t);o.stop(t+dur+.03);
+function play(i){
+  var out=A.createGain(),lp=A.createBiquadFilter(),p=A.createStereoPanner?A.createStereoPanner():null;
+  out.gain.value=cfg.vol/100*1.3;lp.type="lowpass";lp.frequency.value=7000;
+  out.connect(lp);
+  if(p){p.pan.value=R(-.7,.7);lp.connect(p);p.connect(A.destination)}else lp.connect(A.destination);
+  S[i][1](A.currentTime+.05,out);
+  setTimeout(function(){try{out.disconnect()}catch(e){}},8000);
+  return S[i][0];
 }
-function bird(){
-  var t=A.currentTime+.05,out=A.createGain(),p=A.createStereoPanner?A.createStereoPanner():null;
-  out.gain.value=.55;
-  if(p){p.pan.value=Math.random()*1.2-.6;out.connect(p);p.connect(birdBus)}else out.connect(birdBus);
-  var f=1700+Math.random()*1100,r=Math.random();
-  if(r<.5){note(t,f,f*1.12,.22,.1,out);note(t+.32,f*1.12,f*.95,.3,.1,out)}
-  else if(r<.8){note(t,f,f*1.2,.18,.09,out);note(t+.26,f*1.2,f,.18,.09,out);note(t+.52,f,f*1.15,.26,.09,out)}
-  else{note(t,f*1.1,f*.9,.45,.1,out)}
-}
-function sched(){
-  setTimeout(sched,15000+Math.random()*25000);
-  if(!ready()||!cfg.birds||night()||raining())return;
-  bird();
-}
-var lastW=0,wCount=0;
-function countWater(){
-  if(!G||!G.cells)return 0;var c=G.cells,n=0,i,f;
-  for(i=0;i<c.length;i++){f=c[i].floor;if(f&&(f.id==="pond"||f.id==="lake"))n++}
-  return n;
-}
-function update(){
-  if(!built)return;
-  var now=performance.now();
-  if(now-lastW>5000){lastW=now;wCount=countWater()}
-  var on=ready(),t=A.currentTime;
-  master.gain.setTargetAtTime(on?cfg.vol/100:0,t,on?3:.4);
-  waterG.gain.setTargetAtTime(Math.min(1,wCount/12)*.06,t,3);
-  windG.gain.setTargetAtTime(raining()?.28:.2,t,3);
+function schedule(ms){
+  clearTimeout(timer);
+  timer=setTimeout(function(){if(ready())play(next());schedule(R(120000,180000))},ms);
 }
 function arm(){
   if(!A)A=ctx();if(!A)return;
-  if(!built){build();built=true}
   if(A.state!=="running"&&A.resume)A.resume();
+  if(!started){started=true;schedule(R(30000,50000))}
 }
 ["pointerdown","touchstart","keydown","click"].forEach(function(ev){window.addEventListener(ev,arm,true)});
-setInterval(update,700);
-document.addEventListener("visibilitychange",update);
-setTimeout(sched,6000);
 
 var mp=document.getElementById("menuPanel");
 if(mp){
-  var h=document.createElement("h4");h.textContent="Nature";mp.appendChild(h);
-  function row(txt,small){
+  var h=document.createElement("h4");h.textContent="Jungle sounds";mp.appendChild(h);
+  function row(small){
     var r=document.createElement("div");r.className="mrow";
     var b=document.createElement("button");b.className="pill";
     b.style.cssText="pointer-events:auto;border:0;cursor:pointer;background:#e6f8ec";
     var s=document.createElement("small");s.textContent=small;
     r.appendChild(b);r.appendChild(s);mp.appendChild(r);return b;
   }
-  var b1=row("","Soft wind, leaves and a quiet stream");
-  function l1(){b1.textContent="\uD83C\uDF3F Nature sounds: "+(cfg.on?"ON":"OFF")}
-  l1();b1.addEventListener("click",function(){cfg.on=cfg.on?0:1;save();l1();update()});
-  var b2=row("","Occasional soft bird calls (daytime only)");
-  function l2(){b2.textContent="\uD83D\uDC26 Birds: "+(cfg.birds?"ON":"OFF")}
-  l2();b2.addEventListener("click",function(){cfg.birds=cfg.birds?0:1;save();l2()});
+  var b1=row("A random animal or nature sound every 2 to 3 minutes (50 different ones)");
+  function l1(){b1.textContent="\uD83D\uDC12 Jungle sounds: "+(cfg.on?"ON":"OFF")}
+  l1();b1.addEventListener("click",function(){cfg.on=cfg.on?0:1;save();l1()});
+  var b2=row("Hear a random one right now");
+  b2.textContent="\u25B6 Play one now";
+  b2.addEventListener("click",function(){
+    arm();if(!A)return;
+    var n=play(next()),t=document.getElementById("toast");
+    if(t){t.textContent="\uD83D\uDD0A "+n;t.classList.add("show");clearTimeout(play.t);play.t=setTimeout(function(){t.classList.remove("show")},1800)}
+  });
   var r2=document.createElement("div");r2.className="mrow";
   var l=document.createElement("span");l.className="pill";l.style.cssText="background:#e6f8ec;box-shadow:none";
   function vl(){l.textContent="\uD83D\uDD0A Volume "+cfg.vol+"%"}vl();
   var sl=document.createElement("input");sl.type="range";sl.min=0;sl.max=100;sl.value=cfg.vol;sl.style.cssText="flex:1;min-width:0";
-  sl.addEventListener("input",function(){cfg.vol=+sl.value;save();vl();update()});
+  sl.addEventListener("input",function(){cfg.vol=+sl.value;save();vl()});
   r2.appendChild(l);r2.appendChild(sl);mp.appendChild(r2);
 }
-window.__nature={arm:arm,bird:function(){if(ready()&&cfg.birds)bird()}};
+window.__nature={arm:arm,play:function(i){arm();return play(i==null?next():i)},count:S.length};
 })();
 </script>
 <!--/natureAmbience-->
