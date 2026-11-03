@@ -112,70 +112,100 @@
 #introSky .cg{position:absolute;will-change:transform,opacity}
 #introSky .cg span{position:absolute;border-radius:50%;background:radial-gradient(circle,#fff 52%,rgba(255,255,255,0) 72%)}
 </style>
-<style>/*splashV2*/</style>
-<style>/*splashV2*/
+<style>/*splashV3*/</style>
+<style>/*splashV3*/
 #splash{position:fixed;inset:0;z-index:99997;overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center;
-  background:linear-gradient(#2f8cff 0%,#6cc0ff 45%,#cdeeff 78%);font-family:system-ui,-apple-system,"Segoe UI",sans-serif;color:#fff;
-  transition:opacity .7s ease}
+  background:linear-gradient(#1e88ff 0%,#4fb0ff 38%,#a9dcff 68%,#e4f5ff 100%);font-family:system-ui,-apple-system,"Segoe UI",sans-serif;color:#fff;transition:opacity .7s ease}
 #splash.out{opacity:0;pointer-events:none}
-#splash .sun{position:absolute;right:12%;top:9%;width:120px;height:120px;border-radius:50%;
-  background:radial-gradient(circle,#fff9c4 0 38%,rgba(255,236,120,.55) 52%,rgba(255,236,120,0) 72%);animation:spPulse 4s ease-in-out infinite}
-#splash .cl{position:absolute;width:190px;height:115px;opacity:.92;
+#splash .sp-sun{position:absolute;right:9%;top:6%;width:150px;height:150px;border-radius:50%;
+  background:radial-gradient(circle,#fffbe0 0 30%,rgba(255,236,120,.7) 48%,rgba(255,236,120,0) 72%);animation:spPulse 4s ease-in-out infinite}
+#splash .sp-cl{position:absolute;left:-240px;width:200px;height:120px;opacity:.95;
   background:radial-gradient(circle at 28% 62%,#fff 0 26%,transparent 28%),radial-gradient(circle at 52% 42%,#fff 0 33%,transparent 35%),radial-gradient(circle at 76% 62%,#fff 0 25%,transparent 27%);
   animation:spDrift linear infinite}
-#splash .c1{top:14%;left:-220px;animation-duration:26s}
-#splash .c2{top:30%;left:-220px;animation-duration:34s;animation-delay:-14s;transform:scale(.7)}
-#splash .c3{top:6%;left:-220px;animation-duration:42s;animation-delay:-28s;transform:scale(1.2)}
-#splash .hills{position:absolute;left:0;right:0;bottom:0;width:100%;height:34%}
-#splash .stage{position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;margin-top:-6vh}
-#splash .isle{width:min(330px,74vw);height:auto;filter:drop-shadow(0 18px 18px rgba(10,60,40,.35));animation:spFloat 3.2s ease-in-out infinite}
-#splash .shadow{width:min(200px,44vw);height:16px;margin-top:2px;border-radius:50%;background:rgba(10,50,30,.28);filter:blur(5px);animation:spShadow 3.2s ease-in-out infinite}
-#splash .title{margin-top:14px;text-align:center;font-family:Impact,"Arial Black",system-ui,sans-serif;font-weight:900;font-size:clamp(34px,9vw,54px);
-  line-height:.95;letter-spacing:2px;color:#fff;-webkit-text-stroke:2px #1f7a3a;paint-order:stroke fill;text-shadow:0 5px 0 #1f7a3a,0 10px 14px rgba(0,40,20,.35);
-  animation:spIn .8s .15s cubic-bezier(.2,.8,.2,1) both}
-#splash .sub{margin-top:12px;display:inline-block;padding:5px 18px;border-radius:999px;background:linear-gradient(100deg,#2563eb,#1d9bf0);
-  border:2px solid #fff;font-weight:900;font-size:13px;letter-spacing:5px;box-shadow:0 4px 10px rgba(0,40,100,.35);animation:spIn .8s .3s cubic-bezier(.2,.8,.2,1) both}
-#splash .by{margin-top:14px;font-size:12px;font-weight:800;letter-spacing:1.5px;color:#0b3d2a;opacity:.85;animation:spFade 1s .7s both}
-#splash .bar{margin-top:16px;width:min(220px,56vw);height:8px;border-radius:99px;background:rgba(255,255,255,.55);border:1px solid #ffffffaa;overflow:hidden}
-#splash .bar i{display:block;height:100%;width:0;border-radius:99px;background:linear-gradient(90deg,#34d399,#a3e635);animation:spBar 2.1s ease-out forwards}
-#splash .made{position:absolute;z-index:2;bottom:calc(14px + env(safe-area-inset-bottom));left:0;right:0;text-align:center;
-  font-size:11px;font-weight:800;letter-spacing:3px;color:#fff;text-shadow:0 1px 3px rgba(0,50,20,.6)}
+#splash .c1{top:12%;animation-duration:28s}
+#splash .c2{top:34%;animation-duration:38s;animation-delay:-15s;transform:scale(.7)}
+#splash .c3{top:5%;animation-duration:46s;animation-delay:-30s;transform:scale(1.25)}
+#splash .c4{top:52%;animation-duration:52s;animation-delay:-8s;transform:scale(.9);opacity:.75}
+#splash .sp-hills{position:absolute;left:0;right:0;bottom:0;width:100%;height:38%}
+#splash .sp-leaf{position:absolute;width:16px;height:9px;border-radius:0 100% 0 100%;background:#5fd45a;opacity:.9;animation:spLeaf linear infinite}
+#splash .sp-corner{position:absolute;bottom:0;height:min(34vh,260px);width:auto;z-index:1}
+#splash .sp-cl-l{left:0}#splash .sp-cl-r{right:0}
+#splash .sp-stage{position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;margin-top:-4vh;width:100%}
+#splash .sp-isle{width:min(380px,64vw,42vh);height:auto;filter:drop-shadow(0 20px 18px rgba(10,50,40,.35));animation:spFloat 3.4s ease-in-out infinite}
+#splash .sp-title{margin-top:-10px;display:flex;flex-direction:column;align-items:center;line-height:.9;animation:spIn .8s .1s cubic-bezier(.2,.8,.2,1) both}
+#splash .sp-cozy{font-family:Impact,"Arial Black",system-ui,sans-serif;font-weight:900;font-size:clamp(28px,6.2vw,54px);letter-spacing:3px;color:#ffc83d;
+  text-shadow:3px 0 #8a4b00,-3px 0 #8a4b00,0 3px #8a4b00,0 -3px #8a4b00,2px 2px #8a4b00,-2px -2px #8a4b00,2px -2px #8a4b00,-2px 2px #8a4b00,0 7px 0 #8a4b00,0 12px 14px rgba(0,40,20,.35)}
+#splash .sp-garden{font-family:Impact,"Arial Black",system-ui,sans-serif;font-weight:900;font-size:clamp(44px,11vw,92px);letter-spacing:2px;color:#fff;
+  -webkit-text-stroke:6px #1d6f34;paint-order:stroke fill;text-shadow:0 8px 0 #14532d,0 14px 16px rgba(0,40,20,.4);margin-top:2px}
+#splash .sp-builder{position:relative;margin-top:8px;padding:4px 30px 6px;font-family:Impact,"Arial Black",system-ui,sans-serif;font-weight:900;font-size:clamp(24px,5.4vw,44px);letter-spacing:4px;
+  color:#5a2d0c;text-shadow:0 2px 0 rgba(255,220,170,.55);border-radius:10px;border:3px solid #6b3a14;
+  background:repeating-linear-gradient(90deg,rgba(0,0,0,.05) 0 3px,transparent 3px 9px),linear-gradient(#d9953f,#b9742a);box-shadow:0 5px 0 #7a4417,0 10px 16px rgba(0,30,10,.35)}
+#splash .sp-builder:before,#splash .sp-builder:after{content:"";position:absolute;top:50%;width:8px;height:8px;margin-top:-4px;border-radius:50%;background:#8a8a8a;box-shadow:inset 0 0 0 2px #5d5d5d}
+#splash .sp-builder:before{left:9px}#splash .sp-builder:after{right:9px}
+#splash .sp-by{margin-top:14px;font-size:13px;font-weight:800;letter-spacing:1.5px;color:#0b3d4a;text-shadow:0 1px 0 rgba(255,255,255,.6);animation:spFade 1s .6s both}
+#splash .sp-by:before,#splash .sp-by:after{content:"";display:inline-block;width:26px;height:2px;background:#0b3d4a;vertical-align:middle;margin:0 10px;opacity:.7}
+#splash .sp-bar{position:relative;margin-top:16px;width:min(420px,72vw);height:24px;border-radius:99px;background:#1f3b63;border:3px solid #fff;box-shadow:0 4px 12px rgba(0,40,100,.4);overflow:hidden}
+#splash .sp-fill{height:100%;width:0;border-radius:99px;background:repeating-linear-gradient(-45deg,#39d84a 0 12px,#6ae85a 12px 24px);box-shadow:inset 0 3px 0 rgba(255,255,255,.35)}
+#splash .sp-pct{position:absolute;right:12px;top:0;line-height:18px;font-size:13px;font-weight:900;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.5)}
+#splash .sp-msg{margin-top:10px;font-size:14px;font-weight:800;color:#fff;text-shadow:0 2px 3px rgba(0,50,90,.7)}
+#splash .sp-made{position:absolute;z-index:2;bottom:calc(10px + env(safe-area-inset-bottom));left:0;right:0;text-align:center;font-size:10px;font-weight:800;letter-spacing:3px;color:#fff;text-shadow:0 1px 3px rgba(0,50,20,.7)}
 @keyframes spFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
-@keyframes spShadow{0%,100%{transform:scale(1);opacity:.9}50%{transform:scale(.82);opacity:.6}}
-@keyframes spDrift{from{transform:translateX(0)}to{transform:translateX(calc(100vw + 460px))}}
-@keyframes spPulse{50%{transform:scale(1.08)}}
-@keyframes spIn{from{opacity:0;transform:translateY(16px) scale(.95)}to{opacity:1;transform:none}}
-@keyframes spFade{from{opacity:0}to{opacity:.85}}
-@keyframes spBar{to{width:100%}}
+@keyframes spDrift{from{transform:translateX(0)}to{transform:translateX(calc(100vw + 480px))}}
+@keyframes spPulse{50%{transform:scale(1.09)}}
+@keyframes spIn{from{opacity:0;transform:translateY(18px) scale(.94)}to{opacity:1;transform:none}}
+@keyframes spFade{from{opacity:0}to{opacity:.9}}
+@keyframes spLeaf{0%{transform:translate(-40px,0) rotate(0);opacity:0}10%{opacity:.9}100%{transform:translate(110vw,60vh) rotate(540deg);opacity:0}}
+@keyframes spSmoke{0%{transform:translateY(0) scale(.6);opacity:.8}100%{transform:translateY(-34px) scale(1.5);opacity:0}}
+#splash .smk{animation:spSmoke 2.4s ease-out infinite}#splash .smk2{animation-delay:1.2s}
 </style>
 <div id="splash">
- <div class="sun"></div><div class="cl c1"></div><div class="cl c2"></div><div class="cl c3"></div>
- <svg class="hills" viewBox="0 0 400 120" preserveAspectRatio="none"><path d="M0 50 Q70 10 150 45 T300 40 T400 30 V120 H0Z" fill="#5dbb63"/><path d="M0 80 Q90 45 190 78 T400 66 V120 H0Z" fill="#3f9d57"/></svg>
- <div class="stage">
-  <svg class="isle" viewBox="0 0 300 230">
-   <polygon points="30,120 150,180 150,215 30,155" fill="#a96835"/>
-   <polygon points="270,120 150,180 150,215 270,155" fill="#754323"/>
-   <polygon points="150,60 270,120 150,180 30,120" fill="#6fcf5a"/>
-   <polygon points="150,60 270,120 150,180 30,120" fill="none" stroke="#3e9e36" stroke-width="2"/>
-   <polygon points="110,118 140,133 110,148 80,133" fill="#3b9cff"/><polygon points="110,118 140,133 110,148 80,133" fill="none" stroke="#c9e6ff" stroke-width="2"/>
-   <rect x="91" y="92" width="8" height="22" fill="#8a5a30"/>
-   <circle cx="106" cy="86" r="13" fill="#2b8a3e"/><circle cx="85" cy="88" r="12" fill="#37b24d"/><circle cx="95" cy="76" r="16" fill="#2f9e44"/>
-   <polygon points="168,84 190,95 190,123 168,112" fill="#f1dcb2"/>
-   <polygon points="190,95 212,84 212,112 190,123" fill="#d9bd8a"/>
-   <polygon points="168,84 190,95 190,50" fill="#e0593d"/><polygon points="190,95 212,84 190,50" fill="#b03f2b"/>
-   <polygon points="196,120 204,116 204,98 196,102" fill="#8b5a2b"/>
-   <polygon points="173,93 183,98 183,108 173,103" fill="#8cd0ff"/>
-   <rect x="213" y="130" width="4" height="12" fill="#8a5a30"/><circle cx="215" cy="124" r="10" fill="#2f9e44"/>
-   <circle cx="150" cy="152" r="4" fill="#ff7aa8"/><circle cx="166" cy="146" r="3.5" fill="#ffd43b"/><circle cx="134" cy="160" r="3.5" fill="#fff"/>
-   <circle cx="182" cy="154" r="3.5" fill="#ff7aa8"/><circle cx="118" cy="164" r="3" fill="#ffd43b"/>
+ <div class="sp-sun"></div>
+ <div class="sp-cl c1"></div><div class="sp-cl c2"></div><div class="sp-cl c3"></div><div class="sp-cl c4"></div>
+ <span class="sp-leaf" style="top:18%;animation-duration:7s;animation-delay:.2s"></span>
+ <span class="sp-leaf" style="top:34%;animation-duration:9s;animation-delay:2s"></span>
+ <span class="sp-leaf" style="top:8%;animation-duration:8s;animation-delay:4s"></span>
+ <span class="sp-leaf" style="top:46%;animation-duration:10s;animation-delay:1s"></span>
+ <svg class="sp-hills" viewBox="0 0 400 130" preserveAspectRatio="none">
+  <path d="M0 60 Q60 20 130 52 T260 44 T400 34 V130 H0Z" fill="#86d27a"/>
+  <path d="M0 84 Q90 50 190 80 T400 68 V130 H0Z" fill="#5bbd5a"/>
+  <path d="M0 104 Q110 80 220 102 T400 94 V130 H0Z" fill="#3fa24c"/>
+ </svg>
+ <svg class="sp-corner sp-cl-l" viewBox="0 0 220 200"><rect x="14" y="96" width="16" height="104" rx="3" fill="#b9803f"/><rect x="104" y="112" width="14" height="88" rx="3" fill="#b9803f"/><rect x="0" y="118" width="130" height="14" rx="3" fill="#d49a52"/><rect x="0" y="150" width="130" height="12" rx="3" fill="#c48a45"/><circle cx="56" cy="168" r="22" fill="#d946ef"/><circle cx="46" cy="176" r="14" fill="#e879f9"/><circle cx="72" cy="178" r="12" fill="#c026d3"/><circle cx="150" cy="176" r="9" fill="#fff"/><circle cx="150" cy="176" r="3.5" fill="#fbbf24"/><circle cx="178" cy="184" r="7" fill="#fff"/><circle cx="178" cy="184" r="3" fill="#fbbf24"/><ellipse cx="205" cy="194" rx="30" ry="14" fill="#9ca3af"/></svg>
+ <svg class="sp-corner sp-cl-r" viewBox="0 0 200 220"><rect x="128" y="104" width="22" height="116" rx="3" fill="#b9803f"/><rect x="112" y="96" width="54" height="14" rx="3" fill="#8a5a2b"/><polygon points="108,96 139,58 170,96" fill="#a8662c"/><rect x="118" y="66" width="42" height="34" rx="3" fill="#ffd978"/><rect x="124" y="70" width="30" height="26" fill="#fff3b0"/><circle cx="40" cy="196" r="16" fill="#a855f7"/><circle cx="68" cy="204" r="13" fill="#ec4899"/><circle cx="92" cy="200" r="9" fill="#fff"/><circle cx="92" cy="200" r="3.5" fill="#fbbf24"/></svg>
+ <div class="sp-stage">
+  <svg class="sp-isle" viewBox="0 0 360 300">
+   <path d="M18 140 Q36 236 120 266 Q180 302 240 266 Q324 236 342 140Z" fill="#8b5e3c"/>
+   <path d="M60 190 Q110 262 180 282 Q130 250 100 196Z" fill="#6f4627" opacity=".6"/>
+   <path d="M240 200 Q250 250 200 280 Q270 246 296 190Z" fill="#6f4627" opacity=".5"/>
+   <ellipse cx="180" cy="138" rx="170" ry="50" fill="#4fa83a"/>
+   <ellipse cx="180" cy="128" rx="170" ry="50" fill="#74d452"/>
+   <ellipse cx="255" cy="138" rx="36" ry="13" fill="#39a7ff" stroke="#d6efff" stroke-width="3"/>
+   <ellipse cx="248" cy="135" rx="14" ry="4" fill="#8fd0ff"/>
+   <rect x="95" y="66" width="14" height="58" fill="#8a5a30"/>
+   <circle cx="102" cy="54" r="28" fill="#2f9e44"/><circle cx="80" cy="68" r="20" fill="#37b24d"/><circle cx="124" cy="66" r="20" fill="#2b8a3e"/><circle cx="104" cy="42" r="14" fill="#51cf66"/>
+   <rect x="208" y="30" width="11" height="26" fill="#cfc7bb"/>
+   <circle class="smk" cx="214" cy="26" r="6" fill="#fff"/><circle class="smk smk2" cx="216" cy="26" r="5" fill="#fff"/>
+   <rect x="158" y="76" width="68" height="50" fill="#f6ead2"/>
+   <polygon points="148,78 192,38 236,78" fill="#d6453d"/><polygon points="148,78 192,38 192,46 160,78" fill="#ea5d54"/>
+   <rect x="184" y="98" width="15" height="28" rx="2" fill="#8a5a30"/>
+   <rect x="165" y="88" width="13" height="14" fill="#8cd0ff" stroke="#8a5a30" stroke-width="2"/>
+   <rect x="206" y="88" width="13" height="14" fill="#8cd0ff" stroke="#8a5a30" stroke-width="2"/>
+   <g fill="#b07a45"><rect x="36" y="112" width="6" height="20"/><rect x="62" y="116" width="6" height="20"/><rect x="88" y="119" width="6" height="18"/><rect x="34" y="118" width="64" height="5"/></g>
+   <g fill="#c084fc"><circle cx="136" cy="150" r="5"/><circle cx="150" cy="156" r="4.5" fill="#ff7aa8"/></g>
+   <circle cx="170" cy="152" r="4.5" fill="#ffd43b"/><circle cx="212" cy="152" r="4.5" fill="#fff"/><circle cx="300" cy="126" r="4.5" fill="#ff7aa8"/><circle cx="60" cy="146" r="4.5" fill="#fff"/><circle cx="318" cy="136" r="4" fill="#ffd43b"/>
   </svg>
-  <div class="shadow"></div>
-  <div class="title">COZY GARDEN<br>BUILDER</div>
-  <div class="by">by SiamALGalib</div>
-  <div class="bar"><i></i></div>
+  <div class="sp-title"><span class="sp-cozy">COZY</span><span class="sp-garden">GARDEN</span><span class="sp-builder">BUILDER</span></div>
+  <div class="sp-by">by SiamALGalib</div>
+  <div class="sp-bar"><div class="sp-fill" id="spFill"></div><span class="sp-pct" id="spPct">0%</span></div>
+  <div class="sp-msg">Building your dream garden… 🌱</div>
  </div>
- <div class="made">MADE WITH THREE.JS</div>
+ <div class="sp-made">MADE WITH THREE.JS</div>
 </div>
+<script>
+(function(){var f=document.getElementById("spFill"),p=document.getElementById("spPct"),t0=performance.now(),D=2300;
+function s(n){var k=Math.min(1,(n-t0)/D),v=Math.round((1-Math.pow(1-k,2.2))*100);if(!f)return;f.style.width=v+"%";p.textContent=v+"%";if(k<1&&document.getElementById("splash"))requestAnimationFrame(s)}
+requestAnimationFrame(s)})();
+</script>
 <div id="introSky"><div class="sky"></div></div>
 
 <script>try{localStorage.setItem("cozy_builder_guide_v3","1")}catch(e){}</script>
@@ -9408,7 +9438,7 @@ function go(){
   setTimeout(function(){el.remove()},end+300);
 }
 /* wait until the first frame of the game has been drawn */
-function start(){requestAnimationFrame(function(){requestAnimationFrame(function(){setTimeout(go,2100)})})}
+function start(){requestAnimationFrame(function(){requestAnimationFrame(function(){setTimeout(go,2500)})})}
 if(document.readyState==="complete")start();else window.addEventListener("load",start);
 setTimeout(function(){var e=document.getElementById("introSky");if(e)e.remove()},16000);
 })();
@@ -9416,7 +9446,7 @@ setTimeout(function(){var e=document.getElementById("introSky");if(e)e.remove()}
 <script>/*splashScreen*/
 (function(){
 var sp=document.getElementById("splash");if(!sp)return;
-function run(){setTimeout(function(){sp.classList.add("out");setTimeout(function(){sp.remove()},800)},2100)}
+function run(){setTimeout(function(){sp.classList.add("out");setTimeout(function(){sp.remove()},800)},2500)}
 if(document.readyState==="complete")run();else window.addEventListener("load",run);
 setTimeout(function(){var e=document.getElementById("splash");if(e)e.remove()},14000);
 })();
