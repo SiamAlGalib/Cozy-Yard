@@ -112,30 +112,71 @@
 #introSky .cg{position:absolute;will-change:transform,opacity}
 #introSky .cg span{position:absolute;border-radius:50%;background:radial-gradient(circle,#fff 52%,rgba(255,255,255,0) 72%)}
 </style>
-<style>/*splashScreen*/
-#splash{position:fixed;inset:0;z-index:99997;display:flex;flex-direction:column;align-items:center;justify-content:space-between;
-  background:#ff7043;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;color:#fff;
-  padding:calc(30px + env(safe-area-inset-top)) 20px calc(34px + env(safe-area-inset-bottom));transition:opacity .7s ease}
+<style>/*splashV2*/</style>
+<style>/*splashV2*/
+#splash{position:fixed;inset:0;z-index:99997;overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  background:linear-gradient(#2f8cff 0%,#6cc0ff 45%,#cdeeff 78%);font-family:system-ui,-apple-system,"Segoe UI",sans-serif;color:#fff;
+  transition:opacity .7s ease}
 #splash.out{opacity:0;pointer-events:none}
-#splash .mid{flex:1;display:flex;align-items:center;justify-content:center;width:100%}
-#splash .card{width:min(180px,46vw);aspect-ratio:180/250;background:#ff5722;display:flex;flex-direction:column;align-items:center;
-  justify-content:center;gap:10px;text-align:center;animation:spIn .8s cubic-bezier(.2,.8,.2,1) both}
-#splash .ico{font-size:44px;line-height:1}
-#splash .gt{font-weight:1000;font-size:28px;line-height:.95;letter-spacing:1px;text-shadow:0 2px 0 rgba(0,0,0,.2);transform:rotate(-6deg);
-  font-family:Impact,"Arial Black",system-ui,sans-serif;font-weight:900}
-#splash .with{font-size:11px;font-weight:700;opacity:.7}
-#splash .stu{border:3px solid #fff;border-radius:999px;padding:6px 14px;font-weight:900;font-size:19px;letter-spacing:.5px;
-  font-family:"Arial Black",system-ui,sans-serif;animation:spIn .8s .2s cubic-bezier(.2,.8,.2,1) both}
-#splash .made{display:flex;align-items:center;gap:12px;animation:spFade 1s .5s both}
-#splash .made small{font-size:11px;font-weight:800;letter-spacing:5px;line-height:1.4;text-align:right;opacity:.85}
-#splash .made b{font-size:30px;font-weight:700;letter-spacing:-1px;color:#4a1a0c}
-@keyframes spIn{from{opacity:0;transform:translateY(18px) scale(.94)}to{opacity:1;transform:none}}
-@keyframes spFade{from{opacity:0}to{opacity:1}}
+#splash .sun{position:absolute;right:12%;top:9%;width:120px;height:120px;border-radius:50%;
+  background:radial-gradient(circle,#fff9c4 0 38%,rgba(255,236,120,.55) 52%,rgba(255,236,120,0) 72%);animation:spPulse 4s ease-in-out infinite}
+#splash .cl{position:absolute;width:190px;height:70px;opacity:.92;
+  background:radial-gradient(circle at 28% 62%,#fff 0 26%,transparent 28%),radial-gradient(circle at 52% 42%,#fff 0 33%,transparent 35%),radial-gradient(circle at 76% 62%,#fff 0 25%,transparent 27%);
+  animation:spDrift linear infinite}
+#splash .c1{top:14%;left:-220px;animation-duration:26s}
+#splash .c2{top:30%;left:-220px;animation-duration:34s;animation-delay:-14s;transform:scale(.7)}
+#splash .c3{top:6%;left:-220px;animation-duration:42s;animation-delay:-28s;transform:scale(1.2)}
+#splash .hills{position:absolute;left:0;right:0;bottom:0;width:100%;height:34%}
+#splash .stage{position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;margin-top:-6vh}
+#splash .isle{width:min(330px,74vw);height:auto;filter:drop-shadow(0 18px 18px rgba(10,60,40,.35));animation:spFloat 3.2s ease-in-out infinite}
+#splash .shadow{width:min(200px,44vw);height:16px;margin-top:2px;border-radius:50%;background:rgba(10,50,30,.28);filter:blur(5px);animation:spShadow 3.2s ease-in-out infinite}
+#splash .title{margin-top:14px;text-align:center;font-family:Impact,"Arial Black",system-ui,sans-serif;font-weight:900;font-size:clamp(34px,9vw,54px);
+  line-height:.95;letter-spacing:2px;color:#fff;-webkit-text-stroke:2px #1f7a3a;paint-order:stroke fill;text-shadow:0 5px 0 #1f7a3a,0 10px 14px rgba(0,40,20,.35);
+  animation:spIn .8s .15s cubic-bezier(.2,.8,.2,1) both}
+#splash .sub{margin-top:12px;display:inline-block;padding:5px 18px;border-radius:999px;background:linear-gradient(100deg,#2563eb,#1d9bf0);
+  border:2px solid #fff;font-weight:900;font-size:13px;letter-spacing:5px;box-shadow:0 4px 10px rgba(0,40,100,.35);animation:spIn .8s .3s cubic-bezier(.2,.8,.2,1) both}
+#splash .by{margin-top:10px;font-size:12px;font-weight:800;letter-spacing:1.5px;color:#0b3d2a;opacity:.85;animation:spFade 1s .7s both}
+#splash .bar{margin-top:16px;width:min(220px,56vw);height:8px;border-radius:99px;background:rgba(255,255,255,.55);border:1px solid #ffffffaa;overflow:hidden}
+#splash .bar i{display:block;height:100%;width:0;border-radius:99px;background:linear-gradient(90deg,#34d399,#a3e635);animation:spBar 2.1s ease-out forwards}
+#splash .made{position:absolute;z-index:2;bottom:calc(14px + env(safe-area-inset-bottom));left:0;right:0;text-align:center;
+  font-size:11px;font-weight:800;letter-spacing:3px;color:#fff;text-shadow:0 1px 3px rgba(0,50,20,.6)}
+@keyframes spFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
+@keyframes spShadow{0%,100%{transform:scale(1);opacity:.9}50%{transform:scale(.82);opacity:.6}}
+@keyframes spDrift{from{transform:translateX(0)}to{transform:translateX(calc(100vw + 460px))}}
+@keyframes spPulse{50%{transform:scale(1.08)}}
+@keyframes spIn{from{opacity:0;transform:translateY(16px) scale(.95)}to{opacity:1;transform:none}}
+@keyframes spFade{from{opacity:0}to{opacity:.85}}
+@keyframes spBar{to{width:100%}}
 </style>
-<div id="splash"><div class="mid"><div class="card">
-  <div class="ico">&#127793;</div><div class="gt">COZY<br>GARDEN</div><div class="with">with</div><div class="stu">YOUR STUDIO</div>
-</div></div>
-<div class="made"><small>MADE<br>WITH</small><b>three.js</b></div></div>
+<div id="splash">
+ <div class="sun"></div><div class="cl c1"></div><div class="cl c2"></div><div class="cl c3"></div>
+ <svg class="hills" viewBox="0 0 400 120" preserveAspectRatio="none"><path d="M0 50 Q70 10 150 45 T300 40 T400 30 V120 H0Z" fill="#5dbb63"/><path d="M0 80 Q90 45 190 78 T400 66 V120 H0Z" fill="#3f9d57"/></svg>
+ <div class="stage">
+  <svg class="isle" viewBox="0 0 300 230">
+   <polygon points="30,120 150,180 150,215 30,155" fill="#a96835"/>
+   <polygon points="270,120 150,180 150,215 270,155" fill="#754323"/>
+   <polygon points="150,60 270,120 150,180 30,120" fill="#6fcf5a"/>
+   <polygon points="150,60 270,120 150,180 30,120" fill="none" stroke="#3e9e36" stroke-width="2"/>
+   <polygon points="110,118 140,133 110,148 80,133" fill="#3b9cff"/><polygon points="110,118 140,133 110,148 80,133" fill="none" stroke="#c9e6ff" stroke-width="2"/>
+   <rect x="91" y="92" width="8" height="22" fill="#8a5a30"/>
+   <circle cx="106" cy="86" r="13" fill="#2b8a3e"/><circle cx="85" cy="88" r="12" fill="#37b24d"/><circle cx="95" cy="76" r="16" fill="#2f9e44"/>
+   <polygon points="168,84 190,95 190,123 168,112" fill="#f1dcb2"/>
+   <polygon points="190,95 212,84 212,112 190,123" fill="#d9bd8a"/>
+   <polygon points="168,84 190,95 190,50" fill="#e0593d"/><polygon points="190,95 212,84 190,50" fill="#b03f2b"/>
+   <polygon points="196,120 204,116 204,98 196,102" fill="#8b5a2b"/>
+   <polygon points="173,93 183,98 183,108 173,103" fill="#8cd0ff"/>
+   <rect x="213" y="130" width="4" height="12" fill="#8a5a30"/><circle cx="215" cy="124" r="10" fill="#2f9e44"/>
+   <circle cx="150" cy="152" r="4" fill="#ff7aa8"/><circle cx="166" cy="146" r="3.5" fill="#ffd43b"/><circle cx="134" cy="160" r="3.5" fill="#fff"/>
+   <circle cx="182" cy="154" r="3.5" fill="#ff7aa8"/><circle cx="118" cy="164" r="3" fill="#ffd43b"/>
+  </svg>
+  <div class="shadow"></div>
+  <div class="title">COZY<br>GARDEN</div>
+  <div class="sub">BUILDER</div>
+  <div class="by">by SiamALGalib</div>
+  <div class="bar"><i></i></div>
+ </div>
+ <div class="made">MADE WITH THREE.JS</div>
+</div>
 <div id="introSky"><div class="sky"></div></div>
 
 <script>try{localStorage.setItem("cozy_builder_guide_v3","1")}catch(e){}</script>
