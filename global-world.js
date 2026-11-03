@@ -662,6 +662,31 @@
 
   function start() {
     ensureUI();
+
+    // Permanent Global World shortcut, independent of the game menu.
+    if (!document.getElementById("gwQuickAccess")) {
+      const button = document.createElement("button");
+      button.id = "gwQuickAccess";
+      button.type = "button";
+      button.textContent = "🌍 Global World";
+      button.style.cssText = `
+        position:fixed;
+        right:18px;
+        bottom:18px;
+        z-index:1000001;
+        padding:12px 17px;
+        border:1px solid #55a8e8;
+        border-radius:14px;
+        background:linear-gradient(135deg,#1263b5,#4236a5);
+        color:white;
+        font-weight:900;
+        font-size:14px;
+        cursor:pointer;
+        box-shadow:0 5px 22px #0008;
+      `;
+      button.onclick = () => open("globe");
+      document.body.appendChild(button);
+    }
   }
 
   if (document.readyState === "loading") {
