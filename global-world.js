@@ -1416,6 +1416,38 @@
       button.onclick = () => open("globe");
 
       document.body.appendChild(button);
+
+      // Keep both floating controls hidden during the opening splash.
+      function revealAfterSplash() {
+        const splash = document.getElementById("splash");
+        if (splash) {
+          const style = getComputedStyle(splash);
+          if (style.display !== "none" &&
+              style.visibility !== "hidden" &&
+              Number(style.opacity) > 0.02) {
+            requestAnimationFrame(revealAfterSplash);
+            return;
+          }
+        }
+
+        const bar = document.getElementById("gwPlotReturnBar");
+        const arrow = document.getElementById("gwPlotBarToggle");
+        const shortcut = document.getElementById("gwQuickAccess");
+
+        if (bar) bar.style.display = "flex";
+        if (arrow) arrow.style.display = "grid";
+        if (shortcut) shortcut.style.display = "block";
+      }
+
+      const bar = document.getElementById("gwPlotReturnBar");
+      const arrow = document.getElementById("gwPlotBarToggle");
+
+      if (bar) bar.style.display = "none";
+      if (arrow) arrow.style.display = "none";
+      button.style.display = "none";
+
+      requestAnimationFrame(revealAfterSplash);
+
     }
   }
 
