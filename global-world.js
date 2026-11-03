@@ -273,6 +273,8 @@
       );
     };
 
+    toggle.style.display = "none";
+    bar.style.display = "none";
     document.body.appendChild(toggle);
     document.body.appendChild(bar);
   }
@@ -1413,6 +1415,7 @@
         box-shadow:0 5px 22px #0008;
       `;
 
+      button.style.display = "none";
       button.onclick = () => open("globe");
 
       document.body.appendChild(button);
@@ -1451,9 +1454,38 @@
     }
   }
 
+  function waitForIntroToFinish() {
+    const ids = ["splash", "introSky"];
+    const introVisible = ids.some(id => {
+      const el = document.getElementById(id);
+      if (!el) return false;
+      const cs = getComputedStyle(el);
+      return cs.display !== "none" &&
+             cs.visibility !== "hidden" &&
+             Number(cs.opacity) > 0.01;
+    });
+
+    if (introVisible) {
+      requestAnimationFrame(waitForIntroToFinish);
+      return;
+    }
+
+    const bar = document.getElementById("gwPlotReturnBar");
+    const arrow = document.getElementById("gwPlotBarToggle");
+    const shortcut = document.getElementById("gwQuickAccess");
+
+    if (bar) bar.style.display = "flex";
+    if (arrow) arrow.style.display = "";
+    if (shortcut) shortcut.style.display = "";
+  }
+
   if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", start, { once: true });
+    document.addEventListener("DOMContentLoaded", () => {
+      start();
+      requestAnimationFrame(waitForIntroToFinish);
+    }, { once: true });
   } else {
     start();
+    requestAnimationFrame(waitForIntroToFinish);
   }
 })();
