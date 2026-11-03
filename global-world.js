@@ -27,6 +27,7 @@
   let worldFeatures = [];
   let worldDataPromise = null;
   let dragMoved = false;
+  let zoomLevel = 1;
 
   const game = () => window.__game;
   const money = () => Number(game()?.coins ?? 0);
@@ -150,6 +151,24 @@
         box-shadow:0 0 55px #1688df35, inset 0 0 55px #0009;
       }
       #gwMap {width:100%;height:100%;display:block;touch-action:none;cursor:grab}
+      .gw-zoom-controls {
+        position:absolute;right:14px;bottom:14px;z-index:5;
+        display:flex;flex-direction:column;gap:7px;
+      }
+      .gw-zoom-btn {
+        width:40px;height:40px;border-radius:11px;
+        border:1px solid #83bce6;background:#102b4cdd;
+        color:white;font-size:23px;font-weight:800;cursor:pointer;
+        box-shadow:0 4px 15px #0007;
+      }
+      .gw-zoom-btn:hover {background:#2563a0}
+      .gw-zoom-btn:active {transform:scale(.94)}
+      .gw-zoom-label {
+        position:absolute;left:12px;bottom:16px;z-index:5;
+        background:#07172cbb;color:#d7edff;
+        border:1px solid #46769b;border-radius:8px;
+        padding:6px 9px;font-size:12px;
+      }
       #gwMap:active {cursor:grabbing}
       #gwMap .gw-ocean {stroke:#7edbff;stroke-width:1.5;fill:url(#gwOcean)}
       #gwMap .gw-graticule {fill:none;stroke:#9bdfff;stroke-opacity:.15;stroke-width:.65}
@@ -285,6 +304,13 @@
             <svg id="gwMap" viewBox="0 0 640 640"
               role="img" aria-label="Interactive geographic world globe">
             </svg>
+            <div class="gw-zoom-controls">
+              <button class="gw-zoom-btn" id="gwZoomIn" title="Zoom in">+</button>
+              <button class="gw-zoom-btn" id="gwZoomOut" title="Zoom out">−</button>
+              <button class="gw-zoom-btn" id="gwZoomReset" title="Reset zoom"
+                style="font-size:17px">↺</button>
+            </div>
+            <div class="gw-zoom-label" id="gwZoomLabel">100%</div>
           </div>
           <div class="gw-map-legend">
             <span><i class="gw-map-dot" style="background:#75ad75"></i>Land</span>
@@ -361,7 +387,7 @@
 
       const projection = d3.geoOrthographic()
         .translate([320,320])
-        .scale(298)
+        .scale(298 * zoomLevel)
         .clipAngle(90)
         .rotate([rotation, globeTilt]);
 
@@ -408,7 +434,10 @@
         .attr("class","gw-borders");
 
       function redrawMap() {
-        projection.rotate([rotation,globeTilt]);
+        projection
+          .rotate([rotation,globeTilt])
+          .scale(298 * zoomLevel);
+
         ocean.attr("d",path);
         grid.attr("d",path);
         shapes
@@ -421,6 +450,35 @@
           });
         borders.attr("d",path);
       }
+
+      function updateZoom() {
+        zoomLevel = Math.max(1, Math.min(4, zoomLevel));
+        redrawMap();
+
+        const label = document.getElementById("gwZoomLabel");
+        if (label) label.textContent = Math.round(zoomLevel * 100) + "%";
+      }
+
+      document.getElementById("gwZoomIn").onclick = () => {
+        zoomLevel = Math.min(4, zoomLevel + 0.25);
+        updateZoom();
+      };
+
+      document.getElementById("gwZoomOut").onclick = () => {
+        zoomLevel = Math.max(1, zoomLevel - 0.25);
+        updateZoom();
+      };
+
+      document.getElementById("gwZoomReset").onclick = () => {
+        zoomLevel = 1;
+        updateZoom();
+      };
+
+      svg.node().addEventListener("wheel", event => {
+        event.preventDefault();
+        zoomLevel += event.deltaY < 0 ? 0.15 : -0.15;
+        updateZoom();
+      }, {passive:false});
 
       let pointer = null;
       let startRotation = 0;
