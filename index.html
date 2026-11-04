@@ -10870,5 +10870,32 @@ function init(G,B,mp){
 
 /*oceanLife:end*/
 </script>
+
+<style>/*vividLook*/
+#c{filter:saturate(1.38) contrast(1.12) brightness(1.04);}
+</style>
+<script>
+/*vividLook*/
+(function(){
+  var t=0,iv=setInterval(function(){
+    var B=window.__builder;
+    if(!(B&&B.parent)&&++t<200)return;
+    clearInterval(iv);
+    if(!(B&&B.parent))return;
+    var sc=B.parent,hemi=null,sun=null;
+    sc.children.forEach(function(o){
+      if(o.isHemisphereLight)hemi=o;
+      if(o.isDirectionalLight)sun=o;
+    });
+    if(sun){sun.color.setHex(0xfff0cc);}
+    setInterval(function(){
+      if(window.__fpOn)return;          /* kingdom day/night keeps its own lighting */
+      if(hemi)hemi.intensity=1.15;
+      if(sun)sun.intensity=1.35;
+      if(window.__game&&window.__game.redraw)window.__game.redraw();
+    },500);
+  },100);
+})();
+</script>
 </body>
 </html>
