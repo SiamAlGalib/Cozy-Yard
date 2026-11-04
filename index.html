@@ -7311,7 +7311,7 @@ function go(o){
  eo.x=io(o.sx);eo.z=io(o.sz);eo.y=.3;Zl=o.yaw;
  bypass=true;btn.click();bypass=false}
 window.addEventListener("click",function(e){
- if(bypass||!e.target.closest||!e.target.closest("#enterKingdom"))return;
+ if(bypass||window.__autoEnter||!e.target.closest||!e.target.closest("#enterKingdom"))return;
  e.stopImmediatePropagation();e.preventDefault();
  cgShopEl.classList.remove("open");
  opts=build();render();ov.classList.add("open")},true);
@@ -11221,5 +11221,21 @@ function init(G,B,mp){
   },1000);
 })();
 </script>
+<script>
+/*autoEnterKingdom*/
+(function(){
+  var tries=0, iv=setInterval(function(){
+    var btn=document.getElementById("enterKingdom");
+    var ready = window.__game && window.__fpS && window.__fpx && btn;
+    var introGone = !document.getElementById("splash") && !document.getElementById("introSky");
+    if(!(ready && introGone) && ++tries<200) return;
+    clearInterval(iv);
+    if(!ready || window.__fpOn) return;
+    window.__autoEnter=true;
+    btn.click();
+    window.__autoEnter=false;
+  },150);
+})();
+</script>	
 </body>
 </html>
