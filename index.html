@@ -6846,6 +6846,7 @@ function pillar(){
  var ix=Math.floor(S.px+lt/2),iz=Math.floor(S.pz+lt/2);
  if(!Ql(ix,iz))return;
  var ct=S.colTop(ix,iz);
+ var __tr=window.__terrain;if(__tr&&__tr.lvl(iz*lt+ix)<0){pillarNow();return}
  pend={ix:ix,iz:iz,t:performance.now()};
  if(S.py<=ct+.02)S.vy=5.6;
 }
