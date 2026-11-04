@@ -11166,54 +11166,15 @@ function init(G,B,mp){
 })();
 </script>
 
-<script>
-/*soilJoints*/
-(function(){
-  var tries=0, done=false;
-  var iv=setInterval(function(){
-    var B=window.__builder, G=window.__game;
-    if(!(B&&B.parent&&G)){ if(++tries>300)clearInterval(iv); return; }
-    var sc=B.parent, n=0;
-    sc.children.forEach(function(o){
-      if(!o.isMesh||!o.geometry||o.geometry.type!=="BoxGeometry")return;
-      var m=o.material;
-      if(!m||!m.isMeshLambertMaterial||!m.flatShading||o.position.y>=0)return;
-      if(m.userData.__joints)return;
-      m.userData.__joints=1;
-      m.onBeforeCompile=function(sh){
-        sh.vertexShader=sh.vertexShader
-          .replace("#include <common>","#include <common>\nvarying vec3 vJW;")
-          .replace("#include <begin_vertex>","#include <begin_vertex>\nvJW=(modelMatrix*vec4(transformed,1.0)).xyz;");
-        sh.fragmentShader=sh.fragmentShader
-          .replace("#include <common>","#include <common>\nvarying vec3 vJW;")
-          .replace("#include <color_fragment>",
-            "#include <color_fragment>\n"+
-            "{ vec3 fn=normalize(cross(dFdx(vJW),dFdy(vJW)));\n"+
-            "  if(abs(fn.y)<0.5){\n"+
-            "    float u=abs(fn.x)>0.5?vJW.z:vJW.x;\n"+
-            "    float v=vJW.y/0.92;\n"+
-            "    u+=0.5*mod(floor(v),2.0);\n"+
-            "    float lw=0.04;\n"+
-            "    float j=max(step(fract(u),lw),step(fract(v),lw));\n"+
-            "    diffuseColor.rgb*=1.0-0.38*j;\n"+
-            "  } }");
-      };
-      m.customProgramCacheKey=function(){return "soilJoints1"};
-      m.needsUpdate=true; n++;
-    });
-    if(n){ done=true; G.redraw(); }
-    if(done||++tries>300)clearInterval(iv);
-  },200);
-})();
-</script>
+
 
 <script>
-/*wallJoints*/
+/*mcJoints*/
 (function(){
-  var tries=0,fo=null,lastN=-1;
+  var tries=0,fo=null,lastN=-1,soilDone=false;
   function patch(m){
-    if(!m||m.userData.__joints||!m.isMeshLambertMaterial)return;
-    m.userData.__joints=1;
+    if(!m||m.userData.__mcj||!m.isMeshLambertMaterial)return;
+    m.userData.__mcj=1;
     m.onBeforeCompile=function(sh){
       sh.vertexShader=sh.vertexShader
         .replace("#include <common>","#include <common>\nvarying vec3 vJW;")
@@ -11226,33 +11187,37 @@ function init(G,B,mp){
           "  if(abs(fn.y)<0.5){\n"+
           "    float u=abs(fn.x)>0.5?vJW.z:vJW.x;\n"+
           "    float v=vJW.y/0.92;\n"+
-          "    u+=0.5*mod(floor(v+0.02),2.0);\n"+
           "    float fu=fwidth(u),fv=fwidth(v);\n"+
           "    float du=abs(fract(u+0.5)-0.5),dv=abs(fract(v+0.5)-0.5);\n"+
-          "    float ju=1.0-smoothstep(0.02,0.02+fu*1.3,du);\n"+
-          "    float jv=1.0-smoothstep(0.02,0.02+fv*1.3,dv);\n"+
-          "    float j=max(ju,jv);\n"+
-          "    diffuseColor.rgb*=1.0-0.42*j;\n"+
+          "    float ju=1.0-smoothstep(0.012,0.012+fu,du);\n"+
+          "    float jv=1.0-smoothstep(0.012,0.012+fv,dv);\n"+
+          "    float far=1.0-smoothstep(0.25,0.6,max(fu,fv));\n"+
+          "    diffuseColor.rgb*=1.0-0.10*max(ju,jv)*far;\n"+
           "  } }");
     };
-    m.customProgramCacheKey=function(){return "wallJoints1"};
+    m.customProgramCacheKey=function(){return "mcJoints1"};
     m.needsUpdate=true;
-  }
-  function scan(){
-    var n=0;
-    fo.traverse(function(o){
-      if(!o.isMesh||!o.geometry||o.geometry.type!=="BoxGeometry")return;
-      var p=o.geometry.parameters;
-      if(p&&Math.abs(p.height-0.93)<0.005&&p.width>1){patch(o.material);n++}
-    });
-    return n;
   }
   var iv=setInterval(function(){
     var B=window.__builder,G=window.__game;
     if(!(B&&B.parent&&G)){if(++tries>300)clearInterval(iv);return}
-    if(!fo){B.parent.children.forEach(function(o){if(!fo&&o.isGroup&&o.children.length&&o!==B)fo=o});
-      if(!fo)return}
-    if(fo.children.length!==lastN){lastN=fo.children.length;if(scan())G.redraw()}
+    var sc=B.parent,ch=false;
+    if(!soilDone){
+      sc.children.forEach(function(o){
+        if(o.isMesh&&o.geometry&&o.geometry.type==="BoxGeometry"&&o.position.y<0&&o.material&&o.material.flatShading){patch(o.material);ch=true}
+      });
+      soilDone=true;
+    }
+    if(!fo)sc.children.forEach(function(o){if(!fo&&o.isGroup&&o.children.length&&o!==B)fo=o});
+    if(fo&&fo.children.length!==lastN){
+      lastN=fo.children.length;
+      fo.traverse(function(o){
+        if(!o.isMesh||!o.geometry||o.geometry.type!=="BoxGeometry")return;
+        var p=o.geometry.parameters;
+        if(p&&Math.abs(p.height-0.93)<0.005&&p.width>1){patch(o.material);ch=true}
+      });
+    }
+    if(ch)G.redraw();
   },1000);
 })();
 </script>
