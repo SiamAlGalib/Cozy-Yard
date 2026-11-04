@@ -6174,7 +6174,7 @@ function leave(){
   chickens.forEach(function(c){fi.remove(c.g)}); chickens=[];
   for(var k in halos)fi.remove(halos[k]); halos={};
   if(bg0)fi.background.copy(bg0);
-  if(hemi)hemi.intensity=1; gu.intensity=.9;
+   gu.intensity=.9;
   ho(16773800).emissiveIntensity=0; ho(16747051).emissiveIntensity=0;
   if(haloGeo)haloGeo.dispose(); if(haloMat)haloMat.dispose();
   Wt.visible=false;
@@ -10890,8 +10890,8 @@ function init(G,B,mp){
     if(sun){sun.color.setHex(0xfff0cc);}
     setInterval(function(){
       if(window.__fpOn)return;          /* kingdom day/night keeps its own lighting */
-      if(hemi)hemi.intensity=1.3;
-      if(sun)sun.intensity=1.7;
+      
+      
       if(window.__game&&window.__game.redraw)window.__game.redraw();
     },500);
   },100);
@@ -11011,6 +11011,163 @@ body #palette::-webkit-scrollbar-thumb{background:rgba(40,90,60,.3)}
     o.grid=0;o.compact=0;localStorage.setItem(k,JSON.stringify(o));
   }catch(e){}
   document.body.classList.remove("pgrid","pcompact");
+})();
+</script>
+
+<style>/*skyLook*/
+body #tabs .tab.erase{
+  background:linear-gradient(135deg,#ff6b6b,#e11d48)!important;color:#fff!important;
+  border:1px solid rgba(255,255,255,.6)!important;border-radius:999px!important;
+  padding:8px 18px!important;font-weight:800!important;letter-spacing:.3px;
+  text-shadow:0 1px 2px rgba(0,0,0,.3);
+  box-shadow:0 4px 14px rgba(225,29,72,.45),inset 0 1px 0 rgba(255,255,255,.5)!important;
+  transition:transform .12s,filter .12s,box-shadow .12s;
+}
+body #tabs .tab.erase:hover{filter:brightness(1.08);transform:translateY(-1px)}
+body #tabs .tab.erase:active{transform:scale(.95)}
+body #tabs .tab.erase.sel{
+  background:linear-gradient(135deg,#be123c,#881337)!important;
+  box-shadow:0 0 0 3px rgba(225,29,72,.35),0 6px 18px rgba(136,19,55,.55)!important;
+}
+</style>
+<script>
+/*skyLook*/
+(function(){
+"use strict";
+var KEY="cozy_daynight",cycleOn=true;
+try{cycleOn=localStorage.getItem(KEY)!=="0"}catch(e){}
+var er=document.querySelector("#tabs .tab.erase");
+if(er)er.textContent="\uD83D\uDDD1\uFE0F Remove";
+var tries=0,iv=setInterval(function(){
+  var G=window.__game,B=window.__builder,mp=document.getElementById("menuPanel");
+  if(!(G&&B&&B.parent&&mp)&&++tries<300)return;
+  clearInterval(iv);
+  if(!(G&&B&&B.parent))return;
+  try{init(G,B,mp)}catch(e){console.error("skyLook",e)}
+},100);
+function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
+function init(G,B,mp){
+  var sc=B.parent,Mesh=null,BoxGeo=null,Geo=null,Attr=null,Basic=null,Grp=B.constructor,hemi=null,sun=null;
+  B.traverse(function(o){
+    if(!BoxGeo&&o.isMesh&&o.geometry&&o.geometry.type==="BoxGeometry"){
+      Mesh=o.constructor;BoxGeo=o.geometry.constructor;Geo=Object.getPrototypeOf(BoxGeo);Attr=o.geometry.attributes.position.constructor;
+    }
+  });
+  sc.children.forEach(function(o){
+    var p=o.geometry&&o.geometry.parameters;
+    if(!Basic&&p&&p.width===.96&&p.height===.96&&o.material)Basic=o.material.constructor;
+    if(o.isHemisphereLight)hemi=o;
+    if(o.isDirectionalLight)sun=o;
+  });
+  if(!BoxGeo||!Basic)return;
+
+  var cam=null;
+  function obr(r,s,c){cam=c}
+  var root=new Grp();sc.add(root);
+  function mat(color,op){return new Basic({color:color,transparent:op<1,opacity:op,depthWrite:false,fog:false})}
+  var box=new BoxGeo(1,1,1);
+  function sq(g,w,h,color,op,z){
+    var m=new Mesh(box,mat(color,op));m.scale.set(w,h,.5);m.position.z=z||0;
+    m.frustumCulled=false;m.renderOrder=-10;g.add(m);return m;
+  }
+
+  /* camera probe so we always know the active camera */
+  var probe=new Mesh(box,mat(0x000000,0));probe.material.transparent=true;probe.material.opacity=0;
+  probe.scale.set(.01,.01,.01);probe.position.set(0,-50,0);probe.frustumCulled=false;probe.onBeforeRender=obr;root.add(probe);
+
+  /* sun */
+  var sunG=new Grp();
+  sq(sunG,150,150,0xffe27a,.22,-.5);
+  sq(sunG,100,100,0xffc83a,.5,-.3);
+  sq(sunG,70,70,0xffd84a,1,0);
+  sq(sunG,46,46,0xfff2a8,1,.2);
+  root.add(sunG);
+
+  /* moon */
+  var moonG=new Grp();
+  sq(moonG,90,90,0xbcd0ff,.2,-.5);
+  sq(moonG,54,54,0xe9efff,1,0);
+  [[-12,10,12],[10,-8,10],[12,14,7],[-9,-13,8]].forEach(function(c){sq(moonG,c[2],c[2],0xc3cde6,1,.2).position.set(c[0],c[1],.2)});
+  root.add(moonG);
+
+  /* stars */
+  var P=[],seed=11,i;
+  function rnd(){seed=(seed*16807)%2147483647;return seed/2147483647}
+  for(i=0;i<140;i++){
+    var az=rnd()*6.283,el=.1+rnd()*1.3,r=480,ce=Math.cos(el);
+    var d=[ce*Math.cos(az),Math.sin(el),ce*Math.sin(az)];
+    var u=[d[2],0,-d[0]],ul=Math.hypot(u[0],u[1],u[2])||1;u=[u[0]/ul,0,u[2]/ul];
+    var v=[d[1]*u[2]-d[2]*u[1],d[2]*u[0]-d[0]*u[2],d[0]*u[1]-d[1]*u[0]];
+    var z=1.6+rnd()*1.8,c=[d[0]*r,d[1]*r,d[2]*r];
+    function pt(a,b){return[c[0]+u[0]*z*a+v[0]*z*b,c[1]+u[1]*z*a+v[1]*z*b,c[2]+u[2]*z*a+v[2]*z*b]}
+    var q=[pt(-1,-1),pt(1,-1),pt(1,1),pt(-1,-1),pt(1,1),pt(-1,1)];
+    q.forEach(function(p){P.push(p[0],p[1],p[2])});
+  }
+  var sg=new Geo();sg.setAttribute("position",new Attr(new Float32Array(P),3));
+  var starMat=new Basic({color:0xffffff,transparent:true,opacity:0,depthWrite:false,side:2,fog:false});
+  var stars=new Mesh(sg,starMat);stars.frustumCulled=false;stars.renderOrder=-11;root.add(stars);
+
+  /* clock */
+  var tod=.38,DAY=300,last=performance.now(),lastRd=0,BH=1,BS=1.7;
+  function readClock(){
+    var e=document.getElementById("fpClock");if(!e)return null;
+    var m=/(\d+):(\d+)/.exec(e.textContent||"");
+    return m?((+m[1])+(+m[2])/60)/24:null;
+  }
+  var R=450;
+  function loop(now){
+    requestAnimationFrame(loop);
+    if(window.__ytPaused){last=now;return}
+    var dt=Math.min(.1,(now-last)/1000);last=now;
+    var fp=!!window.__fpOn;
+    if(fp){var c=readClock();if(c!==null)tod=c}
+    else if(cycleOn)tod=(tod+dt/DAY)%1;
+    else tod=.5;
+
+    var a=(tod-.25)*Math.PI*2,sn=Math.sin(a),cs=Math.cos(a);
+    var day=clamp((sn+.18)/.6,0,1),night=1-day;
+    if(cam)root.position.copy(cam.position);
+
+    sunG.position.set(cs*R,sn*R*.5,-R*.55);
+    moonG.position.set(-cs*R,-sn*R*.5,-R*.55);
+    sunG.visible=sunG.position.y>10;
+    moonG.visible=moonG.position.y>10;
+    if(cam){
+      if(sunG.visible)sunG.lookAt(cam.position);
+      if(moonG.visible)moonG.lookAt(cam.position);
+    }
+    /* sun turns orange near the horizon */
+    var warm=clamp(1-sn*2.2,0,1);
+    sunG.children[2].material.color.setRGB(1,.85-.3*warm,.29-.12*warm);
+    starMat.opacity=clamp(night*1.25-.1,0,1);
+    stars.visible=starMat.opacity>.02;
+
+    if(!fp){
+      var k=.28+.72*day;
+      if(hemi)hemi.intensity=BH*k;
+      if(sun){sun.intensity=BS*k;sun.color.setHex(day<.5?0xffb070:0xfff0cc)}
+      sc.backgroundIntensity=.2+.8*day;
+      if(cycleOn&&now-lastRd>90){lastRd=now;G.redraw()}
+    }else{
+      sc.backgroundIntensity=1;
+    }
+  }
+  requestAnimationFrame(loop);
+
+  /* menu switch */
+  var h=document.createElement("h4");h.textContent="Sky";mp.appendChild(h);
+  var row=document.createElement("div");row.className="mrow";
+  var bt=document.createElement("button");bt.className="pill";
+  bt.style.cssText="pointer-events:auto;border:0;cursor:pointer;background:#e6f0ff";
+  var sm=document.createElement("small");
+  sm.textContent="Sun, moon and stars with a day and night cycle. OFF keeps it at noon";
+  function lab(){bt.textContent="\u2600\uFE0F Day/night cycle: "+(cycleOn?"ON":"OFF")}
+  lab();row.appendChild(bt);row.appendChild(sm);mp.appendChild(row);
+  bt.addEventListener("click",function(){
+    cycleOn=!cycleOn;try{localStorage.setItem(KEY,cycleOn?"1":"0")}catch(e){}
+    lab();G.redraw();
+  });
+}
 })();
 </script>
 </body>
