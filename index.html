@@ -10506,5 +10506,369 @@ function init(G,B,mp){
 })();
 /*oceanBeach:end*/
 </script>
+<script>
+/*oceanLife:start*/
+(function(){
+"use strict";
+var KEY="cozy_ocean_life",life=true;
+try{life=localStorage.getItem(KEY)!=="0"}catch(e){}
+var tries=0,iv=setInterval(function(){
+  var G=window.__game,B=window.__builder,O=window.__ocean,mp=document.getElementById("menuPanel");
+  if(!(G&&B&&B.parent&&O&&mp)&&++tries<300)return;
+  clearInterval(iv);
+  if(!(G&&B&&B.parent&&O))return;
+  try{init(G,B,mp)}catch(e){console.error("oceanLife",e)}
+},100);
+
+function lin(h){return[Math.pow(((h>>16)&255)/255,2.2),Math.pow(((h>>8)&255)/255,2.2),Math.pow((h&255)/255,2.2)]}
+function sm(a,b,x){var t=Math.max(0,Math.min(1,(x-a)/(b-a)));return t*t*(3-2*t)}
+function cross(a,b){return[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]]}
+function nrm(a){var l=Math.hypot(a[0],a[1],a[2])||1;return[a[0]/l,a[1]/l,a[2]/l]}
+function GB(){return{P:[],N:[],C:[]}}
+function tri(g,a,b,c,col){
+  var n=nrm(cross([b[0]-a[0],b[1]-a[1],b[2]-a[2]],[c[0]-a[0],c[1]-a[1],c[2]-a[2]])),k=lin(col);
+  [a,b,c].forEach(function(v){g.P.push(v[0],v[1],v[2]);g.N.push(n[0],n[1],n[2]);g.C.push(k[0],k[1],k[2])});
+}
+function quad(g,a,b,c,d,col){tri(g,a,b,c,col);tri(g,a,c,d,col)}
+function box(g,cx,cy,cz,w,h,d,col){
+  var x0=cx-w/2,x1=cx+w/2,y0=cy-h/2,y1=cy+h/2,z0=cz-d/2,z1=cz+d/2;
+  quad(g,[x0,y0,z0],[x1,y0,z0],[x1,y1,z0],[x0,y1,z0],col);
+  quad(g,[x0,y0,z1],[x1,y0,z1],[x1,y1,z1],[x0,y1,z1],col);
+  quad(g,[x0,y0,z0],[x0,y0,z1],[x0,y1,z1],[x0,y1,z0],col);
+  quad(g,[x1,y0,z0],[x1,y0,z1],[x1,y1,z1],[x1,y1,z0],col);
+  quad(g,[x0,y0,z0],[x1,y0,z0],[x1,y0,z1],[x0,y0,z1],col);
+  quad(g,[x0,y1,z0],[x1,y1,z0],[x1,y1,z1],[x0,y1,z1],col);
+}
+/* tapered cylinder / cone between two points */
+function limb(g,p0,p1,r0,r1,seg,col,topCol,col2){
+  var ax=nrm([p1[0]-p0[0],p1[1]-p0[1],p1[2]-p0[2]]),h=Math.abs(ax[1])<.9?[0,1,0]:[1,0,0];
+  var u=nrm(cross(ax,h)),v=cross(ax,u);
+  function ring(a,r,p){var c=Math.cos(a)*r,s=Math.sin(a)*r;return[p[0]+u[0]*c+v[0]*s,p[1]+u[1]*c+v[1]*s,p[2]+u[2]*c+v[2]*s]}
+  for(var i=0;i<seg;i++){
+    var a0=i/seg*Math.PI*2,a1=(i+1)/seg*Math.PI*2,c=(col2!==undefined&&i%2)?col2:col;
+    var A0=ring(a0,r0,p0),A1=ring(a1,r0,p0),B0=ring(a0,r1,p1),B1=ring(a1,r1,p1);
+    if(r1<.001)tri(g,A0,A1,p1,c);else quad(g,A0,A1,B1,B0,c);
+    if(topCol!==undefined&&r1>=.001)tri(g,p1,B0,B1,topCol);
+  }
+}
+function annulus(g,r0,r1,y,seg,col){
+  for(var i=0;i<seg;i++){
+    var a0=i/seg*Math.PI*2,a1=(i+1)/seg*Math.PI*2;
+    quad(g,[Math.cos(a0)*r0,y,Math.sin(a0)*r0],[Math.cos(a1)*r0,y,Math.sin(a1)*r0],[Math.cos(a1)*r1,y,Math.sin(a1)*r1],[Math.cos(a0)*r1,y,Math.sin(a0)*r1],col);
+  }
+}
+/* boat hull lofted along z, bow pointed at +z */
+function hull(g,L,W,H,col,deck){
+  var n=10,S=[],i;
+  for(i=0;i<=n;i++){
+    var t=i/n*2-1,w=(W/2)*(t<0?(1-.38*t*t):Math.sqrt(1-Math.pow(t,2.4)));
+    var top=H*(1+.35*Math.pow(Math.max(t,0),2)+.1*Math.pow(Math.max(-t,0),2)),z=t*L/2;
+    S.push({pt:[-w,top,z],st:[w,top,z],sb:[w*.55,0,z],pb:[-w*.55,0,z]});
+  }
+  for(i=0;i<n;i++){
+    var a=S[i],b=S[i+1];
+    quad(g,a.st,b.st,b.sb,a.sb,col);
+    quad(g,a.pt,b.pt,b.pb,a.pb,col);
+    quad(g,a.pb,b.pb,b.sb,a.sb,0x3a2a22);
+    quad(g,a.pt,a.st,b.st,b.pt,deck);
+  }
+  quad(g,S[0].pt,S[0].st,S[0].sb,S[0].pb,col);
+}
+function sailG(hc,sc){
+  var g=GB();
+  hull(g,3.4,1.2,.55,hc,0xe9dfc4);
+  box(g,0,.75,-.45,.62,.3,.9,0xf4efe2);box(g,0,.92,-.45,.7,.05,1,0x7a5a3a);
+  box(g,0,2.3,.25,.08,3.5,.08,0x8a6a45);box(g,0,.95,-.65,.06,.06,1.6,0x8a6a45);
+  tri(g,[.02,1.0,.2],[.02,3.9,.2],[.02,1.0,-1.4],sc);
+  tri(g,[-.02,.9,.3],[-.02,3.4,.28],[-.02,.75,1.6],0xf6f6f6);
+  tri(g,[0,4.05,.25],[0,3.8,.25],[0,3.92,-.3],0xe74c3c);
+  return g;
+}
+function cargoG(hc,cc){
+  var g=GB();
+  hull(g,5.6,1.9,.85,hc,0x7f8c8d);
+  box(g,0,1.5,-1.8,1.5,1.2,1.2,0xf2f2f2);box(g,0,2.2,-1.8,1.6,.2,1.3,0x2c3e50);
+  box(g,0,1.55,-1.18,1.3,.3,.04,0x5dade2);
+  box(g,0,2.6,-2.2,.4,.7,.4,0xc0392b);box(g,0,3,-2.2,.44,.12,.44,0x222222);
+  box(g,0,1.15,.7,1.3,.7,.9,cc[0]);box(g,0,1.15,1.7,1.3,.7,.9,cc[1]);box(g,0,1.85,.7,1.0,.7,.8,cc[2]);
+  box(g,0,2.2,1.9,.06,1.2,.06,0x8a6a45);
+  return g;
+}
+function fishG(hc){
+  var g=GB();
+  hull(g,3.8,1.4,.6,hc,0xcfd8dc);
+  box(g,0,1.0,-.6,.95,.75,.95,0xf8f8f8);box(g,0,1.45,-.6,1.05,.1,1.05,0x2e86c1);
+  box(g,0,2.1,.4,.07,2.2,.07,0x8a6a45);box(g,0,1.4,.9,.05,.05,1.2,0x8a6a45);
+  box(g,.45,.75,.9,.25,.25,.25,0xff8c1a);box(g,-.45,.75,1.1,.25,.25,.25,0xff8c1a);
+  return g;
+}
+function wakeG(){
+  var g=GB(),s;
+  for(s=-1;s<=1;s+=2)quad(g,[s*.5,0,-1.7],[s*.95,0,-1.7],[s*3.2,0,-6.8],[s*2.65,0,-6.8],0xffffff);
+  quad(g,[-.45,0,-1.7],[.45,0,-1.7],[.2,0,-7.5],[-.2,0,-7.5],0xffffff);
+  return g;
+}
+function frond(g,B,d,col){
+  var dir=[d[0],0,d[1]],pp=[-d[1]*.45,0,d[0]*.45];
+  var M=[B[0]+dir[0]*1.3,B[1]+.5,B[2]+dir[2]*1.3],T=[B[0]+dir[0]*2.6,B[1]-.7,B[2]+dir[2]*2.6];
+  quad(g,[B[0]-pp[0]*.3,B[1],B[2]-pp[2]*.3],[B[0]+pp[0]*.3,B[1],B[2]+pp[2]*.3],[M[0]+pp[0],M[1],M[2]+pp[2]],[M[0]-pp[0],M[1],M[2]-pp[2]],col);
+  tri(g,[M[0]-pp[0],M[1],M[2]-pp[2]],[M[0]+pp[0],M[1],M[2]+pp[2]],T,col);
+}
+function palm(g,x,y,z,h,lean,ang){
+  var dx=Math.cos(ang)*lean,dz=Math.sin(ang)*lean,p=[[x,y,z]],i;
+  for(i=1;i<=3;i++){var t=i/3;p.push([x+dx*t*t*h*.5,y+h*t,z+dz*t*t*h*.5])}
+  for(i=0;i<3;i++)limb(g,p[i],p[i+1],.26-.04*i,.22-.04*i,6,i%2?0x8a5a2b:0x9a6a36);
+  var top=p[3];
+  for(i=0;i<7;i++){var a=i/7*Math.PI*2+ang;frond(g,top,[Math.cos(a),Math.sin(a)],i%2?0x2f9a3a:0x3fae45)}
+  box(g,top[0],top[1]-.2,top[2],.25,.25,.25,0x5a3a1e);
+}
+function lighthouse(g,x,y,z){
+  var Y=[0,2.4,4.8,7.2,9.6],R=[1.7,1.55,1.4,1.25,1.1],cl=[0xf4f4f4,0xd9382c,0xf4f4f4,0xd9382c];
+  for(var i=0;i<4;i++)limb(g,[x,y+Y[i],z],[x,y+Y[i+1],z],R[i],R[i+1],12,cl[i]);
+  limb(g,[x,y+9.6,z],[x,y+10,z],1.8,1.8,12,0x333a40,0x333a40);
+  limb(g,[x,y+10,z],[x,y+11.4,z],.8,.8,10,0xffe27a);
+  limb(g,[x,y+11.4,z],[x,y+12.8,z],1.2,0,10,0xc0392b);
+}
+function bush(g,x,y,z,r){limb(g,[x,y,z],[x,y+r*.8,z],r,r*.6,7,0x2f8a3a,0x3fa84a)}
+function rock(g,x,y,z,r){limb(g,[x,y,z],[x,y+r*.7,z],r,r*.55,6,0x7d858c,0x9aa3a8,0x6a7278)}
+
+function init(G,B,mp){
+  if(window.__oceanLife)return;
+  var sc=B.parent,lt=Math.round(Math.sqrt(G.cells.length)),half=lt/2;
+  var s0=null;B.traverse(function(o){if(!s0&&o.isMesh&&o.geometry&&o.material)s0=o});
+  if(!s0)return;
+  var Mesh=s0.constructor,Geo=Object.getPrototypeOf(s0.geometry.constructor),
+      Attr=s0.geometry.attributes.position.constructor,Mat=s0.material.constructor,Grp=B.constructor;
+  var water=null;
+  sc.children.forEach(function(o){var m=o.isMesh&&o.material;if(!water&&m&&m.map&&m.vertexColors&&m.transparent&&Math.abs(m.opacity-.88)<.02)water=o});
+  if(!water){console.warn("oceanLife: water mesh not found");return}
+
+  var T=0,U={value:0},UA={value:life?1:0},UH={value:half};
+  function waveH(x,z){
+    var d=Math.max(Math.abs(x),Math.abs(z))-half,f=sm(2,16,d)*(1-sm(70,200,d))*UA.value;
+    if(f<=0)return 0;
+    return f*(.20*Math.sin(.35*x+.22*z+T*.9)+.13*Math.sin(.23*x-.40*z+T*1.3)+.06*Math.sin(.62*x+.50*z+T*1.9));
+  }
+
+  /* ---------- 1) wavy water: denser ring + vertex shader ---------- */
+  var od=[2,4,8,16,30,50,80,120,180,260,380,540,700];
+  var oc=[0x4ee0d6,0x39d0d8,0x2fc0e0,0x2aa8e8,0x1f8fe0,0x1a7fd6,0x1873cc,0x2a8ad8,0x4aa4e4,0x6ebbee,0x92d0f4,0xb4e0f8,0xcdeafa].map(lin);
+  function colAt(d){
+    if(d<=od[0])return oc[0];
+    for(var i=0;i<od.length-1;i++)if(d<=od[i+1]){var t=(d-od[i])/(od[i+1]-od[i]);return[oc[i][0]+(oc[i+1][0]-oc[i][0])*t,oc[i][1]+(oc[i+1][1]-oc[i][1])*t,oc[i][2]+(oc[i+1][2]-oc[i][2])*t]}
+    return oc[oc.length-1];
+  }
+  var rows=[],d;
+  for(d=2;d<=50;d+=2)rows.push(d);
+  for(d=54;d<=110;d+=4)rows.push(d);
+  for(d=118;d<=200;d+=8)rows.push(d);
+  [220,260,320,420,540,700].forEach(function(v){rows.push(v)});
+  var N=120,per=N*4,P=[],Nn=[],C=[],UV=[],IX=[],r,i;
+  for(r=0;r<rows.length;r++){
+    var a=half+rows[r],cn=[[-a,-a],[a,-a],[a,a],[-a,a]],col=colAt(rows[r]);
+    for(i=0;i<per;i++){
+      var side=Math.floor(i/N),u=(i%N)/N,p0=cn[side],p1=cn[(side+1)%4];
+      var x=p0[0]+(p1[0]-p0[0])*u,z=p0[1]+(p1[1]-p0[1])*u;
+      P.push(x,-.3,z);Nn.push(0,1,0);C.push(col[0],col[1],col[2]);UV.push(x/14,z/14);
+    }
+  }
+  for(r=0;r<rows.length-1;r++)for(i=0;i<per;i++){
+    var i2=(i+1)%per,A=r*per+i,Bq=r*per+i2,Cq=(r+1)*per+i2,Dq=(r+1)*per+i;
+    IX.push(A,Bq,Cq,A,Cq,Dq);
+  }
+  var wg=new Geo();
+  wg.setAttribute("position",new Attr(P,3));wg.setAttribute("normal",new Attr(Nn,3));
+  wg.setAttribute("color",new Attr(C,3));wg.setAttribute("uv",new Attr(UV,2));wg.setIndex(IX);
+  var oldG=water.geometry;water.geometry=wg;if(oldG&&oldG.dispose)oldG.dispose();
+
+  var GL="uniform float uTime;uniform float uAmp;uniform float uHalf;\n"+
+  "float waveF(vec2 p){float d=max(abs(p.x),abs(p.y))-uHalf;return smoothstep(2.0,16.0,d)*(1.0-smoothstep(70.0,200.0,d))*uAmp;}\n"+
+  "vec3 waveH(vec2 p){float a1=.35*p.x+.22*p.y+uTime*.9;float a2=.23*p.x-.40*p.y+uTime*1.3;float a3=.62*p.x+.50*p.y+uTime*1.9;\n"+
+  "float h=.20*sin(a1)+.13*sin(a2)+.06*sin(a3);\n"+
+  "float dx=.20*.35*cos(a1)+.13*.23*cos(a2)+.06*.62*cos(a3);\n"+
+  "float dz=.20*.22*cos(a1)-.13*.40*cos(a2)+.06*.50*cos(a3);return vec3(h,dx,dz);}\n";
+  var wm=water.material;
+  wm.onBeforeCompile=function(sh){
+    sh.uniforms.uTime=U;sh.uniforms.uAmp=UA;sh.uniforms.uHalf=UH;
+    sh.vertexShader=sh.vertexShader
+      .replace("#include <common>","#include <common>\n"+GL)
+      .replace("#include <beginnormal_vertex>","vec3 wv=waveH(position.xz);float wf=waveF(position.xz);\nvec3 objectNormal=normalize(vec3(-wv.y*wf*1.6,1.0,-wv.z*wf*1.6));\n#ifdef USE_TANGENT\nvec3 objectTangent=vec3(1.0,0.0,0.0);\n#endif")
+      .replace("#include <begin_vertex>","vec3 transformed=vec3(position);\ntransformed.y+=wv.x*wf;\n#ifdef USE_COLOR\nvColor.rgb+=vec3(.30,.34,.36)*smoothstep(.12,.36,wv.x*wf);\n#endif");
+  };
+  wm.customProgramCacheKey=function(){return "oceanwaves1"};
+  wm.needsUpdate=true;
+
+  /* ---------- helpers ---------- */
+  function toMesh(g,mat){
+    var geo=new Geo();
+    geo.setAttribute("position",new Attr(g.P,3));geo.setAttribute("normal",new Attr(g.N,3));geo.setAttribute("color",new Attr(g.C,3));
+    var m=new Mesh(geo,mat);m.frustumCulled=false;return m;
+  }
+  var vm=new Mat({vertexColors:true,side:2});
+  var wakeMat=new Mat({color:0xffffff,transparent:true,opacity:.5,depthWrite:false,side:2});
+  var reefMat=new Mat({color:0x5fe3d6,transparent:true,opacity:.5,depthWrite:false,side:2});
+  var foamMat=new Mat({color:0xffffff,transparent:true,opacity:.55,depthWrite:false,side:2});
+  var root=new Grp();sc.add(root);
+
+  /* ---------- 2) islets ---------- */
+  function placeSq(a,side,t){
+    if(side===0)return[t*a,-a];if(side===1)return[a,t*a];if(side===2)return[-t*a,a];return[-a,t*a];
+  }
+  var ISL=[
+    {a:121,s:0,t:.45,R:6,k:"small"},{a:160,s:1,t:-.35,R:11,k:"palms"},{a:210,s:2,t:.5,R:12,k:"palms"},
+    {a:270,s:3,t:.1,R:22,k:"light"},{a:160,s:3,t:.5,R:9,k:"rocks"},{a:210,s:0,t:-.5,R:13,k:"palms"},{a:121,s:2,t:-.5,R:7,k:"small"}
+  ];
+  var foams=[],lightPos=[0,0];
+  ISL.forEach(function(I,n){
+    var pos=placeSq(I.a,I.s,I.t),R=I.R,g=GB(),k=I.k;
+    limb(g,[0,-1.2,0],[0,.15,0],R*1.15,R*.95,18,0xe8d9a0,undefined,0xdfcd92);
+    limb(g,[0,.15,0],[0,.6,0],R*.86,R*.7,18,0x8fcf6a,0x5fb04a);
+    if(k==="small"){palm(g,R*.15,.6,0,4.6,.5,n);bush(g,-R*.35,.6,R*.2,1.1);bush(g,R*.3,.6,-R*.3,.9)}
+    else if(k==="palms"){
+      palm(g,-R*.25,.6,R*.1,5.4,.6,n+1);palm(g,R*.25,.6,-R*.15,6.2,.7,n+2);palm(g,R*.05,.6,R*.35,4.8,.5,n+3);
+      bush(g,-R*.1,.6,-R*.35,1.4);bush(g,R*.4,.6,R*.25,1.1);rock(g,-R*.45,.5,-R*.15,1.2);
+    }else if(k==="rocks"){
+      rock(g,0,.5,0,R*.4);rock(g,R*.3,.5,R*.15,R*.25);rock(g,-R*.3,.5,-R*.1,R*.22);bush(g,R*.1,.6,-R*.3,1.2);
+    }else if(k==="light"){
+      lighthouse(g,0,.6,0);
+      palm(g,R*.45,.6,R*.2,6,.6,1);palm(g,-R*.4,.6,R*.35,5.2,.5,3);palm(g,-R*.2,.6,-R*.45,5.6,.6,5);
+      bush(g,R*.3,.6,-R*.4,1.6);rock(g,-R*.55,.5,-R*.1,1.8);rock(g,R*.6,.5,-R*.2,1.4);
+      lightPos=pos;
+    }
+    var m=toMesh(g,vm);m.position.set(pos[0],0,pos[1]);root.add(m);
+    var rg=GB();limb(rg,[0,-.15,0],[0,-.12,0],R*1.9,R*1.7,24,0x5fe3d6,0x5fe3d6);
+    var rm=toMesh(rg,reefMat);rm.position.set(pos[0],0,pos[1]);rm.renderOrder=3;root.add(rm);
+    var fg=GB();annulus(fg,R*.96,R*1.28,-.04,28,0xffffff);
+    var fm=toMesh(fg,foamMat);fm.position.set(pos[0],0,pos[1]);fm.renderOrder=4;root.add(fm);
+  });
+
+  /* ---------- 3) ships on rounded-rectangle lanes ---------- */
+  var lanes=[{a:135,r:34},{a:185,r:44},{a:235,r:50}];
+  lanes.forEach(function(l){l.L=2*(l.a-l.r);l.A=Math.PI*l.r/2;l.P=4*(l.L+l.A)});
+  var pp={x:0,z:0,dx:1,dz:0};
+  function pathAt(l,s){
+    var a=l.a,r=l.r,c=a-r,L=l.L,A=l.A;s=((s%l.P)+l.P)%l.P;
+    var TH=[-Math.PI/2,0,Math.PI/2,Math.PI],CC=[[c,-c],[c,c],[-c,c],[-c,-c]];
+    for(var k=0;k<8;k++){
+      var len=(k%2===0)?L:A;
+      if(s<=len||k===7){
+        if(k===0){pp.x=-c+s;pp.z=-a;pp.dx=1;pp.dz=0}
+        else if(k===2){pp.x=a;pp.z=-c+s;pp.dx=0;pp.dz=1}
+        else if(k===4){pp.x=c-s;pp.z=a;pp.dx=-1;pp.dz=0}
+        else if(k===6){pp.x=-a;pp.z=c-s;pp.dx=0;pp.dz=-1}
+        else{var ai=(k-1)/2,th=TH[ai]+s/r;pp.x=CC[ai][0]+r*Math.cos(th);pp.z=CC[ai][1]+r*Math.sin(th);pp.dx=-Math.sin(th);pp.dz=Math.cos(th)}
+        return;
+      }
+      s-=len;
+    }
+  }
+  var wakeGeo=wakeG();
+  var fleet=[
+    {g:sailG(0xc0392b,0xffffff),lane:0,sp:5.2,f:.05,dir:1,scale:2.6,hl:1.7},
+    {g:sailG(0x2e86c1,0xfff3c4),lane:0,sp:5.2,f:.55,dir:1,scale:2.4,hl:1.7},
+    {g:cargoG(0x34495e,[0xe67e22,0x27ae60,0xc0392b]),lane:2,sp:4.2,f:.2,dir:1,scale:3.2,hl:2.8},
+    {g:fishG(0x1abc9c),lane:1,sp:3.6,f:.7,dir:-1,scale:2.6,hl:1.9},
+    {g:sailG(0x8e44ad,0xffffff),lane:1,sp:4.6,f:.3,dir:-1,scale:2.8,hl:1.7},
+    {g:cargoG(0x7b241c,[0x3498db,0xf1c40f,0xecf0f1]),lane:2,sp:4.6,f:.75,dir:-1,scale:3.0,hl:2.8}
+  ];
+  fleet.forEach(function(s){
+    s.s=s.f*lanes[s.lane].P;
+    s.grp=new Grp();s.tilt=new Grp();s.tilt.rotation.order="YXZ";
+    s.tilt.add(toMesh(s.g,vm));s.tilt.position.y=-.2;
+    var w=toMesh(wakeGeo,wakeMat);w.position.y=.08;w.renderOrder=3;s.wake=w;
+    s.grp.add(s.tilt);s.grp.add(w);s.grp.scale.setScalar(s.scale);root.add(s.grp);
+  });
+  function updShips(dt){
+    fleet.forEach(function(s){
+      var l=lanes[s.lane];
+      s.s+=s.sp*dt;
+      pathAt(l,s.dir*s.s);
+      var dx=pp.dx*s.dir,dz=pp.dz*s.dir,x=pp.x,z=pp.z,hl=s.hl*s.scale,wl=.6*s.scale;
+      var rx=dz,rz=-dx;
+      var hB=waveH(x+dx*hl,z+dz*hl),hS=waveH(x-dx*hl,z-dz*hl),hR=waveH(x+rx*wl,z+rz*wl),hL=waveH(x-rx*wl,z-rz*wl),hC=waveH(x,z);
+      s.grp.position.set(x,-.3+hC,z);
+      s.grp.rotation.y=Math.atan2(dx,dz);
+      s.tilt.rotation.x=-Math.atan2(hB-hS,2*hl)*1.2;
+      s.tilt.rotation.z=Math.atan2(hR-hL,2*wl)*1.2;
+      s.wake.material.opacity=wakeMat.opacity;
+    });
+  }
+
+  /* ---------- 4) seagulls ---------- */
+  var bb=GB();box(bb,0,0,0,.16,.14,.55,0xf4f6f8);box(bb,0,.04,.33,.12,.12,.14,0xf4f6f8);box(bb,0,.03,.44,.035,.03,.12,0xf5a623);box(bb,0,0,-.38,.1,.03,.2,0x9aa3ab);
+  var bw=GB();quad(bw,[0,0,.25],[0,0,-.22],[.6,.03,-.3],[.6,.03,.12],0xf4f6f8);quad(bw,[.6,.03,.12],[.6,.03,-.3],[1.25,.12,-.45],[1.25,.12,-.08],0x6d7781);
+  var bodyGeo=toMesh(bb,vm).geometry,wingGeo=toMesh(bw,vm).geometry;
+  var flocks=[
+    {cx:-20,cz:10,R:55,h:15,n:6,v:9,dir:1},{cx:25,cz:-30,R:90,h:24,n:5,v:12,dir:-1},
+    {cx:0,cz:0,R:130,h:20,n:7,v:13,dir:1},{cx:lightPos[0],cz:lightPos[1],R:30,h:16,n:5,v:8,dir:1},
+    {cx:140,cz:-120,R:28,h:12,n:4,v:7,dir:-1}
+  ];
+  var birds=[];
+  flocks.forEach(function(f){
+    for(var i=0;i<f.n;i++){
+      var b={f:f,th:i*.16+Math.random()*.3,r:f.R+(Math.random()-.5)*10,h:f.h+(Math.random()-.5)*3,ph:Math.random()*6,g:Math.random()*6};
+      b.root=new Grp();b.root.rotation.order="YXZ";b.root.scale.setScalar(1.5);
+      b.root.add(new Mesh(bodyGeo,vm));
+      b.pr=new Grp();b.pr.position.set(.07,.03,0);b.pr.add(new Mesh(wingGeo,vm));
+      b.pl=new Grp();b.pl.position.set(-.07,.03,0);b.pl.scale.x=-1;b.pl.add(new Mesh(wingGeo,vm));
+      b.root.add(b.pr,b.pl);b.root.children.forEach(function(c){c.frustumCulled=false;c.children.forEach(function(q){q.frustumCulled=false})});
+      root.add(b.root);birds.push(b);
+    }
+  });
+  function updBirds(dt){
+    birds.forEach(function(b){
+      var f=b.f,w=f.dir*f.v/b.r,ds=f.dir;
+      b.th+=w*dt;
+      var x=f.cx+b.r*Math.cos(b.th),z=f.cz+b.r*Math.sin(b.th);
+      var dx=-Math.sin(b.th)*ds,dz=Math.cos(b.th)*ds;
+      b.root.position.set(x,b.h+Math.sin(T*.6+b.ph)*1.2,z);
+      b.root.rotation.y=Math.atan2(dx,dz);
+      b.root.rotation.z=ds*.32;
+      var gl=sm(.4,.8,Math.sin(T*.25+b.g));
+      b.ph+=dt*(7+1.5*Math.sin(T*.7+b.g));
+      var ang=Math.sin(b.ph)*(.55-.45*gl)+.14*gl;
+      b.pr.rotation.z=ang;b.pl.rotation.z=-ang;
+    });
+  }
+
+  /* ---------- loop ---------- */
+  var oceanOn=true,lastCheck=0,last=performance.now(),lp=0;
+  function apply(){root.visible=life&&oceanOn;UA.value=life?1:0;G.redraw()}
+  apply();
+  (function loop(now){
+    requestAnimationFrame(loop);
+    if(window.__ytPaused){last=now;return}
+    var dt=Math.min(.1,(now-last)/1000);last=now;
+    if(now-lastCheck>300){
+      lastCheck=now;var o;try{o=localStorage.getItem("cozy_ocean")!=="0"}catch(e){o=true}
+      if(o!==oceanOn){oceanOn=o;apply()}
+    }
+    if(!oceanOn)return;
+    T+=dt;U.value=T;
+    if(life){
+      updShips(dt);updBirds(dt);
+      wakeMat.opacity=.4+.15*Math.sin(T*3);foamMat.opacity=.45+.2*Math.sin(T*1.4);
+      if(!window.__fpOn&&now-lp>45){lp=now;G.redraw()}
+    }
+  })(performance.now());
+
+  /* ---------- menu switch ---------- */
+  var h=document.createElement("h4");h.textContent="Sea life";mp.appendChild(h);
+  var row=document.createElement("div");row.className="mrow";
+  var bt=document.createElement("button");bt.className="pill";
+  bt.style.cssText="pointer-events:auto;border:0;cursor:pointer;background:#e6f0ff";
+  var sm2=document.createElement("small");sm2.textContent="Waves, sailing ships, seagulls and small islands. Turn off if the game is slow";
+  function lab(){bt.textContent="\u26F5 Waves & ships: "+(life?"ON":"OFF")}
+  lab();row.appendChild(bt);row.appendChild(sm2);mp.appendChild(row);
+  bt.addEventListener("click",function(){
+    life=!life;try{localStorage.setItem(KEY,life?"1":"0")}catch(e){}
+    lab();apply();
+  });
+  window.__oceanLife={toggle:function(){life=!life;apply()}};
+}
+})();
+
+/*oceanLife:end*/
+</script>
 </body>
 </html>
