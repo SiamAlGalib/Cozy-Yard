@@ -10382,5 +10382,129 @@ var fr=0,last=performance.now();
 })();
 
 </script>
+<script>
+/*oceanBeach:start*/
+(function(){
+"use strict";
+var KEY="cozy_ocean",on=true;
+try{on=localStorage.getItem(KEY)!=="0"}catch(e){}
+var tries=0,iv=setInterval(function(){
+  var G=window.__game,B=window.__builder,mp=document.getElementById("menuPanel");
+  if(!(G&&B&&B.parent&&mp)&&++tries<200)return;
+  clearInterval(iv);
+  if(!G||!B||!B.parent)return;
+  try{init(G,B,mp)}catch(e){console.error("ocean",e)}
+},100);
+function lin(h){return[Math.pow(((h>>16)&255)/255,2.2),Math.pow(((h>>8)&255)/255,2.2),Math.pow((h&255)/255,2.2)]}
+function init(G,B,mp){
+  if(window.__ocean)return;
+  var sc=B.parent,lt=Math.round(Math.sqrt(G.cells.length)),half=lt/2;
+  var s0=null;B.traverse(function(o){if(!s0&&o.isMesh&&o.geometry&&o.material)s0=o});
+  if(!s0)return;
+  var Mesh=s0.constructor,Geo=Object.getPrototypeOf(s0.geometry.constructor),
+      Attr=s0.geometry.attributes.position.constructor,Mat=s0.material.constructor;
+  var TexC=null;
+  sc.children.forEach(function(o){if(!TexC&&o.isMesh&&o.material&&o.material.map)TexC=o.material.map.constructor});
+  if(!TexC)return;
+  var hemi=null;sc.children.forEach(function(o){if(o.isHemisphereLight)hemi=o});
+
+  /* wave texture (seamless) */
+  var cv=document.createElement("canvas");cv.width=cv.height=256;
+  var x=cv.getContext("2d");
+  x.fillStyle="#c4ccd6";x.fillRect(0,0,256,256);
+  x.strokeStyle="rgba(255,255,255,.55)";x.lineWidth=2;x.lineCap="round";
+  var seed=5;function r(){seed=(seed*16807)%2147483647;return seed/2147483647}
+  for(var i=0;i<26;i++){
+    var px=r()*256,py=r()*256,w=14+r()*22;
+    for(var ox=-256;ox<=256;ox+=256)for(var oy=-256;oy<=256;oy+=256){
+      x.beginPath();x.moveTo(px+ox,py+oy);
+      x.quadraticCurveTo(px+ox+w/2,py+oy-5,px+ox+w,py+oy);x.stroke();
+    }
+  }
+  var tex=new TexC(cv);tex.wrapS=tex.wrapT=1000;tex.colorSpace="srgb";tex.needsUpdate=true;
+
+  /* camera far plane must be big enough to see the ocean */
+  function obr(rn,s,c){if(c.far<1800){c.far=1800;c.updateProjectionMatrix()}}
+
+  /* square ring made of strips: ds = distance beyond island edge, ys = height, cs = colour */
+  function ring(ds,ys,cs,uvs,mat,order){
+    var P=[],C=[],U=[],N=[];
+    function V(a,y,b,c){return{x:a,y:y,z:b,c:c}}
+    function tri(a,b,c){
+      var cy=(b.z-a.z)*(c.x-a.x)-(b.x-a.x)*(c.z-a.z);
+      if(cy<0){var t=b;b=c;c=t}
+      [a,b,c].forEach(function(v){P.push(v.x,v.y,v.z);C.push(v.c[0],v.c[1],v.c[2]);U.push(v.x/uvs,v.z/uvs);N.push(0,1,0)});
+    }
+    for(var k=0;k<ds.length-1;k++){
+      var a=half+ds[k],b=half+ds[k+1];
+      var A=[[-a,-a],[a,-a],[a,a],[-a,a]],Q=[[-b,-b],[b,-b],[b,b],[-b,b]];
+      for(var s=0;s<4;s++){
+        var t=(s+1)%4;
+        var p0=V(A[s][0],ys[k],A[s][1],cs[k]),p1=V(A[t][0],ys[k],A[t][1],cs[k]),
+            p2=V(Q[t][0],ys[k+1],Q[t][1],cs[k+1]),p3=V(Q[s][0],ys[k+1],Q[s][1],cs[k+1]);
+        tri(p0,p1,p2);tri(p0,p2,p3);
+      }
+    }
+    var g=new Geo();
+    g.setAttribute("position",new Attr(new Float32Array(P),3));
+    g.setAttribute("normal",new Attr(new Float32Array(N),3));
+    g.setAttribute("color",new Attr(new Float32Array(C),3));
+    g.setAttribute("uv",new Attr(new Float32Array(U),2));
+    var m=new Mesh(g,mat);m.frustumCulled=false;m.renderOrder=order;m.onBeforeRender=obr;
+    sc.add(m);return m;
+  }
+
+  /* BEACH: slopes from island edge (y=0) down into the sea */
+  var bd=[0,1,2,3,4,5,6,7,8];
+  var by=bd.map(function(d){return -0.55*Math.min(d,7)/7-(d>7?.04:0)});
+  var bc=[0xf2e2ac,0xefdea6,0xe8d59a,0xd8c387,0xc4ab74,0xcdb97f,0xd5c58b,0xdacb92,0xdacb92].map(lin);
+  var beach=ring(bd,by,bc,6,new Mat({vertexColors:true,side:2}),0);
+
+  /* OCEAN: turquoise near shore -> deep blue -> hazy at the horizon */
+  var od=[2,4,8,16,30,50,80,120,180,260,380,540,700];
+  var oy=od.map(function(){return -0.3});
+  var oc=[0x4ee0d6,0x39d0d8,0x2fc0e0,0x2aa8e8,0x1f8fe0,0x1a7fd6,0x1873cc,0x2a8ad8,0x4aa4e4,0x6ebbee,0x92d0f4,0xb4e0f8,0xcdeafa].map(lin);
+  var wm=new Mat({vertexColors:true,map:tex,side:2,transparent:true,opacity:.88,depthWrite:false});
+  wm.emissive.set(0x0b2f55);
+  var water=ring(od,oy,oc,14,wm,1);
+
+  /* FOAM line on the shore */
+  var fm=new Mat({vertexColors:true,side:2,transparent:true,opacity:.5,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2});
+  fm.emissive.set(0x666666);
+  var foam=ring([3.55,4.15],[-.26,-.26],[[1,1,1],[1,1,1]],6,fm,2);
+
+  function setVis(){beach.visible=water.visible=foam.visible=on;G.redraw()}
+  setVis();
+
+  var last=performance.now(),lp=0;
+  (function loop(now){
+    requestAnimationFrame(loop);
+    if(!on||window.__ytPaused){last=now;return}
+    var dt=Math.min(.1,(now-last)/1000);last=now;
+    tex.offset.x=(tex.offset.x+dt*.010)%1;tex.offset.y=(tex.offset.y+dt*.006)%1;
+    foam.material.opacity=.42+.2*Math.sin(now/700);
+    if(hemi)wm.emissiveIntensity=Math.max(.1,hemi.intensity);
+    if(!window.__fpOn&&now-lp>66){lp=now;G.redraw()}
+  })(performance.now());
+
+  /* Menu switch */
+  if(mp){
+    var h=document.createElement("h4");h.textContent="Ocean";mp.appendChild(h);
+    var row=document.createElement("div");row.className="mrow";
+    var bt=document.createElement("button");bt.className="pill";
+    bt.style.cssText="pointer-events:auto;border:0;cursor:pointer;background:#e6f0ff";
+    var sm=document.createElement("small");sm.textContent="Ocean and beach around your island. Turn off if the game is slow";
+    function lab(){bt.textContent="\uD83C\uDF0A Ocean: "+(on?"ON":"OFF")}
+    lab();row.appendChild(bt);row.appendChild(sm);mp.appendChild(row);
+    bt.addEventListener("click",function(){
+      on=!on;try{localStorage.setItem(KEY,on?"1":"0")}catch(e){}
+      lab();setVis();
+    });
+  }
+  window.__ocean={toggle:function(){on=!on;setVis()}};
+}
+})();
+/*oceanBeach:end*/
+</script>
 </body>
 </html>
