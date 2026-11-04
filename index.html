@@ -442,7 +442,7 @@ function s(n){var k=Math.min(1,(n-t0)/D),v=Math.round((1-Math.pow(1-k,2.2))*100)
 requestAnimationFrame(s);if(window.ytgame&&ytgame.IN_PLAYABLES_ENV){requestAnimationFrame(function(){try{ytgame.game.firstFrameReady()}catch(e){}})}})();
 </script>
 
-<!-- First-visit guide completion is set only after the player closes the tour. -->
+<script>try{localStorage.setItem("cozy_builder_guide_v3","1")}catch(e){}</script>
 <script>/*animEarly*/window.__turn=function(a,b){var d=((b-a+Math.PI)%(Math.PI*2)+Math.PI*2)%(Math.PI*2)-Math.PI;return Math.abs(d)<.01?b:a+d*.2};</script>
 <script>/*dprCap*/(function(){try{var d=window.devicePixelRatio||1;Object.defineProperty(window,"devicePixelRatio",{configurable:true,get:function(){return Math.min(d,(window.matchMedia&&matchMedia("(pointer:coarse)").matches)?1:1.25)}})}catch(e){}})();</script>
 <script>/* landGrow200: shift extra saved data when land grew 100 -> 200 */
@@ -616,9 +616,9 @@ body.fp #questDock{display:none!important}
 <style>
 /* Interactive spotlight tour */
 #guideShade{display:none!important}
-#coachLayer{position:fixed;inset:0;z-index:99990;display:none;pointer-events:none;font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
+#coachLayer{position:fixed;inset:0;z-index:99990;display:none;pointer-events:auto;font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
 #coachLayer.active{display:block}
-#coachDim{position:absolute;inset:0;background:#07142678;backdrop-filter:blur(1.5px);pointer-events:none}
+#coachDim{position:absolute;inset:0;background:#07142678;backdrop-filter:blur(1.5px);pointer-events:auto}
 .coach-focus{position:relative!important;z-index:93!important;outline:4px solid #fbbf24!important;outline-offset:4px!important;box-shadow:0 0 0 8px #fbbf2440,0 0 28px 8px #60a5fa!important;border-radius:13px!important}
 /* Make every character of the highlighted control visibly bold */
 .coach-focus,
@@ -7300,29 +7300,6 @@ function build(){
   o.push({sec:"Landmarks",icon:LAND[m.id][0],name:LAND[m.id][1],sub:"",sx:s[0],sz:s[1],yaw:yawTo(s[0],s[1],m.x,m.z)})});
  if(water){var s2=nearest(water.x,water.z,6);if(s2)o.push({sec:"Landmarks",icon:"\uD83C\uDF0A",name:"Water",sub:"Nearest to the centre",sx:s2[0],sz:s2[1],yaw:yawTo(s2[0],s2[1],water.x,water.z)})}
  return o}
-// First-time visitors start outside their largest building's entrance. If no
-// building door exists yet, use a clear tile on the outer edge of the land,
-// facing inward. (The collision system does not permit spawning beyond Ql.)
-window.__cozyFirstVisitSpawn=function(){
- var all=build(),door=null;
- for(var i=0;i<all.length;i++){
-  if(all[i].sec==="Buildings"&&/at the door$/.test(all[i].name)){door=all[i];break}
- }
- if(door)return {sx:door.sx,sz:door.sz,yaw:door.yaw};
- var n=Ai(),off=(lt-n)/2,mid=Math.floor(lt/2),best=null,bd=1e9;
- for(var ring=0;ring<Math.ceil(n/2)&&!best;ring++){
-  var z0=off+ring,z1=off+n-1-ring,x0=off+ring,x1=off+n-1-ring;
-  for(var x=x0;x<=x1;x++){
-   var cand=[[x,z0],[x,z1]];
-   for(var q=0;q<cand.length;q++){var a=cand[q][0],b=cand[q][1];if(walk(a,b)){var d=(a-mid)*(a-mid)+(b-mid)*(b-mid);if(d<bd){bd=d;best={sx:a,sz:b,yaw:yawTo(a,b,mid,mid)}}}}
-  }
-  for(var z=z0+1;z<z1;z++){
-   var cand2=[[x0,z],[x1,z]];
-   for(var q2=0;q2<cand2.length;q2++){var a2=cand2[q2][0],b2=cand2[q2][1];if(walk(a2,b2)){var d2=(a2-mid)*(a2-mid)+(b2-mid)*(b2-mid);if(d2<bd){bd=d2;best={sx:a2,sz:b2,yaw:yawTo(a2,b2,mid,mid)}}}}
-  }
- }
- return best;
-};
 function render(){
  var h="",sec="";
  opts.forEach(function(o,i){
@@ -7334,7 +7311,7 @@ function go(o){
  eo.x=io(o.sx);eo.z=io(o.sz);eo.y=.3;Zl=o.yaw;
  bypass=true;btn.click();bypass=false}
 window.addEventListener("click",function(e){
- if(bypass||window.__autoEnter||!e.target.closest||!e.target.closest("#enterKingdom"))return;
+ if(bypass||!e.target.closest||!e.target.closest("#enterKingdom"))return;
  e.stopImmediatePropagation();e.preventDefault();
  cgShopEl.classList.remove("open");
  opts=build();render();ov.classList.add("open")},true);
@@ -8566,7 +8543,7 @@ window.__weather={rain:function(){startRain()},stop:function(){W.left=0},state:W
   typeText(s.text);
  }
  function open(){index=0;layer.classList.add("active");render()}
- function close(){clearInterval(typingTimer);clearFocus();layer.classList.remove("active");try{localStorage.setItem("cozy_builder_guide_v4","1")}catch(e){}}
+ function close(){clearInterval(typingTimer);clearFocus();layer.classList.remove("active")}
  window.__openCozyGardenTour=open;
  $("guideOpen").addEventListener("click",function(e){e.preventDefault();e.stopImmediatePropagation();open()},{capture:true});
  $("coachNext").addEventListener("click",()=>{if(index<steps.length-1){index++;render()}else close()});
@@ -8574,7 +8551,7 @@ window.__weather={rain:function(){startRain()},stop:function(){W.left=0},state:W
  $("coachClose").addEventListener("click",close);
  $("coachDim").addEventListener("click",close);
  window.addEventListener("resize",()=>{if(layer.classList.contains("active")&&activeTarget)positionCard(activeTarget)});
- try{if(!localStorage.getItem("cozy_builder_guide_v4"))setTimeout(()=>{if(!localStorage.getItem("cozy_builder_guide_v4"))open()},1100)}catch(e){setTimeout(open,1100)}
+ try{if(!localStorage.getItem("cozy_builder_guide_v3"))setTimeout(()=>{open();localStorage.setItem("cozy_builder_guide_v3","1")},1100)}catch(e){setTimeout(open,1100)}
 })();
 
 ;
@@ -11244,30 +11221,5 @@ function init(G,B,mp){
   },1000);
 })();
 </script>
-<script>
-/*autoEnterKingdom*/
-(function(){
-  var tries=0, iv=setInterval(function(){
-    var btn=document.getElementById("enterKingdom");
-    var ready = window.__game && window.__fpS && window.__fpx && btn;
-    var introGone = !document.getElementById("splash") && !document.getElementById("introSky");
-    if(!(ready && introGone) && ++tries<200) return;
-    clearInterval(iv);
-    if(!ready || window.__fpOn) return;
-    var firstVisit=false;
-    try{firstVisit=!localStorage.getItem("cozy_first_kingdom_visit_v1")}catch(e){}
-    if(firstVisit&&typeof window.__cozyFirstVisitSpawn==="function"){
-      try{
-        var start=window.__cozyFirstVisitSpawn();
-        if(start){eo.x=io(start.sx);eo.z=io(start.sz);eo.y=.3;Zl=start.yaw;}
-      }catch(e){console.warn("First-visit spawn fallback",e)}
-    }
-    window.__autoEnter=true;
-    btn.click();
-    window.__autoEnter=false;
-    if(firstVisit){try{localStorage.setItem("cozy_first_kingdom_visit_v1","1")}catch(e){}}
-  },150);
-})();
-</script>	
 </body>
 </html>
