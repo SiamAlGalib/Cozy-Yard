@@ -11165,5 +11165,46 @@ function init(G,B,mp){
 }
 })();
 </script>
+
+<script>
+/*soilJoints*/
+(function(){
+  var tries=0, done=false;
+  var iv=setInterval(function(){
+    var B=window.__builder, G=window.__game;
+    if(!(B&&B.parent&&G)){ if(++tries>300)clearInterval(iv); return; }
+    var sc=B.parent, n=0;
+    sc.children.forEach(function(o){
+      if(!o.isMesh||!o.geometry||o.geometry.type!=="BoxGeometry")return;
+      var m=o.material;
+      if(!m||!m.isMeshLambertMaterial||!m.flatShading||o.position.y>=0)return;
+      if(m.userData.__joints)return;
+      m.userData.__joints=1;
+      m.onBeforeCompile=function(sh){
+        sh.vertexShader=sh.vertexShader
+          .replace("#include <common>","#include <common>\nvarying vec3 vJW;")
+          .replace("#include <begin_vertex>","#include <begin_vertex>\nvJW=(modelMatrix*vec4(transformed,1.0)).xyz;");
+        sh.fragmentShader=sh.fragmentShader
+          .replace("#include <common>","#include <common>\nvarying vec3 vJW;")
+          .replace("#include <color_fragment>",
+            "#include <color_fragment>\n"+
+            "{ vec3 fn=normalize(cross(dFdx(vJW),dFdy(vJW)));\n"+
+            "  if(abs(fn.y)<0.5){\n"+
+            "    float u=abs(fn.x)>0.5?vJW.z:vJW.x;\n"+
+            "    float v=vJW.y/0.92;\n"+
+            "    u+=0.5*mod(floor(v),2.0);\n"+
+            "    float lw=0.04;\n"+
+            "    float j=max(step(fract(u),lw),step(fract(v),lw));\n"+
+            "    diffuseColor.rgb*=1.0-0.38*j;\n"+
+            "  } }");
+      };
+      m.customProgramCacheKey=function(){return "soilJoints1"};
+      m.needsUpdate=true; n++;
+    });
+    if(n){ done=true; G.redraw(); }
+    if(done||++tries>300)clearInterval(iv);
+  },200);
+})();
+</script>
 </body>
 </html>
