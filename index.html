@@ -129,6 +129,20 @@ document.documentElement.classList.add("cozy-intro-pending");
 </script>
 
 
+<script>
+/*lowEndDefaults*/
+(function(){
+try{
+  var coarse=window.matchMedia&&matchMedia("(pointer:coarse)").matches;
+  var weak=coarse||(navigator.hardwareConcurrency&&navigator.hardwareConcurrency<=4)||(navigator.deviceMemory&&navigator.deviceMemory<=4);
+  if(!weak)return;
+  function def(k,v){if(localStorage.getItem(k)===null)localStorage.setItem(k,v)}
+  def("cozy_ocean_life","0");
+  def("cozy_anim","0");
+  def("cozy_weather",'{"fx":0,"sound":1}');
+}catch(e){}
+})();
+</script>
 <style id="cozy-stability-polish">
 /* Accessibility and input polish; preserves game mechanics and saved worlds. */
 :focus-visible { outline: 3px solid #f6c453 !important; outline-offset: 3px !important; }
