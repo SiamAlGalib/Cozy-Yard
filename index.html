@@ -10798,11 +10798,8 @@ function init(G,B,mp){
   var bb=GB();box(bb,0,0,0,.16,.14,.55,0xf4f6f8);box(bb,0,.04,.33,.12,.12,.14,0xf4f6f8);box(bb,0,.03,.44,.035,.03,.12,0xf5a623);box(bb,0,0,-.38,.1,.03,.2,0x9aa3ab);
   var bw=GB();quad(bw,[0,0,.25],[0,0,-.22],[.6,.03,-.3],[.6,.03,.12],0xf4f6f8);quad(bw,[.6,.03,.12],[.6,.03,-.3],[1.25,.12,-.45],[1.25,.12,-.08],0x6d7781);
   var bodyGeo=toMesh(bb,vm).geometry,wingGeo=toMesh(bw,vm).geometry;
-  var flocks=[
-    {cx:-20,cz:10,R:55,h:15,n:6,v:9,dir:1},{cx:25,cz:-30,R:90,h:24,n:5,v:12,dir:-1},
-    {cx:0,cz:0,R:130,h:20,n:7,v:13,dir:1},{cx:lightPos[0],cz:lightPos[1],R:30,h:16,n:5,v:8,dir:1},
-    {cx:140,cz:-120,R:28,h:12,n:4,v:7,dir:-1}
-  ];
+  var flocks=[{cx:-20,cz:10,R:70,h:16,n:3,v:10,dir:1}];
+  var visiting=false,visitT=60+Math.random()*90,inited=false;
   var birds=[];
   flocks.forEach(function(f){
     for(var i=0;i<f.n;i++){
@@ -10815,7 +10812,7 @@ function init(G,B,mp){
       root.add(b.root);birds.push(b);
     }
   });
-  function updBirds(dt){
+  function updBirds(dt){if(!inited){inited=true;birds.forEach(function(b){b.root.visible=false})}visitT-=dt;if(visitT<=0){visiting=!visiting;visitT=visiting?35+Math.random()*25:150+Math.random()*150;birds.forEach(function(b){b.root.visible=visiting})}if(!visiting)return;
     birds.forEach(function(b){
       var f=b.f,w=f.dir*f.v/b.r,ds=f.dir;
       b.th+=w*dt;
