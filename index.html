@@ -6822,7 +6822,7 @@ function pillarNow(){
  var now=performance.now();if(now-lastT<60)return;lastT=now;
  var ix=Math.floor(S.px+lt/2),iz=Math.floor(S.pz+lt/2);
  if(!Ql(ix,iz))return;
- var c=so(ix,iz),ct=S.colTop(ix,iz);
+ var c=so(ix,iz),ct=S.colTop(ix,iz);var __terr=window.__terrain,__tl=__terr?__terr.lvl(iz*lt+ix):0;if(__tl<0){var __fill=__terr.place(ix,iz,2);if(__fill!==""){Vt(__fill||"Cannot place soil here");return;}S.py=(__tl+1)*H;S.vy=0;if(window.__sfx)window.__sfx.place("path");Vt("🟫 Dirt placed directly beneath you · you rose up");if(window.__vxSave)window.__vxSave();an=true;return;}
  if(c.base&&ct===0)return Vt("Can't build a pillar here");
  if(c.floor&&pt[c.floor.id].blocks)return Vt("You can't build on water");
  var L=Math.round(ct/H);
@@ -6846,7 +6846,6 @@ function pillar(){
  var ix=Math.floor(S.px+lt/2),iz=Math.floor(S.pz+lt/2);
  if(!Ql(ix,iz))return;
  var ct=S.colTop(ix,iz);
- var __tr=window.__terrain;if(__tr&&__tr.lvl(iz*lt+ix)<0){pillarNow();return}
  pend={ix:ix,iz:iz,t:performance.now()};
  if(S.py<=ct+.02)S.vy=5.6;
 }
@@ -9492,23 +9491,31 @@ window.__terrain={lvl:lvl,breakAt:breakAt,dig:function(x,z){var e=dig(x,z);mark(
 
 ;
 
-/*landKingdom*/
+/*landKingdom - dedicated terrain dig tool (no Land ON/OFF mode)*/
 (function(){
 "use strict";
 var G=window.__game,B=window.__builder,T=window.__terrain;
 if(!G||!B||!T||!T.lvl){console.warn("landKingdom: terrain not ready");return}
-var lt=Math.round(Math.sqrt(G.cells.length)),H=.92,half=lt/2;
-var on=false,type=2,lastAct=0;
-var NAMES=["","Grass","Dirt","Sand","Rock","Clay"],ICONS=["","🟩","🟫","🟨","⬜","🟧"],SND=["","grass","path","sand","rocks","path"];
+var lt=Math.round(Math.sqrt(G.cells.length)),H=.92,half=lt/2,lastAct=0;
 var Wt=null;
-B.parent.children.forEach(function(o){var p=o.geometry&&o.geometry.parameters;if(!Wt&&p&&p.width===.96&&p.height===.96)Wt=o});
-
-function toast(m){var t=document.getElementById("toast");if(!t)return;t.textContent=m;t.classList.add("show");clearTimeout(toast.t);toast.t=setTimeout(function(){t.classList.remove("show")},1800)}
-function ownCell(x,z){var n=G.size,off=(lt-n)/2;return x>=off&&z>=off&&x<off+n&&z<off+n}
+B.parent.children.forEach(function(o){
+  var p=o.geometry&&o.geometry.parameters;
+  if(!Wt&&p&&p.width===.96&&p.height===.96)Wt=o;
+});
+function toast(m){
+  var t=document.getElementById("toast");if(!t)return;
+  t.textContent=m;t.classList.add("show");clearTimeout(toast.t);
+  toast.t=setTimeout(function(){t.classList.remove("show")},1800);
+}
+function ownCell(x,z){
+  var n=G.size,off=(lt-n)/2;
+  return x>=off&&z>=off&&x<off+n&&z<off+n;
+}
 function hasItems(x,z){
   var c=G.cells[z*lt+x];
   if(c.floor||c.base||c.top||(c.stack&&c.stack.length))return true;
-  var V=window.__VX;if(V)for(var L=0;L<=(window.__VT|0);L++)if(V[x+","+z+","+L])return true;
+  var V=window.__VX;
+  if(V)for(var L=0;L<=(window.__VT|0);L++)if(V[x+","+z+","+L])return true;
   return false;
 }
 function aimCell(md){
@@ -9518,9 +9525,7 @@ function aimCell(md){
   if(Math.hypot(r.x+.5-half-S.px,r.z+.5-half-S.pz)>(md||7))return null;
   return r;
 }
-
-/* ---- hooks used by the patched game code ---- */
-window.__tLandOn=function(){return on&&!!window.__fpOn};
+window.__tLandOn=function(){return false};
 window.__tH=function(x,z){
   var ix=Math.floor(x+half),iz=Math.floor(z+half);
   if(ix<0||iz<0||ix>=lt||iz>=lt)return 0;
@@ -9528,79 +9533,51 @@ window.__tH=function(x,z){
 };
 window.__tBlk=function(ix,iz,py){
   if(ix<0||iz<0||ix>=lt||iz>=lt)return false;
-  return T.lvl(iz*lt+ix)*H>py+.55;      /* too high to step onto: jump or build stairs */
+  return T.lvl(iz*lt+ix)*H>py+.55;
 };
+/* Keep the ground target visible in first-person mode for digging. */
 window.__tAim=function(){
   if(!window.__fpOn)return undefined;
-  if(!on&&!T.count){if(Wt)Wt.position.y=.09;return undefined}
-  var r=aimCell(on?7:12);
-  if(!r)return null;
+  var r=aimCell(7);
+  if(!r){if(Wt)Wt.position.y=.09;return null}
   if(Wt)Wt.position.y=r.top+.05;
   return {ix:r.x,iz:r.z};
 };
-window.__tPlace=function(){
-  if(!on||!window.__fpOn)return false;
-  var now=performance.now();if(now-lastAct<80)return true;lastAct=now;
-  var r=aimCell();
-  if(!r){toast("Aim at the ground within reach");return true}
-  var e=T.place(r.x,r.z,type);
-  if(e){toast(e);return true}
-  if(window.__sfx)window.__sfx.place(SND[type]);
-  lab();return true;
-};
-window.__tBreak=function(){
+/* Terrain is no longer placed from a Land mode. Normal block breaking stays separate. */
+window.__tPlace=function(){return false};
+window.__tBreak=function(){return false};
+window.__tDig=function(){
   if(!window.__fpOn)return false;
-  var r=aimCell();
-  if(!r||hasItems(r.x,r.z))return false;   /* items: normal breaking handles them */
-  var now=performance.now();if(now-lastAct<80)return true;lastAct=now;
+  var now=performance.now();
+  if(now-lastAct<100)return true;
+  var r=aimCell(7);
+  if(!r){toast("Aim at the ground within reach");return true}
+  if(hasItems(r.x,r.z)){toast("Break the item on this spot first");return true}
+  lastAct=now;
   var e=T.dig(r.x,r.z);
   if(e){toast(e);return true}
   if(window.__sfx)window.__sfx.place("path");
-  lab();return true;
+  toast("⛏ Ground dug");
+  return true;
 };
-
-/* ---- buttons ---- */
-var bar=document.getElementById("fpBar");
-function mk(id,css){
-  var b=document.createElement("button");b.id=id;
-  b.style.cssText="width:auto;border-radius:999px;padding:0 14px;font-weight:700;font-size:13px;height:34px;border:0;cursor:pointer;"+css;
-  b.addEventListener("pointerdown",function(e){e.stopPropagation()});
-  return b;
+function addDigButton(parent,id){
+  if(!parent||document.getElementById(id))return;
+  var b=document.createElement("button");
+  b.id=id;b.type="button";b.textContent="⛏ Dig";
+  b.style.cssText="border:0;border-radius:999px;padding:0 14px;height:34px;background:#b7791f;color:#fff;font:700 13px system-ui,sans-serif;cursor:pointer;white-space:nowrap";
+  b.addEventListener("pointerdown",function(e){e.preventDefault();e.stopPropagation()});
+  b.addEventListener("click",function(e){e.preventDefault();e.stopPropagation();window.__tDig()});
+  parent.appendChild(b);
 }
-var bOn=mk("fpLandBtn","background:#a05a20;color:#fff"),bTy=mk("fpLandType","background:#f4e3c6;color:#6b3f12;display:none");
-bar.appendChild(bOn);bar.appendChild(bTy);
-function lab(){
-  bOn.textContent="🌍 Land: "+(on?"ON":"OFF");
-  bOn.style.background=on?"#2e9d57":"#a05a20";
-  var n=(T.inv&&T.inv[type])|0;
-  bTy.textContent=ICONS[type]+" "+NAMES[type]+(n?" ×"+n:"");
-  bTy.style.display=on?"":"none";
-}
-function setOn(v){
-  on=!!v;if(!on&&Wt)Wt.position.y=.09;lab();
-  toast(on?"Land mode ON: click = place "+NAMES[type]+", right-click / X = dig. Q/E or wheel = change type":"Land mode OFF");
-}
-function cyc(d){type=((type-1+d+5)%5)+1;lab();toast("Land block: "+NAMES[type])}
-bOn.addEventListener("click",function(){setOn(!on)});
-bTy.addEventListener("click",function(){cyc(1)});
-setInterval(function(){if(window.__fpOn)lab()},500);
-lab();
-
+addDigButton(document.getElementById("fpBar"),"fpDigBtn");
+addDigButton(document.getElementById("fpActs"),"fpDigTouchBtn");
 window.addEventListener("keydown",function(e){
   if(!window.__fpOn||e.ctrlKey||e.metaKey||e.altKey)return;
-  if(e.code==="KeyT"){e.stopImmediatePropagation();if(!e.repeat)setOn(!on);return}
-  if(on&&(e.code==="KeyQ"||e.code==="KeyE")){e.stopImmediatePropagation();e.preventDefault();if(!e.repeat)cyc(e.code==="KeyE"?1:-1)}
+  if(e.code==="KeyZ"&&!e.repeat){
+    e.preventDefault();e.stopImmediatePropagation();window.__tDig();
+  }
 },true);
-var look=document.getElementById("fpLook");
-window.addEventListener("wheel",function(e){
-  if(!on||!window.__fpOn||e.target!==look)return;
-  e.preventDefault();e.stopImmediatePropagation();cyc(e.deltaY>0?1:-1);
-},{capture:true,passive:false});
 })();
-
-
-;
-
 /*waterFlow2*/
 (function(){
 "use strict";
@@ -11220,6 +11197,58 @@ function init(G,B,mp){
     }
     if(ch)G.redraw();
   },1000);
+})();
+</script>
+
+<script>
+/* ===== Kingdom digging loot + terrain-aware pillar UI ===== */
+(function(){
+"use strict";
+var T=window.__terrain,H=.92;
+if(!T)return;
+/* Solid terrain walls: do not let the player pass through higher soil cells. */
+var oldTerrainBlock=window.__tBlk,worldSize=Math.round(Math.sqrt(window.__game.cells.length));
+window.__tBlk=function(ix,iz,py){
+ if(ix<0||iz<0||ix>=worldSize||iz>=worldSize)return false;
+ var surface=T.lvl(iz*worldSize+ix)*H;
+ if(surface>py+.38)return true;
+ return oldTerrainBlock?oldTerrainBlock(ix,iz,py):false;
+};
+var LOOT_KEY="cozy_kingdom_dig_loot";
+var loot={dirt:0,mud:0,clay:0,rock:0};
+try{loot=Object.assign(loot,JSON.parse(localStorage.getItem(LOOT_KEY)||"{}"))}catch(e){}
+function saveLoot(){try{localStorage.setItem(LOOT_KEY,JSON.stringify(loot))}catch(e){}}
+function lootUI(){
+ var el=document.getElementById("fpDigLoot");
+ if(!el){el=document.createElement("div");el.id="fpDigLoot";
+  el.style.cssText="position:fixed;left:50%;bottom:calc(112px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:35;background:rgba(20,39,43,.94);color:#fff;border:1px solid rgba(255,255,255,.2);border-radius:12px;padding:6px 10px;font:700 11px/1.45 system-ui,sans-serif;max-width:94vw;text-align:center;pointer-events:none;white-space:normal;display:none";
+  document.body.appendChild(el);
+ }
+ el.textContent="🟫 Dirt "+loot.dirt+"  ·  🟤 Mud "+loot.mud+"  ·  🟧 Clay "+loot.clay+"  ·  🪨 Rock "+loot.rock;
+ el.style.display=window.__fpOn?"block":"none";
+}
+var oldDig=window.__tDig;
+if(oldDig){window.__tDig=function(){
+ var G=window.__game,S=window.__fpS,lt=Math.round(Math.sqrt(G.cells.length));
+ var ix=Math.floor(S.px+lt/2),iz=Math.floor(S.pz+lt/2),before=(ix>=0&&iz>=0&&ix<lt&&iz<lt)?T.lvl(iz*lt+ix):0;
+ var out=oldDig();
+ var after=(ix>=0&&iz>=0&&ix<lt&&iz<lt)?T.lvl(iz*lt+ix):before;
+ if(out&&after<before){
+  var depth=Math.max(1,-after);loot.dirt++;loot.mud++;
+  if(Math.random()<.22){loot.clay++;T.inv[5]=(T.inv[5]|0)+1}
+  if(depth>=2&&Math.random()<.16){loot.rock++;T.inv[4]=(T.inv[4]|0)+1}
+  saveLoot();lootUI();
+  var toast=document.getElementById("toast");
+  if(toast){toast.textContent="⛏ +1 Dirt · +1 Mud";toast.classList.add("show");clearTimeout(toast._digT);toast._digT=setTimeout(function(){toast.classList.remove("show")},1800)}
+ }
+ return out;
+}}
+var fpx=window.__fpx;
+if(fpx){var enter=fpx.enter,leave=fpx.leave;
+ if(enter)fpx.enter=function(){enter();lootUI()};
+ if(leave)fpx.leave=function(){leave();var el=document.getElementById("fpDigLoot");if(el)el.style.display="none"};
+}
+lootUI();
 })();
 </script>
 </body>
