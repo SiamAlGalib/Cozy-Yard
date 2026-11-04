@@ -9171,25 +9171,23 @@ function holeCell(i){
   hx.fillStyle=D[i]>0?"#000":"#fff";hx.fillRect(i%lt,Math.floor(i/lt),1,1);ht.needsUpdate=true;
 }
 
-var tmat=new Mat({vertexColors:true,roughness:.95,side:2});
+var tmat=new Mat({vertexColors:true,roughness:.95,side:2,map:(function(){/*blockJoints*/var TC=ground.material.map.constructor,c=document.createElement("canvas");c.width=c.height=64;var x=c.getContext("2d");x.fillStyle="#fff";x.fillRect(0,0,64,64);x.fillStyle="rgba(0,0,0,.30)";x.fillRect(0,0,64,2);x.fillRect(0,62,64,2);x.fillRect(0,0,2,64);x.fillRect(62,0,2,64);x.fillRect(0,31,64,2);x.fillRect(31,0,2,32);x.fillRect(15,32,2,32);x.fillRect(47,32,2,32);var t=new TC(c);t.colorSpace="srgb";t.needsUpdate=true;return t})()});
 var tmesh=new Mesh(new Geo(),tmat);tmesh.frustumCulled=false;tmesh.visible=false;sc.add(tmesh);
 function lin(h){return[Math.pow(((h>>16)&255)/255,2.2),Math.pow(((h>>8)&255)/255,2.2),Math.pow((h&255)/255,2.2)]}
 var cache={};function col(h,k){var key=h+"_"+k,c=cache[key];if(!c){c=lin(h);c=[c[0]*k,c[1]*k,c[2]*k];cache[key]=c}return c}
-function buildGeo(P,N,C){
+function buildGeo(P,N,C,U){
   var g=new Geo();
   g.setAttribute("position",new Attr(new Float32Array(P),3));
   g.setAttribute("normal",new Attr(new Float32Array(N),3));
-  g.setAttribute("color",new Attr(new Float32Array(C),3));
+  g.setAttribute("color",new Attr(new Float32Array(C),3));if(U)g.setAttribute("uv",new Attr(new Float32Array(U),2));
   return g;
 }
 function rebuild(){
-  var P=[],N=[],C=[];
+  var P=[],N=[],C=[],U=[];
   function quad(a,b,c,d,n,cc){
     var ux=b[0]-a[0],uy=b[1]-a[1],uz=b[2]-a[2],vx=c[0]-a[0],vy=c[1]-a[1],vz=c[2]-a[2];
     var cx=uy*vz-uz*vy,cy=uz*vx-ux*vz,cz=ux*vy-uy*vx;
-    if(cx*n[0]+cy*n[1]+cz*n[2]<0){var t=b;b=d;d=t}
-    var v=[a,b,c,a,c,d];
-    for(var i=0;i<6;i++){P.push(v[i][0],v[i][1],v[i][2]);N.push(n[0],n[1],n[2]);C.push(cc[0],cc[1],cc[2])}
+    var ua=[0,0],ub=[1,0],uc=[1,1],ud=[0,1];if(cx*n[0]+cy*n[1]+cz*n[2]<0){var t=b;b=d;d=t;var tu=ub;ub=ud;ud=tu}var v=[a,b,c,a,c,d],uu=[ua,ub,uc,ua,uc,ud];for(var i=0;i<6;i++){P.push(v[i][0],v[i][1],v[i][2]);N.push(n[0],n[1],n[2]);C.push(cc[0],cc[1],cc[2]);U.push(uu[i][0],uu[i][1])}
   }
   var cells=new Set(feat);
   feat.forEach(function(i){var x=i%lt,z=(i-x)/lt;
@@ -9221,7 +9219,7 @@ function rebuild(){
   }
   var old=tmesh.geometry;
   if(!P.length){tmesh.visible=false}
-  else{tmesh.geometry=buildGeo(P,N,C);tmesh.visible=true}
+  else{tmesh.geometry=buildGeo(P,N,C,U);tmesh.visible=true}
   if(old&&old.dispose)old.dispose();
   syncItems();G.redraw();
 }
