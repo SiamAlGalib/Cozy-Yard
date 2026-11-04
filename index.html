@@ -11251,5 +11251,40 @@ if(fpx){var enter=fpx.enter,leave=fpx.leave;
 lootUI();
 })();
 </script>
+<script>
+/*fillHoleUnderPlayer*/
+(function(){
+"use strict";
+var T=window.__terrain,S=window.__fpS,G=window.__game,H=.92,last=0;
+if(!T||!S||!G)return;
+function say(m){var t=document.getElementById("toast");if(!t)return;t.textContent=m;t.classList.add("show");clearTimeout(say.t);say.t=setTimeout(function(){t.classList.remove("show")},2200)}
+function fill(){
+  if(!window.__fpOn)return;
+  var n=performance.now();if(n-last<150)return;last=n;
+  var lt=Math.round(Math.sqrt(G.cells.length)),ix=Math.floor(S.px+lt/2),iz=Math.floor(S.pz+lt/2),l=T.lvl(iz*lt+ix);
+  if(l>=0)return say("You are not standing in a hole");
+  var e=T.place(ix,iz,2);
+  if(e)return say(e);
+  S.py=(l+1)*H;S.vy=0;
+  if(window.__sfx)window.__sfx.place("path");
+  say("Dirt placed under you");
+}
+window.__fillHole=fill;
+window.addEventListener("keydown",function(e){
+  if(!window.__fpOn||e.ctrlKey||e.metaKey||e.altKey||e.code!=="KeyP")return;
+  e.preventDefault();e.stopImmediatePropagation();fill();
+},true);
+function addBtn(parent,id){
+  if(!parent||document.getElementById(id))return;
+  var b=document.createElement("button");b.id=id;b.type="button";b.textContent="\u2B06 Fill";
+  b.style.cssText="border:0;border-radius:999px;padding:0 14px;height:34px;background:#8a5a2b;color:#fff;font:700 13px system-ui,sans-serif;cursor:pointer;white-space:nowrap";
+  b.addEventListener("pointerdown",function(e){e.preventDefault();e.stopPropagation()});
+  b.addEventListener("click",function(e){e.preventDefault();e.stopPropagation();fill()});
+  parent.appendChild(b);
+}
+addBtn(document.getElementById("fpBar"),"fpFillBtn");
+addBtn(document.getElementById("fpActs"),"fpFillTouchBtn");
+})();
+</script>
 </body>
 </html>
